@@ -34,7 +34,7 @@
 
     <!-- Top Two Boxes with Center '+' Sign Only -->
     <div class="owner-top-two-bars">
-      <button type="button" class="owner-bar-btn bar-user" onclick="openOwnerUserView()">
+      <button type="button" class="owner-bar-btn bar-user" onclick="openOwnerStoreEditView()">
         <span class="bar-plus-center">+</span>
       </button>
       <button type="button" class="owner-bar-btn bar-expand" onclick="openExpandLimitsModal()">
@@ -42,7 +42,37 @@
       </button>
     </div>
 
-    <!-- Clean Boxes Grid (Moved Up Directly Below Top Two Boxes) -->
+    <!-- Owner Store View (Same User Store Layout + Inline Photo & Name Edit in Place) -->
+    <section class="owner-box" id="ownerStoreEditView" style="display:none; margin-bottom:14px;">
+      <div class="folder-view-header">
+        <span class="sub-block-title" style="margin:0;">Store</span>
+        <button type="button" class="icon-mini-btn danger-tone" title="Close" onclick="closeOwnerStoreEditView()">×</button>
+      </div>
+
+      <!-- Cover Banner in Same Position -->
+      <div class="cover-wrapper" style="border-radius:14px; margin-bottom:14px;">
+        <img id="ownerLiveCoverImg" src="" alt="" />
+        <div class="cover-overlay">
+          <div class="cover-title" id="ownerLiveCoverTitle"></div>
+          <div class="cover-subtitle" id="ownerLiveCoverSubtitle"></div>
+        </div>
+      </div>
+
+      <!-- Quick Cover Photo & Name Update Right in Place -->
+      <div class="sub-block">
+        <div class="form-grid">
+          <input type="text" id="ownerLiveTitleInput" placeholder="Store Name" oninput="liveUpdateStoreHeader()" />
+          <input type="text" id="ownerLiveSubtitleInput" placeholder="Subtitle" oninput="liveUpdateStoreHeader()" />
+          <input type="file" id="ownerLiveCoverFile" accept="image/*" onchange="liveUpdateCoverPhoto(event)" />
+          <button type="button" class="btn-primary" onclick="saveOwnerStoreChanges()">Update</button>
+        </div>
+      </div>
+
+      <!-- Store Rows & Boxes in Same Position with Inline Photo & Name Edit -->
+      <div id="ownerLiveStoreContainer"></div>
+    </section>
+
+    <!-- Clean Boxes Grid -->
     <div class="clean-boxes-grid" id="ownerFoldersGrid"></div>
 
   </main>
@@ -69,6 +99,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Hidden File Input for Inline Item Photo Change -->
+  <input type="file" id="ownerInlineItemPhotoInput" accept="image/*" hidden onchange="applyOwnerInlineItemPhoto(event)" />
 
   <script src="app.js"></script>
 </body>
