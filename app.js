@@ -175,6 +175,10 @@ function applyStoreThemeColor(hexColor) {
   if (!hexColor) return;
   storeData.themeColor = hexColor;
   document.documentElement.style.setProperty("--primary", hexColor);
+  const bar = document.getElementById("ownerLiveSaveBar");
+  if (bar) bar.style.background = hexColor;
+  const saveBtn = document.getElementById("ownerLiveSaveBtn");
+  if (saveBtn) saveBtn.style.color = hexColor;
   saveData();
 }
 
@@ -313,12 +317,14 @@ function attachOwnerStoreEditHandlers() {
   const activeColor = storeData.themeColor || "#0f766e";
   document.documentElement.style.setProperty("--primary", activeColor);
 
-  // Color Picker for Color Option
+  // Browser Color Picker for Color Option
   const colorInput = document.createElement("input");
   colorInput.type = "color";
   colorInput.id = "ownerThemeColorPicker";
   colorInput.value = activeColor;
-  colorInput.style.cssText = "position:fixed;opacity:0;pointer-events:none;width:1px;height:1px;";
+  colorInput.setAttribute("aria-label", "Choose Store Color");
+  colorInput.style.cssText =
+    "position:fixed;top:52px;right:14px;z-index:90;width:36px;height:36px;padding:0;border:2px solid #ffffff;border-radius:8px;background:transparent;cursor:pointer;opacity:0.01;";
   colorInput.addEventListener("input", (e) => applyStoreThemeColor(e.target.value));
   colorInput.addEventListener("change", (e) => applyStoreThemeColor(e.target.value));
   document.body.appendChild(colorInput);
@@ -327,7 +333,7 @@ function attachOwnerStoreEditHandlers() {
   const bar = document.createElement("div");
   bar.id = "ownerLiveSaveBar";
   bar.style.cssText =
-    "position:sticky;top:0;z-index:80;background:#0f766e;color:#ffffff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;";
+    `position:sticky;top:0;z-index:80;background:${activeColor};color:#ffffff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;`;
 
   const info = document.createElement("span");
   info.textContent = "Edit photo, name, color, boxes or rows";
@@ -341,13 +347,26 @@ function attachOwnerStoreEditHandlers() {
   colorBtn.textContent = "✎ Color";
   colorBtn.style.cssText =
     "padding:6px 10px;border:1px solid rgba(255,255,255,0.65);border-radius:8px;background:rgba(255,255,255,0.16);color:#ffffff;font-size:0.78rem;font-weight:700;cursor:pointer;";
-  colorBtn.onclick = () => colorInput.click();
+  colorBtn.onclick = (e) => {
+    e.stopPropagation();
+    colorInput.style.opacity = "1";
+    colorInput.style.pointerEvents = "auto";
+    if (typeof colorInput.showPicker === "function") {
+      try {
+        colorInput.showPicker();
+        return;
+      } catch (err) {}
+    }
+    colorInput.click();
+    colorInput.focus();
+  };
 
   const saveBtn = document.createElement("button");
+  saveBtn.id = "ownerLiveSaveBtn";
   saveBtn.type = "button";
   saveBtn.textContent = "Save";
   saveBtn.style.cssText =
-    "padding:7px 14px;border:none;border-radius:8px;background:#ffffff;color:#0f766e;font-weight:700;cursor:pointer;";
+    `padding:7px 14px;border:none;border-radius:8px;background:#ffffff;color:${activeColor};font-weight:700;cursor:pointer;`;
   saveBtn.onclick = () => {
     saveData();
     removeOwnerStoreEditUI();
@@ -381,7 +400,7 @@ function attachOwnerStoreEditHandlers() {
     coverBtn.className = "owner-inline-edit-btn";
     coverBtn.textContent = "✎ Photo";
     coverBtn.style.cssText =
-      "position:absolute;top:10px;right:10px;z-index:5;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:#0f766e;font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);";
+      `position:absolute;top:10px;right:10px;z-index:5;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${storeData.themeColor || "#0f766e"};font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);`;
     coverBtn.onclick = (e) => {
       e.stopPropagation();
       pendingOwnerEditSlot = { type: "cover", slotIdx: 0 };
@@ -394,7 +413,7 @@ function attachOwnerStoreEditHandlers() {
     addCoverBtn.className = "owner-inline-edit-btn";
     addCoverBtn.textContent = "+ Cover";
     addCoverBtn.style.cssText =
-      "position:absolute;bottom:10px;right:10px;z-index:5;padding:4px 9px;border:none;border-radius:8px;background:#ffffff;color:#0f766e;font-size:0.74rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);";
+      `position:absolute;bottom:10px;right:10px;z-index:5;padding:4px 9px;border:none;border-radius:8px;background:#ffffff;color:${storeData.themeColor || "#0f766e"};font-size:0.74rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);`;
     addCoverBtn.onclick = (e) => {
       e.stopPropagation();
       addCoverInEditMode();
@@ -458,7 +477,7 @@ function attachOwnerStoreEditHandlers() {
       photoBtn.textContent = "✎";
       photoBtn.title = "Edit Photo";
       photoBtn.style.cssText =
-        "position:absolute;top:6px;right:6px;z-index:4;width:24px;height:24px;border:none;border-radius:6px;background:rgba(15,118,110,0.92);color:#ffffff;font-size:0.75rem;font-weight:700;cursor:pointer;";
+        `position:absolute;top:6px;right:6px;z-index:4;width:24px;height:24px;border:none;border-radius:6px;background:${storeData.themeColor || "#0f766e"};color:#ffffff;font-size:0.75rem;font-weight:700;cursor:pointer;`;
       photoBtn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -501,7 +520,7 @@ function attachOwnerStoreEditHandlers() {
         addBoxBtn.className = "owner-inline-edit-btn";
         addBoxBtn.textContent = "+ Box";
         addBoxBtn.style.cssText =
-          "flex:0 0 auto;align-self:center;padding:10px 14px;border:1px dashed #0f766e;border-radius:14px;background:#f0fdfa;color:#0f766e;font-size:0.82rem;font-weight:700;cursor:pointer;";
+          `flex:0 0 auto;align-self:center;padding:10px 14px;border:1px dashed ${storeData.themeColor || "#0f766e"};border-radius:14px;background:#f0fdfa;color:${storeData.themeColor || "#0f766e"};font-size:0.82rem;font-weight:700;cursor:pointer;`;
         addBoxBtn.onclick = (e) => {
           e.stopPropagation();
           addBoxToSection(sIdx);
@@ -538,7 +557,7 @@ function attachOwnerStoreEditHandlers() {
     addRowBtn.className = "owner-inline-edit-btn";
     addRowBtn.textContent = "+ Row";
     addRowBtn.style.cssText =
-      "flex:1;padding:10px 14px;border:1px solid #0f766e;border-radius:12px;background:#f0fdfa;color:#0f766e;font-size:0.88rem;font-weight:700;cursor:pointer;";
+      `flex:1;padding:10px 14px;border:1px solid ${storeData.themeColor || "#0f766e"};border-radius:12px;background:#f0fdfa;color:${storeData.themeColor || "#0f766e"};font-size:0.88rem;font-weight:700;cursor:pointer;`;
     addRowBtn.onclick = () => addBottomStoreRow();
 
     const remRowBtn = document.createElement("button");
