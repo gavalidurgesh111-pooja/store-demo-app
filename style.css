@@ -643,7 +643,6 @@ footer {
   margin-bottom: 12px;
 }
 
-/* 4 Main Folders + 10 Empty Editable Folders Grid */
 .folder-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
@@ -779,7 +778,6 @@ footer {
   font-weight: 600;
 }
 
-/* Cost-Saver Counter Card */
 .cost-saver-stat {
   background: #f0fdfa;
   border: 1px solid var(--primary);
@@ -817,7 +815,6 @@ footer {
   margin-top: 2px;
 }
 
-/* Clean Photo + Name List Rows */
 .clean-row-list {
   display: flex;
   flex-direction: column;
