@@ -162,6 +162,8 @@ function openOwnerStoreEditView() {
 function removeOwnerStoreEditUI() {
   const bar = document.getElementById("ownerLiveSaveBar");
   if (bar) bar.remove();
+  const bottomBar = document.getElementById("ownerBottomRowControls");
+  if (bottomBar) bottomBar.remove();
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
 }
 
@@ -202,6 +204,72 @@ function ensureOwnerInlineFileInput() {
   return input;
 }
 
+function addBoxToSection(sIdx) {
+  const sec = storeData.sections[sIdx];
+  if (!sec) return;
+  const maxBoxes = Math.min(MAX_INDEX_BOXES, Math.max(0, Number(storeData.indexBoxLimit ?? MAX_INDEX_BOXES)));
+  const currentCount = sIdx === 0 ? Math.min(4, sec.items.length) : sec.items.length;
+
+  if (currentCount >= maxBoxes) {
+    alert(`Box limit reached (${maxBoxes} max).`);
+    return;
+  }
+
+  const nextNum = sec.items.length + 1;
+  sec.items.push({
+    id: `${sIdx}-${Date.now()}-${nextNum}`,
+    name: `Item ${nextNum}`,
+    price: 0,
+    img: ""
+  });
+
+  saveData();
+  renderSections();
+  attachOwnerStoreEditHandlers();
+}
+
+function removeBoxFromSection(sIdx) {
+  const sec = storeData.sections[sIdx];
+  if (!sec) return;
+  const minBoxes = sIdx === 0 ? 1 : 0;
+  if (sec.items.length <= minBoxes) return;
+
+  sec.items.pop();
+  saveData();
+  renderSections();
+  attachOwnerStoreEditHandlers();
+}
+
+function addBottomStoreRow() {
+  const maxRows = Math.min(MAX_INDEX_BOXES, Math.max(1, Number(storeData.indexBoxLimit ?? MAX_INDEX_BOXES)));
+  if (storeData.sections.length >= maxRows) {
+    alert(`Row limit reached (${maxRows} max).`);
+    return;
+  }
+
+  const rowNum = storeData.sections.length + 1;
+  const items = [];
+  for (let i = 1; i <= 5; i++) {
+    items.push({ id: `${rowNum}-${Date.now()}-${i}`, name: `Item ${i}`, price: 0, img: "" });
+  }
+  storeData.sections.push({
+    title: `${rowNum}. New Row`,
+    items
+  });
+
+  saveData();
+  renderSections();
+  attachOwnerStoreEditHandlers();
+}
+
+function removeBottomStoreRow() {
+  if (storeData.sections.length <= 1) return;
+  storeData.sections.pop();
+  saveData();
+  renderSections();
+  attachOwnerStoreEditHandlers();
+}
+
 function attachOwnerStoreEditHandlers() {
   if (!OWNER_EDIT_MODE || document.body.getAttribute("data-page") === "owner") return;
 
@@ -215,7 +283,7 @@ function attachOwnerStoreEditHandlers() {
     "position:sticky;top:0;z-index:80;background:#0f766e;color:#ffffff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;";
 
   const info = document.createElement("span");
-  info.textContent = "Edit photo or name buttons, then Save";
+  info.textContent = "Edit photo, name, boxes or rows, then Save";
   info.style.cssText = "font-size:0.82rem;font-weight:600;";
 
   const actions = document.createElement("div");
@@ -267,7 +335,7 @@ function attachOwnerStoreEditHandlers() {
     coverWrap.appendChild(coverBtn);
   }
 
-  // Section Name & Item Photo/Name Edit Buttons
+  // Section Name, Item Photo/Name & Box Add/Remove Buttons
   const sectionEls = document.querySelectorAll("#sectionsContainer .row-section");
   sectionEls.forEach((secEl, sIdx) => {
     const sec = storeData.sections[sIdx];
@@ -342,7 +410,68 @@ function attachOwnerStoreEditHandlers() {
         nameEl.insertAdjacentElement("afterend", nameBtn);
       }
     });
+
+    // Box Add (+ Box) and Remove (−) controls on each row
+    if (sIdx > 0) {
+      const scrollEl = secEl.querySelector(".scroll-row");
+      if (scrollEl) {
+        const addBoxBtn = document.createElement("button");
+        addBoxBtn.type = "button";
+        addBoxBtn.className = "owner-inline-edit-btn";
+        addBoxBtn.textContent = "+ Box";
+        addBoxBtn.style.cssText =
+          "flex:0 0 auto;align-self:center;padding:10px 14px;border:1px dashed #0f766e;border-radius:14px;background:#f0fdfa;color:#0f766e;font-size:0.82rem;font-weight:700;cursor:pointer;";
+        addBoxBtn.onclick = (e) => {
+          e.stopPropagation();
+          addBoxToSection(sIdx);
+        };
+
+        const remBoxBtn = document.createElement("button");
+        remBoxBtn.type = "button";
+        remBoxBtn.className = "owner-inline-edit-btn";
+        remBoxBtn.textContent = "−";
+        remBoxBtn.title = "Remove Last Box";
+        remBoxBtn.style.cssText =
+          "flex:0 0 auto;align-self:center;padding:10px 12px;border:1px solid #fecaca;border-radius:14px;background:#fee2e2;color:#dc2626;font-size:0.9rem;font-weight:700;cursor:pointer;";
+        remBoxBtn.onclick = (e) => {
+          e.stopPropagation();
+          removeBoxFromSection(sIdx);
+        };
+
+        scrollEl.appendChild(addBoxBtn);
+        scrollEl.appendChild(remBoxBtn);
+      }
+    }
   });
+
+  // Bottom controls to add/remove strips (rows) within limit
+  const sectionsContainer = document.getElementById("sectionsContainer");
+  if (sectionsContainer) {
+    const bottomControls = document.createElement("div");
+    bottomControls.id = "ownerBottomRowControls";
+    bottomControls.style.cssText =
+      "display:flex;gap:10px;margin-top:12px;margin-bottom:16px;";
+
+    const addRowBtn = document.createElement("button");
+    addRowBtn.type = "button";
+    addRowBtn.className = "owner-inline-edit-btn";
+    addRowBtn.textContent = "+ Row";
+    addRowBtn.style.cssText =
+      "flex:1;padding:10px 14px;border:1px solid #0f766e;border-radius:12px;background:#f0fdfa;color:#0f766e;font-size:0.88rem;font-weight:700;cursor:pointer;";
+    addRowBtn.onclick = () => addBottomStoreRow();
+
+    const remRowBtn = document.createElement("button");
+    remRowBtn.type = "button";
+    remRowBtn.className = "owner-inline-edit-btn";
+    remRowBtn.textContent = "− Row";
+    remRowBtn.style.cssText =
+      "padding:10px 14px;border:1px solid #fecaca;border-radius:12px;background:#fee2e2;color:#dc2626;font-size:0.88rem;font-weight:700;cursor:pointer;";
+    remRowBtn.onclick = () => removeBottomStoreRow();
+
+    bottomControls.appendChild(addRowBtn);
+    bottomControls.appendChild(remRowBtn);
+    sectionsContainer.insertAdjacentElement("afterend", bottomControls);
+  }
 }
 
 /* ==================== STORE PAGE (index.html) ==================== */
@@ -368,6 +497,7 @@ function renderSections() {
   if (!container) return;
   container.innerHTML = "";
   const savedPhoto = storeData.userProfile?.photo || "";
+  const maxBoxes = Math.min(MAX_INDEX_BOXES, Math.max(0, Number(storeData.indexBoxLimit ?? MAX_INDEX_BOXES)));
 
   storeData.sections.forEach((sec, sIdx) => {
     const sectionEl = document.createElement("section");
@@ -385,7 +515,7 @@ function renderSections() {
       const fiveRow = document.createElement("div");
       fiveRow.className = "five-boxes-row";
 
-      sec.items.slice(0, 4).forEach((item) => {
+      sec.items.slice(0, Math.min(4, maxBoxes)).forEach((item) => {
         const box = document.createElement("div");
         box.className = "mini-box";
         box.onclick = () => {
@@ -418,7 +548,7 @@ function renderSections() {
       const scrollEl = document.createElement("div");
       scrollEl.className = "scroll-row";
 
-      sec.items.forEach((item) => {
+      sec.items.slice(0, maxBoxes).forEach((item) => {
         const box = document.createElement("div");
         box.className = "item-box";
         box.innerHTML = `
