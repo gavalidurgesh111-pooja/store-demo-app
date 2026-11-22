@@ -643,6 +643,51 @@ footer {
   margin-bottom: 12px;
 }
 
+/* Top Two Action Bars */
+.owner-top-two-bars {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.owner-bar-btn {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+.owner-bar-btn.bar-user {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+}
+
+.owner-bar-btn.bar-expand {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+}
+
+.bar-badge {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.owner-user-cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* 4 Main Folders + 10 Empty Editable Folders Grid */
 .folder-grid {
   display: grid;
@@ -723,10 +768,18 @@ footer {
   margin-bottom: 8px;
 }
 
+.cover-multi-row {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
 .cover-manage-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .cover-thumb-box {
@@ -754,6 +807,49 @@ footer {
   gap: 6px;
 }
 
+/* Two Big Boxes Inside Folder */
+.two-big-boxes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.big-folder-box {
+  background: #f0fdfa;
+  border: 1px solid var(--primary);
+  border-radius: 14px;
+  padding: 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 92px;
+}
+
+.big-box-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
+.big-box-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.big-box-value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-top: 8px;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
@@ -779,42 +875,9 @@ footer {
   font-weight: 600;
 }
 
-/* Cost-Saver Counter Card */
-.cost-saver-stat {
+.bottom-name-box {
   background: #f0fdfa;
-  border: 1px solid var(--primary);
-  border-radius: 14px;
-  padding: 14px 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.stat-card {
-  background: #f8fafc;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px;
-}
-
-.stat-label {
-  font-size: 0.78rem;
-  color: var(--muted);
-}
-
-.stat-num {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--primary-dark);
-  margin-top: 2px;
+  border-color: var(--primary);
 }
 
 /* Clean Photo + Name List Rows */
