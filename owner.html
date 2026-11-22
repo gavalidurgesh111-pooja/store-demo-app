@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Owner Panel</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-page="owner">
+
+  <div class="top-bar">
+    <a class="back-link" href="index.html">← Store</a>
+    <button type="button" class="btn-secondary btn-compact" onclick="lockOwnerPage()">Lock</button>
+  </div>
+
+  <!-- Owner PIN Lock Modal -->
+  <div class="modal-backdrop active" id="pinModal">
+    <div class="modal-card">
+      <h3>Owner Access</h3>
+      <div class="field">
+        <label>Enter Security PIN</label>
+        <input type="password" id="ownerPinInput" placeholder="PIN (1234)" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="goToStoreFromPin()">Cancel</button>
+        <button type="button" class="btn-primary" onclick="verifyPin()">Unlock</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Owner Dashboard (Shown After PIN Unlock) -->
+  <section class="owner-panel" id="ownerPanel">
+    <div class="panel-top-row">
+      <h3>Owner Dashboard</h3>
+      <button type="button" class="btn-secondary btn-compact" onclick="lockOwnerPage()">Lock</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Items Sold</div>
+        <div class="stat-num" id="statSold">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Sales</div>
+        <div class="stat-num" id="statRevenue">₹0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Orders</div>
+        <div class="stat-num" id="statOrders">0</div>
+      </div>
+    </div>
+
+    <div class="owner-box">
+      <h4>1. Store Name & Cover Photo</h4>
+      <div class="form-grid">
+        <input id="editStoreTitle" type="text" placeholder="Store Name" />
+        <input id="editStoreSubtitle" type="text" placeholder="Store Tagline" />
+        <input id="editCoverFile" type="file" accept="image/*" />
+        <button type="button" class="btn-primary" onclick="updateStoreHeader()">Save Store Info</button>
+      </div>
+    </div>
+
+    <div class="owner-box">
+      <h4>2. Add New Item (Photo + Name + Price)</h4>
+      <div class="form-grid">
+        <select id="newSectionIndex"></select>
+        <input id="newItemName" type="text" placeholder="Item Name" />
+        <input id="newItemPrice" type="number" placeholder="Price in ₹" min="1" />
+        <input id="newItemFile" type="file" accept="image/*" />
+        <button type="button" class="btn-primary" onclick="addNewItem()">Add Item</button>
+      </div>
+    </div>
+
+    <div class="owner-box">
+      <h4>3. Edit Item Price or Remove Item</h4>
+      <div class="field">
+        <select id="manageSectionFilter" onchange="renderOwnerItemsTable()"></select>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Price</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="ownerItemsTableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="owner-box">
+      <h4>4. Customer Orders & Sales Record</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody id="ordersTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
