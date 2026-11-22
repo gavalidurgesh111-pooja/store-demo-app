@@ -282,7 +282,7 @@
     .modal-card {
       background: var(--surface);
       width: 100%;
-      max-width: 400px;
+      max-width: 410px;
       border-radius: 18px;
       padding: 18px;
       box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
@@ -320,6 +320,36 @@
       justify-content: center;
     }
 
+    /* 10 Demo Avatars Grid */
+    .demo-avatar-picker {
+      display: none;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+
+    .demo-avatar-picker.active {
+      display: grid;
+    }
+
+    .demo-avatar-option {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid transparent;
+      cursor: pointer;
+    }
+
+    .demo-avatar-option.selected {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.25);
+    }
+
     .field {
       margin-bottom: 10px;
     }
@@ -341,14 +371,29 @@
       background: #fff;
     }
 
-    .two-small-boxes {
+    .two-side-boxes {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
       margin-bottom: 10px;
     }
 
-    /* OTP Strip Pop-up Directly Below Phone Input */
+    .phone-line-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .phone-line-row input {
+      flex: 1;
+      padding: 9px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      background: #fff;
+    }
+
+    /* OTP Strip Pop-up Directly Below Number Line */
     .otp-strip-popup {
       display: none;
       background: #f0fdfa;
@@ -583,21 +628,27 @@
         <input type="file" id="userPhotoInput" accept="image/*" style="display:none;" onchange="handleUserPhotoUpload(event)" />
         <div class="avatar-actions">
           <button type="button" class="btn-primary" onclick="document.getElementById('userPhotoInput').click()">Upload Photo</button>
-          <button type="button" class="btn-secondary" onclick="setDemoAvatar()">Demo Avatar</button>
+          <button type="button" class="btn-secondary" onclick="toggleDemoAvatarPicker()">Demo Avatars (10)</button>
         </div>
       </div>
 
-      <div class="field">
-        <label>First Name</label>
-        <input type="text" id="userFirstName" placeholder="Enter first name" />
+      <!-- 10 Demo Avatars Selection Grid -->
+      <div class="demo-avatar-picker" id="demoAvatarPicker"></div>
+
+      <!-- First Name & Surname Side-by-Side -->
+      <div class="two-side-boxes">
+        <div class="field" style="margin-bottom:0;">
+          <label>First Name</label>
+          <input type="text" id="userFirstName" placeholder="First name" />
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Surname</label>
+          <input type="text" id="userSurname" placeholder="Surname" />
+        </div>
       </div>
 
-      <div class="field">
-        <label>Surname</label>
-        <input type="text" id="userSurname" placeholder="Enter surname" />
-      </div>
-
-      <div class="two-small-boxes">
+      <!-- Age & Gender Side-by-Side -->
+      <div class="two-side-boxes">
         <div class="field" style="margin-bottom:0;">
           <label>Age</label>
           <input type="number" id="userAge" placeholder="Age" min="1" max="120" />
@@ -613,14 +664,19 @@
         </div>
       </div>
 
+      <!-- Phone Number + Send Button on Same Line -->
       <div class="field">
         <label>Mobile Number</label>
-        <input type="tel" id="userPhone" placeholder="Enter mobile number" oninput="handlePhoneInput()" />
+        <div class="phone-line-row">
+          <input type="tel" id="userPhone" placeholder="Enter mobile number" oninput="resetOtpOnPhoneChange()" />
+          <button type="button" class="btn-primary" style="flex:0 0 auto; padding:9px 14px;" onclick="sendOtpForNumber()">Send</button>
+        </div>
+        <div id="phoneVerifiedBadge" style="font-size:0.76rem; color:var(--primary-dark); font-weight:600; margin-top:4px;"></div>
 
-        <!-- OTP Strip Pop-up Directly Below Number -->
+        <!-- OTP Strip Pop-up Shown Only After Clicking Send -->
         <div class="otp-strip-popup" id="otpStripPopup">
           <div class="otp-strip-header">
-            <span>OTP Verification</span>
+            <span>Enter OTP</span>
             <span id="otpTimerText">30s</span>
           </div>
           <div class="otp-strip-row">
@@ -631,9 +687,10 @@
         </div>
       </div>
 
+      <!-- Google & Facebook Sign In Buttons -->
       <div class="social-auth-row">
-        <button type="button" class="btn-primary" onclick="socialRegister('Google')">Continue with Google</button>
-        <button type="button" class="btn-primary" onclick="socialRegister('Facebook')">Continue with Facebook</button>
+        <button type="button" class="btn-primary" onclick="socialRegister('Google')">Sign in with Google</button>
+        <button type="button" class="btn-primary" onclick="socialRegister('Facebook')">Sign in with Facebook</button>
       </div>
 
       <div class="modal-actions">
@@ -763,7 +820,19 @@
     const OWNER_PIN = "1234";
     const DEFAULT_COVER = "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80";
     const FALLBACK_IMG = "https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8?auto=format&fit=crop&w=500&q=70";
-    const DEMO_AVATAR_IMG = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80";
+
+    const DEMO_AVATARS = [
+      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80",
+      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80",
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=300&q=80",
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80",
+      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80",
+      "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=300&q=80",
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80",
+      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&q=80",
+      "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80"
+    ];
 
     const SAMPLE_CATALOG = [
       {
@@ -877,7 +946,7 @@
       };
     }
 
-    let storeData = JSON.parse(localStorage.getItem("storeDemoV3")) || buildInitialData();
+    let storeData = JSON.parse(localStorage.getItem("storeDemoV4")) || buildInitialData();
     if (!storeData.userProfile) {
       storeData.userProfile = {
         photo: "",
@@ -892,12 +961,11 @@
     }
 
     let activeOrderItem = null;
-    let draftAvatar = storeData.userProfile.photo || DEMO_AVATAR_IMG;
+    let draftAvatar = storeData.userProfile.photo || DEMO_AVATARS[0];
     let otpCountdownInterval = null;
-    let otpTriggeredForCurrentNumber = false;
 
     function saveData() {
-      localStorage.setItem("storeDemoV3", JSON.stringify(storeData));
+      localStorage.setItem("storeDemoV4", JSON.stringify(storeData));
     }
 
     function readImageAsDataURL(file, maxWidth = 600) {
@@ -945,7 +1013,6 @@
         sectionEl.appendChild(stripEl);
 
         if (sIdx === 0) {
-          // Row 1: 5 Small Rounded Boxes; 5th Box is User Box
           const fiveRow = document.createElement("div");
           fiveRow.className = "five-boxes-row";
 
@@ -964,7 +1031,7 @@
             fiveRow.appendChild(box);
           });
 
-          // 5th Box: User Registration / Photo Box
+          // 5th Box: User Box — Shows Only Saved Photo
           const fifthBox = document.createElement("div");
           fifthBox.className = "mini-box user-photo-only-box" + (storeData.userProfile.photo ? " has-photo" : "");
           fifthBox.onclick = openUserProfileModal;
@@ -978,7 +1045,6 @@
           fiveRow.appendChild(fifthBox);
           sectionEl.appendChild(fiveRow);
         } else {
-          // Sections 2-15: Normal Rounded Boxes with Horizontal Scroll
           const scrollEl = document.createElement("div");
           scrollEl.className = "scroll-row";
 
@@ -1003,27 +1069,44 @@
       });
     }
 
+    function buildDemoAvatarGrid() {
+      const picker = document.getElementById("demoAvatarPicker");
+      picker.innerHTML = "";
+      DEMO_AVATARS.forEach((url, idx) => {
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = `Demo Avatar ${idx + 1}`;
+        img.className = "demo-avatar-option" + (draftAvatar === url ? " selected" : "");
+        img.onclick = () => {
+          draftAvatar = url;
+          document.getElementById("modalAvatarPreview").src = draftAvatar;
+          buildDemoAvatarGrid();
+        };
+        picker.appendChild(img);
+      });
+    }
+
+    function toggleDemoAvatarPicker() {
+      const picker = document.getElementById("demoAvatarPicker");
+      picker.classList.toggle("active");
+      buildDemoAvatarGrid();
+    }
+
     function openUserProfileModal() {
       const up = storeData.userProfile;
-      draftAvatar = up.photo || DEMO_AVATAR_IMG;
+      draftAvatar = up.photo || DEMO_AVATARS[0];
       document.getElementById("modalAvatarPreview").src = draftAvatar;
+      document.getElementById("demoAvatarPicker").classList.remove("active");
       document.getElementById("userFirstName").value = up.firstName || "";
       document.getElementById("userSurname").value = up.surname || "";
       document.getElementById("userAge").value = up.age || "";
       document.getElementById("userGender").value = up.gender || "";
       document.getElementById("userPhone").value = up.phone || "";
       document.getElementById("userOtpInput").value = "";
-      document.getElementById("otpStatusMsg").textContent = up.otpVerified ? "OTP Verified" : "";
-      otpTriggeredForCurrentNumber = false;
-
-      const otpPopup = document.getElementById("otpStripPopup");
-      if (up.phone && up.phone.replace(/\D/g, "").length >= 10) {
-        otpPopup.classList.add("active");
-        startOtpTimer(30);
-      } else {
-        otpPopup.classList.remove("active");
-        clearInterval(otpCountdownInterval);
-      }
+      document.getElementById("otpStatusMsg").textContent = "";
+      document.getElementById("phoneVerifiedBadge").textContent = up.otpVerified ? "Number Verified" : "";
+      document.getElementById("otpStripPopup").classList.remove("active");
+      clearInterval(otpCountdownInterval);
 
       document.getElementById("userProfileModal").classList.add("active");
     }
@@ -1040,12 +1123,13 @@
       if (imgData) {
         draftAvatar = imgData;
         document.getElementById("modalAvatarPreview").src = draftAvatar;
+        buildDemoAvatarGrid();
       }
     }
 
-    function setDemoAvatar() {
-      draftAvatar = DEMO_AVATAR_IMG;
-      document.getElementById("modalAvatarPreview").src = draftAvatar;
+    function resetOtpOnPhoneChange() {
+      storeData.userProfile.otpVerified = false;
+      document.getElementById("phoneVerifiedBadge").textContent = "";
     }
 
     function startOtpTimer(seconds = 30) {
@@ -1059,48 +1143,42 @@
         if (left <= 0) {
           clearInterval(otpCountdownInterval);
           timerEl.textContent = "0s";
-          document.getElementById("otpStatusMsg").textContent = "Time expired. Enter number again to resend.";
-          otpTriggeredForCurrentNumber = false;
+          document.getElementById("otpStatusMsg").textContent = "Time expired. Tap Send to resend.";
         } else {
           timerEl.textContent = `${left}s`;
         }
       }, 1000);
     }
 
-    function handlePhoneInput() {
-      const phoneVal = document.getElementById("userPhone").value.trim();
-      const digitsOnly = phoneVal.replace(/\D/g, "");
-      const otpPopup = document.getElementById("otpStripPopup");
-
-      if (digitsOnly.length >= 10) {
-        otpPopup.classList.add("active");
-        if (!otpTriggeredForCurrentNumber) {
-          otpTriggeredForCurrentNumber = true;
-          document.getElementById("otpStatusMsg").textContent = "OTP sent (Demo OTP: 1234)";
-          startOtpTimer(30);
-        }
-      } else {
-        otpTriggeredForCurrentNumber = false;
-        clearInterval(otpCountdownInterval);
-        otpPopup.classList.remove("active");
+    function sendOtpForNumber() {
+      const digits = document.getElementById("userPhone").value.replace(/\D/g, "");
+      if (digits.length < 10) {
+        alert("Please enter a valid mobile number first.");
+        return;
       }
+
+      document.getElementById("userOtpInput").value = "";
+      document.getElementById("otpStatusMsg").textContent = "OTP sent (Demo OTP: 1234)";
+      document.getElementById("otpStripPopup").classList.add("active");
+      startOtpTimer(30);
     }
 
     function verifyUserOtp() {
       const code = document.getElementById("userOtpInput").value.trim();
       if (code.length >= 4) {
-        storeData.userProfile.otpVerified = true;
         clearInterval(otpCountdownInterval);
-        document.getElementById("otpStatusMsg").textContent = "OTP Verified!";
+        storeData.userProfile.otpVerified = true;
+        document.getElementById("otpStripPopup").classList.remove("active");
+        document.getElementById("phoneVerifiedBadge").textContent = "Number Verified";
       } else {
-        document.getElementById("otpStatusMsg").textContent = "Enter valid OTP";
+        document.getElementById("otpStatusMsg").textContent = "Please enter OTP";
       }
     }
 
     function socialRegister(provider) {
       storeData.userProfile.provider = provider;
       if (!draftAvatar) {
-        draftAvatar = DEMO_AVATAR_IMG;
+        draftAvatar = DEMO_AVATARS[0];
         document.getElementById("modalAvatarPreview").src = draftAvatar;
       }
       alert(`${provider} selected. Tap Save to apply.`);
@@ -1115,7 +1193,7 @@
 
       storeData.userProfile = {
         ...storeData.userProfile,
-        photo: draftAvatar || DEMO_AVATAR_IMG,
+        photo: draftAvatar || DEMO_AVATARS[0],
         firstName,
         surname,
         age,
