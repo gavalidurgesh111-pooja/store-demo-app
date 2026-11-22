@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Profile & Registration</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-page="profile">
+
+  <div class="top-bar">
+    <a class="back-link" href="index.html">← Store</a>
+    <button type="button" class="btn-primary btn-compact" onclick="openRegistrationPopup()">Register</button>
+  </div>
+
+  <!-- Registration Pop-up Modal -->
+  <div class="modal-backdrop active" id="userProfileModal">
+    <div class="modal-card modal-wide">
+      <h3>Profile & Registration</h3>
+
+      <div class="profile-top-center">
+        <div id="avatarCircleTrigger" class="avatar-circle-trigger" onclick="handleAvatarCircleClick()">
+          <span class="plus-sign-icon">+</span>
+        </div>
+      </div>
+
+      <div class="two-side-boxes">
+        <div class="field no-margin">
+          <label>First Name</label>
+          <input type="text" id="userFirstName" placeholder="First name" />
+        </div>
+        <div class="field no-margin">
+          <label>Surname</label>
+          <input type="text" id="userSurname" placeholder="Surname" />
+        </div>
+      </div>
+
+      <div class="two-side-boxes">
+        <div class="field no-margin">
+          <label>Age</label>
+          <input type="number" id="userAge" placeholder="Age" min="1" max="120" />
+        </div>
+        <div class="field no-margin">
+          <label>Gender</label>
+          <select id="userGender">
+            <option value="">Select</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Mobile Number</label>
+        <div class="phone-line-row">
+          <input type="tel" id="userPhone" placeholder="Enter mobile number" oninput="resetOtpOnPhoneChange()" />
+          <button type="button" id="sendOtpBtn" class="btn-primary btn-compact" onclick="sendOtpForNumber()">Send</button>
+        </div>
+        <div id="phoneVerifiedBadge" class="verified-badge"></div>
+
+        <div class="otp-strip-popup" id="otpStripPopup">
+          <div class="otp-strip-header">
+            <span>Enter OTP</span>
+            <span id="otpTimerText">30s</span>
+          </div>
+          <div class="otp-strip-row">
+            <input type="text" id="userOtpInput" maxlength="6" placeholder="Enter OTP" />
+            <button type="button" class="btn-primary btn-compact" onclick="verifyUserOtp()">Verify</button>
+          </div>
+          <div id="otpStatusMsg" class="otp-status-text"></div>
+        </div>
+      </div>
+
+      <div class="social-auth-row">
+        <button type="button" class="social-round-btn" onclick="socialRegister('Google')">
+          <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          <span>Google</span>
+        </button>
+
+        <button type="button" class="social-round-btn" onclick="socialRegister('Facebook')">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#1877F2" d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.268h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"/>
+          </svg>
+          <span>Facebook</span>
+        </button>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="cancelRegistrationPopup()">Cancel</button>
+        <button type="button" class="btn-primary" onclick="saveUserProfile()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Media Permission Pop-up -->
+  <div class="modal-backdrop z-70" id="permissionModal">
+    <div class="modal-card modal-narrow text-center">
+      <h3>Media & Photos Permission</h3>
+      <p class="muted-desc">
+        Allow access to device photos and avatars to select your profile picture?
+      </p>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="denyMediaPermission()">Deny</button>
+        <button type="button" class="btn-primary" onclick="allowMediaPermission()">Allow</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Photo & Cartoon Avatars Pop-up -->
+  <div class="modal-backdrop z-75" id="photoManagerModal">
+    <div class="modal-card modal-wide">
+      <h3>Photo & Avatars</h3>
+
+      <div class="profile-top-center small-bottom">
+        <div id="photoManagerPreview" class="avatar-circle-trigger no-pointer">
+          <span class="plus-sign-icon">+</span>
+        </div>
+      </div>
+
+      <input type="file" id="userPhotoInput" accept="image/*" hidden onchange="handleUserPhotoUpload(event)" />
+
+      <div class="photo-action-grid">
+        <button type="button" class="btn-primary" onclick="document.getElementById('userPhotoInput').click()">Upload Photo</button>
+        <button type="button" class="btn-primary" onclick="document.getElementById('userPhotoInput').click()">Change Photo</button>
+        <button type="button" class="btn-danger span-two" onclick="deleteTempPhoto()">Delete Photo</button>
+      </div>
+
+      <div class="avatars-section">
+        <div class="section-mini-title">Avatars</div>
+        <div class="avatars-grid" id="cartoonAvatarsGrid"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="closePhotoManagerModal()">Cancel</button>
+        <button type="button" class="btn-primary" onclick="applyPhotoSelection()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
