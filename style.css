@@ -624,7 +624,7 @@ footer {
   cursor: pointer;
 }
 
-/* ==================== OWNER WORKSPACE (owner.html) ==================== */
+/* ==================== OWNER PAGE (owner.html) ==================== */
 .owner-panel {
   display: none;
   max-width: 1080px;
@@ -636,14 +636,24 @@ footer {
   display: block;
 }
 
-.panel-top-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* Owner Page Name Box */
+.owner-page-name-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--primary);
+  border-radius: 14px;
+  padding: 12px 14px;
   margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 800;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
 }
 
-/* Top Two Action Bars */
+/* Top Two Boxes */
 .owner-top-two-bars {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -654,32 +664,23 @@ footer {
 .owner-bar-btn {
   border: none;
   border-radius: 14px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   color: #ffffff;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   font-weight: 700;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  justify-content: center;
   cursor: pointer;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
 }
 
 .owner-bar-btn.bar-user {
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  background: linear-gradient(135deg, #f59e0b, #ea580c);
 }
 
 .owner-bar-btn.bar-expand {
-  background: linear-gradient(135deg, #1e293b, #0f172a);
-}
-
-.bar-badge {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 3px 8px;
-  border-radius: 999px;
-  font-size: 0.74rem;
-  font-weight: 700;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
 }
 
 .owner-user-cards-grid {
@@ -688,26 +689,25 @@ footer {
   gap: 8px;
 }
 
-/* 4 Main Folders + 10 Empty Editable Folders Grid */
-.folder-grid {
+/* Clean Boxes Grid (No Photo Name / No Logo) */
+.clean-boxes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  margin-bottom: 16px;
 }
 
 .folder-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-left: 4px solid var(--primary);
   border-radius: 14px;
-  padding: 10px 12px;
+  padding: 12px 10px;
+  min-height: 76px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
 }
 
 .folder-card.active {
@@ -715,26 +715,11 @@ footer {
   border-color: var(--primary);
 }
 
-.folder-card.empty-custom {
-  border-left-color: #94a3b8;
-}
-
-.folder-card.empty-custom.named {
-  border-left-color: var(--primary);
-}
-
 .folder-card-name {
-  font-size: 0.86rem;
+  font-size: 0.84rem;
   font-weight: 700;
   color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.folder-card.empty-custom:not(.named) .folder-card-name {
-  color: var(--muted);
-  font-weight: 500;
+  word-break: break-word;
 }
 
 .owner-box {
@@ -819,15 +804,15 @@ footer {
   background: #f0fdfa;
   border: 1px solid var(--primary);
   border-radius: 14px;
-  padding: 12px;
+  padding: 14px 12px;
   cursor: pointer;
+  min-height: 88px;
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 92px;
+  align-items: center;
 }
 
 .big-box-top {
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -835,19 +820,15 @@ footer {
 }
 
 .big-box-title {
-  font-size: 0.84rem;
+  font-size: 0.86rem;
   font-weight: 700;
   color: var(--primary-dark);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .big-box-value {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: var(--text);
-  margin-top: 8px;
 }
 
 .form-grid {
@@ -858,7 +839,7 @@ footer {
 
 .editable-names-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 8px;
 }
 
@@ -880,7 +861,6 @@ footer {
   border-color: var(--primary);
 }
 
-/* Clean Photo + Name List Rows */
 .clean-row-list {
   display: flex;
   flex-direction: column;
