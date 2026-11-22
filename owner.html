@@ -16,7 +16,7 @@
 
   <!-- Owner PIN Lock Modal -->
   <div class="modal-backdrop active" id="pinModal">
-    <div class="modal-card">
+    <div class="modal-card modal-narrow">
       <h3>Owner Access</h3>
       <div class="field">
         <label>Enter Security PIN</label>
@@ -29,81 +29,120 @@
     </div>
   </div>
 
-  <!-- Owner Dashboard (Shown After PIN Unlock) -->
-  <section class="owner-panel" id="ownerPanel">
+  <!-- Main Owner Workspace -->
+  <main class="owner-panel" id="ownerPanel">
     <div class="panel-top-row">
-      <h3>Owner Dashboard</h3>
+      <h3>Owner Workspace</h3>
       <button type="button" class="btn-secondary btn-compact" onclick="lockOwnerPage()">Lock</button>
     </div>
 
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Items Sold</div>
-        <div class="stat-num" id="statSold">0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Total Sales</div>
-        <div class="stat-num" id="statRevenue">₹0</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Total Orders</div>
-        <div class="stat-num" id="statOrders">0</div>
-      </div>
-    </div>
+    <!-- Folder Navigation Grid: 4 Core Folders + 10 Empty Editable Folders -->
+    <div class="folder-grid" id="ownerFoldersGrid"></div>
 
-    <div class="owner-box">
-      <h4>1. Store Name & Cover Photo</h4>
-      <div class="form-grid">
-        <input id="editStoreTitle" type="text" placeholder="Store Name" />
-        <input id="editStoreSubtitle" type="text" placeholder="Store Tagline" />
-        <input id="editCoverFile" type="file" accept="image/*" />
-        <button type="button" class="btn-primary" onclick="updateStoreHeader()">Save Store Info</button>
+    <!-- Active Folder Content Area -->
+    <section class="owner-box" id="activeFolderView">
+      <div class="folder-view-header">
+        <h4 id="activeFolderHeading">Store Setup</h4>
+        <button type="button" class="icon-mini-btn" title="Rename Folder" onclick="renameActiveFolder()">✎</button>
       </div>
-    </div>
 
-    <div class="owner-box">
-      <h4>2. Add New Item (Photo + Name + Price)</h4>
-      <div class="form-grid">
-        <select id="newSectionIndex"></select>
-        <input id="newItemName" type="text" placeholder="Item Name" />
-        <input id="newItemPrice" type="number" placeholder="Price in ₹" min="1" />
-        <input id="newItemFile" type="file" accept="image/*" />
-        <button type="button" class="btn-primary" onclick="addNewItem()">Add Item</button>
+      <!-- TAB 0: Store Setup -->
+      <div id="tabStoreSetup" class="folder-tab-pane">
+        <div class="sub-block">
+          <div class="sub-block-title">Store Cover Photo & Name</div>
+          <div class="cover-manage-row">
+            <div id="ownerCoverThumb" class="cover-thumb-box" onclick="document.getElementById('editCoverFile').click()">
+              <span class="plus-sign-icon">+</span>
+            </div>
+            <div class="cover-thumb-actions">
+              <button type="button" class="icon-mini-btn plus-tone" title="Add / Change Cover" onclick="document.getElementById('editCoverFile').click()">+</button>
+              <button type="button" class="icon-mini-btn danger-tone" title="Remove Cover" onclick="removeStoreCover()">×</button>
+            </div>
+            <input id="editCoverFile" type="file" accept="image/*" hidden onchange="previewAndSaveCover(event)" />
+          </div>
+
+          <div class="form-grid" style="margin-top:10px;">
+            <input id="editStoreTitle" type="text" placeholder="Store Name" />
+            <input id="editStoreSubtitle" type="text" placeholder="Store Tagline / Timing" />
+            <button type="button" class="btn-primary" onclick="updateStoreHeader()">Save</button>
+          </div>
+        </div>
+
+        <div class="sub-block">
+          <div class="sub-block-title">Edit 15 Section Names</div>
+          <div id="sectionNamesEditorList" class="editable-names-list"></div>
+        </div>
+
+        <div class="sub-block">
+          <div class="sub-block-title">Add Item (Photo + Name + Price)</div>
+          <div class="form-grid">
+            <select id="newSectionIndex"></select>
+            <input id="newItemName" type="text" placeholder="Item Name" />
+            <input id="newItemPrice" type="number" placeholder="Price (₹)" min="1" />
+            <input id="newItemFile" type="file" accept="image/*" />
+            <button type="button" class="btn-primary" onclick="addNewItem()">+ Add Item</button>
+          </div>
+        </div>
+
+        <div class="sub-block" style="margin-bottom:0;">
+          <div class="sub-block-title">Manage Items (Edit Name, Price or Remove)</div>
+          <div class="field">
+            <select id="manageSectionFilter" onchange="renderOwnerItemsTable()"></select>
+          </div>
+          <div id="ownerItemsList" class="clean-row-list"></div>
+        </div>
       </div>
-    </div>
 
-    <div class="owner-box">
-      <h4>3. Edit Item Price or Remove Item</h4>
-      <div class="field">
-        <select id="manageSectionFilter" onchange="renderOwnerItemsTable()"></select>
+      <!-- TAB 1: Active Users (Counter First to Save Cost, List on Tap) -->
+      <div id="tabActiveUsers" class="folder-tab-pane" style="display:none;">
+        <div class="cost-saver-stat" onclick="toggleUsersList()">
+          <div>
+            <div class="stat-label">Active Users</div>
+            <div class="stat-num" id="activeUsersCount">0</div>
+          </div>
+          <button type="button" class="btn-primary btn-compact" id="toggleUsersBtn">View List</button>
+        </div>
+
+        <div id="activeUsersListWrap" style="display:none; margin-top:12px;">
+          <div id="activeUsersList" class="clean-row-list"></div>
+          <button type="button" class="btn-secondary" id="loadMoreUsersBtn" style="width:100%; margin-top:8px; display:none;" onclick="loadMoreUsers()">Load More</button>
+        </div>
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th>Price</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="ownerItemsTableBody"></tbody>
-      </table>
-    </div>
 
-    <div class="owner-box">
-      <h4>4. Customer Orders & Sales Record</h4>
-      <table>
-        <thead>
-          <tr>
-            <th>Customer</th>
-            <th>Item</th>
-            <th>Qty</th>
-            <th>Amount</th>
-          </tr>
-        </thead>
-        <tbody id="ordersTableBody"></tbody>
-      </table>
-    </div>
-  </section>
+      <!-- TAB 2: Sold Items (Photo + Name + Price + Total Sold Qty) -->
+      <div id="tabSoldItems" class="folder-tab-pane" style="display:none;">
+        <div class="stats-grid" style="grid-template-columns: 1fr 1fr;">
+          <div class="stat-card">
+            <div class="stat-label">Total Units Sold</div>
+            <div class="stat-num" id="statSold">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Sales</div>
+            <div class="stat-num" id="statRevenue">₹0</div>
+          </div>
+        </div>
+        <div id="soldItemsList" class="clean-row-list"></div>
+      </div>
+
+      <!-- TAB 3: Buyers / Customer Orders (Photo + Name + Item Purchased) -->
+      <div id="tabBuyers" class="folder-tab-pane" style="display:none;">
+        <div class="stat-card" style="margin-bottom:10px;">
+          <div class="stat-label">Total Orders</div>
+          <div class="stat-num" id="statOrders">0</div>
+        </div>
+        <div id="buyersList" class="clean-row-list"></div>
+      </div>
+
+      <!-- TABS 4..13: 10 Custom Empty Editable Folders -->
+      <div id="tabCustomFolder" class="folder-tab-pane" style="display:none;">
+        <div class="phone-line-row" style="margin-bottom:10px;">
+          <input type="text" id="customEntryInput" placeholder="Add note or item..." />
+          <button type="button" class="icon-mini-btn plus-tone" title="Add" onclick="addCustomFolderEntry()">+</button>
+        </div>
+        <div id="customFolderEntriesList" class="clean-row-list"></div>
+      </div>
+    </section>
+  </main>
 
   <script src="app.js"></script>
 </body>
