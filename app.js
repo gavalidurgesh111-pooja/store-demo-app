@@ -1,7 +1,5 @@
-const STORAGE_KEY = "storeModularCleanV1";
+const STORAGE_KEY = "storeCleanNoDemoImgV1";
 const OWNER_PIN = "1234";
-const DEFAULT_COVER = "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80";
-const FALLBACK_IMG = "https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8?auto=format&fit=crop&w=500&q=70";
 
 const CARTOON_AVATARS = [
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='60' fill='%23dbeafe'/><circle cx='60' cy='46' r='22' fill='%23f59e0b'/><path d='M36 44c0-15 11-26 24-26s24 11 24 26c-6-6-14-9-24-9s-18 3-24 9z' fill='%231e293b'/><circle cx='52' cy='46' r='3' fill='%23111827'/><circle cx='68' cy='46' r='3' fill='%23111827'/><path d='M52 56q8 7 16 0' stroke='%23111827' stroke-width='3' fill='none' stroke-linecap='round'/><path d='M26 110c4-22 18-32 34-32s30 10 34 32' fill='%230f766e'/></svg>",
@@ -16,59 +14,12 @@ const CARTOON_AVATARS = [
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='60' fill='%23e0f2fe'/><ellipse cx='46' cy='24' rx='6' ry='16' fill='%23ffffff'/><ellipse cx='74' cy='24' rx='6' ry='16' fill='%23ffffff'/><circle cx='60' cy='54' r='23' fill='%23ffffff'/><circle cx='51' cy='51' r='3' fill='%23111827'/><circle cx='69' cy='51' r='3' fill='%23111827'/><circle cx='60' cy='57' r='3' fill='%23f43f5e'/><path d='M52 64q8 6 16 0' stroke='%23111827' stroke-width='2.5' fill='none' stroke-linecap='round'/><path d='M30 110c5-20 16-28 30-28s25 8 30 28' fill='%230284c7'/></svg>"
 ];
 
-const SAMPLE_CATALOG = [
-  {
-    title: "1. Trending Deals",
-    items: [
-      { name: "Grocery Combo", price: 799, img: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=500&q=70" },
-      { name: "Dry Fruit Box", price: 540, img: "https://images.unsplash.com/photo-1596591606975-97ee5cef3a1e?auto=format&fit=crop&w=500&q=70" },
-      { name: "Organic Honey", price: 295, img: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=500&q=70" },
-      { name: "Assam Gold Tea", price: 420, img: "https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?auto=format&fit=crop&w=500&q=70" }
-    ]
-  },
-  {
-    title: "2. Fresh Fruits & Vegetables",
-    items: [
-      { name: "Shimla Apples 1kg", price: 160, img: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=500&q=70" },
-      { name: "Fresh Bananas", price: 60, img: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=500&q=70" },
-      { name: "Farm Tomatoes 1kg", price: 45, img: "https://images.unsplash.com/photo-1546470427-227c7369a9b9?auto=format&fit=crop&w=500&q=70" },
-      { name: "Red Onions 2kg", price: 70, img: "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?auto=format&fit=crop&w=500&q=70" },
-      { name: "Fresh Potatoes 2kg", price: 65, img: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=500&q=70" }
-    ]
-  },
-  {
-    title: "3. Dairy & Bakery",
-    items: [
-      { name: "Full Cream Milk 1L", price: 68, img: "https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&w=500&q=70" },
-      { name: "Brown Bread Pack", price: 45, img: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=500&q=70" },
-      { name: "Table Butter 500g", price: 275, img: "https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?auto=format&fit=crop&w=500&q=70" },
-      { name: "Fresh Paneer 200g", price: 95, img: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=500&q=70" },
-      { name: "Cheese Slices Pack", price: 140, img: "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=500&q=70" }
-    ]
-  },
-  {
-    title: "4. Snacks & Namkeen",
-    items: [
-      { name: "Classic Salted Chips", price: 30, img: "https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=500&q=70" },
-      { name: "Aloo Bhujia 400g", price: 95, img: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=500&q=70" },
-      { name: "Roasted Peanuts 250g", price: 65, img: "https://images.unsplash.com/photo-1567892320421-1c657571ea4a?auto=format&fit=crop&w=500&q=70" },
-      { name: "Masala Mixture 500g", price: 120, img: "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?auto=format&fit=crop&w=500&q=70" },
-      { name: "Butter Popcorn Pack", price: 50, img: "https://images.unsplash.com/photo-1578849278619-e73505e9610f?auto=format&fit=crop&w=500&q=70" }
-    ]
-  },
-  {
-    title: "5. Cold Drinks & Juices",
-    items: [
-      { name: "Mixed Fruit Juice 1L", price: 110, img: "https://images.unsplash.com/photo-1600271886742-f049cd451bba?auto=format&fit=crop&w=500&q=70" },
-      { name: "Orange Juice Pack 1L", price: 115, img: "https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?auto=format&fit=crop&w=500&q=70" },
-      { name: "Sparkling Cola 2L", price: 95, img: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=500&q=70" },
-      { name: "Mango Drink 1.2L", price: 75, img: "https://images.unsplash.com/photo-1546173159-315724a31696?auto=format&fit=crop&w=500&q=70" },
-      { name: "Lemon Iced Tea 500ml", price: 60, img: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=500&q=70" }
-    ]
-  }
-];
-
-const EXTRA_TITLES = [
+const SECTION_TITLES = [
+  "1. Trending Deals",
+  "2. Fresh Fruits & Vegetables",
+  "3. Dairy & Bakery",
+  "4. Snacks & Namkeen",
+  "5. Cold Drinks & Juices",
   "6. Atta, Rice & Dal",
   "7. Cooking Oil & Ghee",
   "8. Spices & Masala",
@@ -82,37 +33,24 @@ const EXTRA_TITLES = [
 ];
 
 function buildInitialData() {
-  const sections = [];
-  SAMPLE_CATALOG.forEach((sec, sIdx) => {
-    sections.push({
-      title: sec.title,
-      items: sec.items.map((it, iIdx) => ({
-        id: `${sIdx}-${iIdx}`,
-        name: it.name,
-        price: it.price,
-        img: it.img
-      }))
-    });
-  });
-
-  EXTRA_TITLES.forEach((title, idx) => {
-    const sIdx = idx + 5;
-    const baseSamples = SAMPLE_CATALOG[idx % SAMPLE_CATALOG.length].items;
-    sections.push({
-      title,
-      items: baseSamples.map((it, iIdx) => ({
-        id: `${sIdx}-${iIdx}`,
-        name: `${it.name} Pack`,
-        price: it.price + (idx + 1) * 10,
-        img: it.img
-      }))
-    });
+  const sections = SECTION_TITLES.map((title, idx) => {
+    const count = idx === 0 ? 4 : 5;
+    const items = [];
+    for (let i = 1; i <= count; i++) {
+      items.push({
+        id: `${idx}-${i}`,
+        name: `Item ${i}`,
+        price: 0,
+        img: ""
+      });
+    }
+    return { title, items };
   });
 
   return {
-    storeTitle: "Urban Fresh Mart",
-    storeSubtitle: "Daily Essentials • Fast Delivery • Best Local Prices",
-    coverImg: DEFAULT_COVER,
+    storeTitle: "Store Name",
+    storeSubtitle: "",
+    coverImg: "",
     sections,
     orders: [],
     mediaPermissionGranted: false,
@@ -164,13 +102,29 @@ function readImageAsDataURL(file, maxWidth = 600) {
   });
 }
 
+function imgMarkup(src, altText, isMini = false) {
+  if (src) {
+    return `<img src="${src}" alt="${altText}" />`;
+  }
+  const h = isMini ? "74px" : "125px";
+  return `<div style="width:100%;height:${h};background:#e5e7eb;"></div>`;
+}
+
 /* ==================== STORE PAGE (index.html) ==================== */
 function renderHeader() {
   const titleEl = document.getElementById("storeTitle");
   if (!titleEl) return;
-  titleEl.textContent = storeData.storeTitle;
-  document.getElementById("storeSubtitle").textContent = storeData.storeSubtitle;
-  document.getElementById("coverImage").src = storeData.coverImg || DEFAULT_COVER;
+  titleEl.textContent = storeData.storeTitle || "Store";
+  document.getElementById("storeSubtitle").textContent = storeData.storeSubtitle || "";
+
+  const coverImgEl = document.getElementById("coverImage");
+  if (storeData.coverImg) {
+    coverImgEl.src = storeData.coverImg;
+    coverImgEl.style.display = "block";
+  } else {
+    coverImgEl.removeAttribute("src");
+    coverImgEl.style.display = "none";
+  }
 }
 
 function renderSections() {
@@ -200,7 +154,7 @@ function renderSections() {
         box.className = "mini-box";
         box.onclick = () => openOrderModal(0, item.id);
         box.innerHTML = `
-          <img src="${item.img || FALLBACK_IMG}" alt="${item.name}" onerror="this.src='${FALLBACK_IMG}'" />
+          ${imgMarkup(item.img, item.name, true)}
           <div class="mini-box-body">
             <div class="mini-box-name">${item.name}</div>
             <div class="mini-box-price">₹${item.price}</div>
@@ -228,7 +182,7 @@ function renderSections() {
         const box = document.createElement("div");
         box.className = "item-box";
         box.innerHTML = `
-          <img src="${item.img || FALLBACK_IMG}" alt="${item.name}" onerror="this.src='${FALLBACK_IMG}'" />
+          ${imgMarkup(item.img, item.name, false)}
           <div class="item-info">
             <div class="item-name" title="${item.name}">${item.name}</div>
             <div class="item-price">₹${item.price}</div>
@@ -263,7 +217,7 @@ function closeOrderModal() {
 
 function confirmOrder() {
   if (!activeOrderItem) return;
-  const customer = document.getElementById("orderCustomer").value.trim() || "Walk-in Customer";
+  const customer = document.getElementById("orderCustomer").value.trim() || "Customer";
   const qty = Math.max(1, parseInt(document.getElementById("orderQty").value, 10) || 1);
   const amount = activeOrderItem.price * qty;
 
@@ -275,12 +229,21 @@ function confirmOrder() {
 }
 
 function openPinModal() {
+  const page = document.body.getAttribute("data-page");
+  if (page !== "owner") {
+    window.location.href = "owner.html";
+    return;
+  }
   document.getElementById("ownerPinInput").value = "";
   document.getElementById("pinModal").classList.add("active");
 }
 
 function closePinModal() {
   document.getElementById("pinModal").classList.remove("active");
+}
+
+function goToStoreFromPin() {
+  window.location.href = "index.html";
 }
 
 function verifyPin() {
@@ -295,16 +258,24 @@ function verifyPin() {
   }
 }
 
+function lockOwnerPage() {
+  const panel = document.getElementById("ownerPanel");
+  if (panel) panel.classList.remove("active");
+  document.getElementById("ownerPinInput").value = "";
+  document.getElementById("pinModal").classList.add("active");
+}
+
 function closeOwnerPanel() {
-  document.getElementById("ownerPanel").classList.remove("active");
+  const panel = document.getElementById("ownerPanel");
+  if (panel) panel.classList.remove("active");
 }
 
 function renderOwnerDashboard() {
   const panel = document.getElementById("ownerPanel");
   if (!panel) return;
 
-  document.getElementById("editStoreTitle").value = storeData.storeTitle;
-  document.getElementById("editStoreSubtitle").value = storeData.storeSubtitle;
+  document.getElementById("editStoreTitle").value = storeData.storeTitle || "";
+  document.getElementById("editStoreSubtitle").value = storeData.storeSubtitle || "";
 
   const select = document.getElementById("newSectionIndex");
   const filter = document.getElementById("manageSectionFilter");
@@ -349,7 +320,7 @@ async function updateStoreHeader() {
   const file = document.getElementById("editCoverFile").files[0];
 
   if (title) storeData.storeTitle = title;
-  if (sub) storeData.storeSubtitle = sub;
+  storeData.storeSubtitle = sub;
   if (file) {
     const imgData = await readImageAsDataURL(file, 900);
     if (imgData) storeData.coverImg = imgData;
@@ -358,7 +329,7 @@ async function updateStoreHeader() {
   saveData();
   renderHeader();
   document.getElementById("editCoverFile").value = "";
-  alert("Store header updated!");
+  alert("Store info saved!");
 }
 
 async function addNewItem() {
@@ -372,7 +343,7 @@ async function addNewItem() {
     return;
   }
 
-  let imgUrl = FALLBACK_IMG;
+  let imgUrl = "";
   if (file) {
     const uploaded = await readImageAsDataURL(file, 500);
     if (uploaded) imgUrl = uploaded;
@@ -647,4 +618,6 @@ if (currentPage === "store") {
   renderSections();
 } else if (currentPage === "profile") {
   openRegistrationPopup();
+} else if (currentPage === "owner") {
+  document.getElementById("pinModal").classList.add("active");
 }
