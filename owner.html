@@ -36,7 +36,34 @@
       <button type="button" class="btn-secondary btn-compact" onclick="lockOwnerPage()">Lock</button>
     </div>
 
-    <!-- Folder Navigation Grid: 4 Core Folders + 10 Empty Editable Folders -->
+    <!-- Top Two Action Bars (Like Screenshot Top Bars) -->
+    <div class="owner-top-two-bars">
+      <button type="button" class="owner-bar-btn bar-user" onclick="openOwnerUserView()">
+        <span>Users Page</span>
+        <span class="bar-badge">Manage</span>
+      </button>
+      <button type="button" class="owner-bar-btn bar-expand" onclick="openExpandLimitsModal()">
+        <span>Boxes & Covers</span>
+        <span class="bar-badge" id="limitsSummaryBadge">50 / 10</span>
+      </button>
+    </div>
+
+    <!-- Owner Editable User View Panel (Same Look as User Page + Owner Edit/Photo/Box Controls) -->
+    <section class="owner-box" id="ownerUserViewSection" style="display:none; margin-bottom:14px;">
+      <div class="folder-view-header">
+        <h4>Users Page (Owner Manage)</h4>
+        <div class="row-actions">
+          <button type="button" class="icon-mini-btn plus-tone" title="Add User Box (Max 50)" onclick="addOwnerUserBox()">+</button>
+          <button type="button" class="icon-mini-btn danger-tone" title="Close" onclick="closeOwnerUserView()">×</button>
+        </div>
+      </div>
+      <div class="muted-desc" style="margin-bottom:10px;">
+        User registration card is fixed per user. Owner can edit names, set photos, and add boxes up to 50.
+      </div>
+      <div id="ownerUsersManageGrid" class="owner-user-cards-grid"></div>
+    </section>
+
+    <!-- Folder Navigation Grid -->
     <div class="folder-grid" id="ownerFoldersGrid"></div>
 
     <!-- Active Folder Content Area -->
@@ -48,18 +75,13 @@
 
       <!-- TAB 0: Store Setup -->
       <div id="tabStoreSetup" class="folder-tab-pane">
+        <!-- Cover Photos (Starts with 1, Owner can expand up to 10) -->
         <div class="sub-block">
-          <div class="sub-block-title">Store Cover Photo & Name</div>
-          <div class="cover-manage-row">
-            <div id="ownerCoverThumb" class="cover-thumb-box" onclick="document.getElementById('editCoverFile').click()">
-              <span class="plus-sign-icon">+</span>
-            </div>
-            <div class="cover-thumb-actions">
-              <button type="button" class="icon-mini-btn plus-tone" title="Add / Change Cover" onclick="document.getElementById('editCoverFile').click()">+</button>
-              <button type="button" class="icon-mini-btn danger-tone" title="Remove Cover" onclick="removeStoreCover()">×</button>
-            </div>
-            <input id="editCoverFile" type="file" accept="image/*" hidden onchange="previewAndSaveCover(event)" />
+          <div class="folder-view-header" style="border:none; padding:0; margin-bottom:8px;">
+            <div class="sub-block-title" style="margin:0;">Cover Photo (<span id="coverCountLabel">1</span> / <span id="coverMaxLabel">1</span>)</div>
+            <button type="button" class="icon-mini-btn plus-tone" title="Add Cover Slot (Max 10)" onclick="addCoverSlot()">+</button>
           </div>
+          <div id="ownerCoversRow" class="cover-multi-row"></div>
 
           <div class="form-grid" style="margin-top:10px;">
             <input id="editStoreTitle" type="text" placeholder="Store Name" />
@@ -68,39 +90,82 @@
           </div>
         </div>
 
-        <div class="sub-block">
-          <div class="sub-block-title">Edit 15 Section Names</div>
-          <div id="sectionNamesEditorList" class="editable-names-list"></div>
+        <!-- Two Big Boxes Below Cover -->
+        <div class="two-big-boxes">
+          <div class="big-folder-box" id="bigBoxLeft">
+            <div class="big-box-top">
+              <span class="big-box-title" id="bigBoxLeftTitle">Sections</span>
+              <button type="button" class="icon-mini-btn" title="Edit Name" onclick="renameBigBox('left')">✎</button>
+            </div>
+            <div class="big-box-value" id="bigBoxLeftCount">15</div>
+          </div>
+
+          <div class="big-folder-box" id="bigBoxRight">
+            <div class="big-box-top">
+              <span class="big-box-title" id="bigBoxRightTitle">Store Boxes</span>
+              <button type="button" class="icon-mini-btn" title="Edit Name" onclick="renameBigBox('right')">✎</button>
+            </div>
+            <div class="big-box-value" id="bigBoxRightCount">0</div>
+          </div>
         </div>
 
+        <!-- Smaller / Section Boxes Below the Two Big Boxes -->
         <div class="sub-block">
-          <div class="sub-block-title">Add Item (Photo + Name + Price)</div>
-          <div class="form-grid">
+          <div class="folder-view-header" style="border:none; padding:0; margin-bottom:8px;">
+            <div class="sub-block-title" style="margin:0;">Section & Item Boxes</div>
+            <button type="button" class="icon-mini-btn plus-tone" title="Add Box (Max 50)" onclick="addOwnerBoxItem()">+</button>
+          </div>
+          <div id="sectionNamesEditorList" class="editable-names-list"></div>
+
+          <div class="form-grid" style="margin-top:10px;">
             <select id="newSectionIndex"></select>
             <input id="newItemName" type="text" placeholder="Item Name" />
             <input id="newItemPrice" type="number" placeholder="Price (₹)" min="1" />
             <input id="newItemFile" type="file" accept="image/*" />
             <button type="button" class="btn-primary" onclick="addNewItem()">+ Add Item</button>
           </div>
-        </div>
 
-        <div class="sub-block" style="margin-bottom:0;">
-          <div class="sub-block-title">Manage Items (Edit Name, Price or Remove)</div>
-          <div class="field">
+          <div class="field" style="margin-top:10px;">
             <select id="manageSectionFilter" onchange="renderOwnerItemsTable()"></select>
           </div>
           <div id="ownerItemsList" class="clean-row-list"></div>
         </div>
+
+        <!-- Bottom Name Input Option -->
+        <div class="sub-block bottom-name-box" style="margin-bottom:0;">
+          <div class="sub-block-title">Set Name</div>
+          <div class="phone-line-row">
+            <input type="text" id="bottomCustomNameInput" placeholder="Enter name..." />
+            <button type="button" class="btn-primary btn-compact" onclick="saveBottomCustomName()">Save Name</button>
+          </div>
+        </div>
       </div>
 
-      <!-- TAB 1: Active Users (Counter First to Save Cost, List on Tap) -->
+      <!-- TAB 1: Active Users -->
       <div id="tabActiveUsers" class="folder-tab-pane" style="display:none;">
-        <div class="cost-saver-stat" onclick="toggleUsersList()">
-          <div>
-            <div class="stat-label">Active Users</div>
-            <div class="stat-num" id="activeUsersCount">0</div>
+        <div class="two-big-boxes">
+          <div class="big-folder-box" onclick="toggleUsersList()">
+            <div class="big-box-top">
+              <span class="big-box-title">Active Users</span>
+              <button type="button" class="icon-mini-btn" title="Edit Name" onclick="event.stopPropagation(); renameActiveFolder()">✎</button>
+            </div>
+            <div class="big-box-value" id="activeUsersCount">0</div>
           </div>
-          <button type="button" class="btn-primary btn-compact" id="toggleUsersBtn">View List</button>
+
+          <div class="big-folder-box">
+            <div class="big-box-top">
+              <span class="big-box-title">Box Limit</span>
+              <button type="button" class="icon-mini-btn plus-tone" title="Add Box (Max 50)" onclick="addOwnerUserBox()">+</button>
+            </div>
+            <div class="big-box-value" id="ownerUserBoxesCount">0 / 50</div>
+          </div>
+        </div>
+
+        <div class="sub-block">
+          <div class="phone-line-row">
+            <input type="text" id="usersTabNameInput" placeholder="Enter name..." />
+            <button type="button" class="btn-primary btn-compact" onclick="saveTabName('usersTabNameInput')">Save</button>
+          </div>
         </div>
 
         <div id="activeUsersListWrap" style="display:none; margin-top:12px;">
@@ -109,40 +174,124 @@
         </div>
       </div>
 
-      <!-- TAB 2: Sold Items (Photo + Name + Price + Total Sold Qty) -->
+      <!-- TAB 2: Sold Items -->
       <div id="tabSoldItems" class="folder-tab-pane" style="display:none;">
-        <div class="stats-grid" style="grid-template-columns: 1fr 1fr;">
-          <div class="stat-card">
-            <div class="stat-label">Total Units Sold</div>
-            <div class="stat-num" id="statSold">0</div>
+        <div class="two-big-boxes">
+          <div class="big-folder-box">
+            <div class="big-box-top">
+              <span class="big-box-title">Total Units Sold</span>
+            </div>
+            <div class="big-box-value" id="statSold">0</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-label">Total Sales</div>
-            <div class="stat-num" id="statRevenue">₹0</div>
+
+          <div class="big-folder-box">
+            <div class="big-box-top">
+              <span class="big-box-title">Total Sales</span>
+            </div>
+            <div class="big-box-value" id="statRevenue">₹0</div>
           </div>
         </div>
-        <div id="soldItemsList" class="clean-row-list"></div>
+
+        <div id="soldItemsList" class="clean-row-list" style="margin-bottom:12px;"></div>
+
+        <div class="sub-block bottom-name-box" style="margin-bottom:0;">
+          <div class="phone-line-row">
+            <input type="text" id="salesTabNameInput" placeholder="Enter name..." />
+            <button type="button" class="btn-primary btn-compact" onclick="saveTabName('salesTabNameInput')">Save</button>
+          </div>
+        </div>
       </div>
 
-      <!-- TAB 3: Buyers / Customer Orders (Photo + Name + Item Purchased) -->
+      <!-- TAB 3: Buyers / Customer Orders -->
       <div id="tabBuyers" class="folder-tab-pane" style="display:none;">
-        <div class="stat-card" style="margin-bottom:10px;">
-          <div class="stat-label">Total Orders</div>
-          <div class="stat-num" id="statOrders">0</div>
+        <div class="two-big-boxes">
+          <div class="big-folder-box">
+            <div class="big-box-top">
+              <span class="big-box-title">Total Orders</span>
+            </div>
+            <div class="big-box-value" id="statOrders">0</div>
+          </div>
+
+          <div class="big-folder-box">
+            <div class="big-box-top">
+              <span class="big-box-title">Buyers</span>
+              <button type="button" class="icon-mini-btn plus-tone" title="Add Box (Max 50)" onclick="addOwnerBuyerBox()">+</button>
+            </div>
+            <div class="big-box-value" id="ownerBuyerBoxesCount">0 / 50</div>
+          </div>
         </div>
-        <div id="buyersList" class="clean-row-list"></div>
+
+        <div id="buyersList" class="clean-row-list" style="margin-bottom:12px;"></div>
+
+        <div class="sub-block bottom-name-box" style="margin-bottom:0;">
+          <div class="phone-line-row">
+            <input type="text" id="buyersTabNameInput" placeholder="Enter name..." />
+            <button type="button" class="btn-primary btn-compact" onclick="saveTabName('buyersTabNameInput')">Save</button>
+          </div>
+        </div>
       </div>
 
-      <!-- TABS 4..13: 10 Custom Empty Editable Folders -->
+      <!-- TABS 4..13: Custom Folders (No Top Photo Line -> Two Big Boxes -> Sub Boxes -> Bottom Name Input) -->
       <div id="tabCustomFolder" class="folder-tab-pane" style="display:none;">
-        <div class="phone-line-row" style="margin-bottom:10px;">
-          <input type="text" id="customEntryInput" placeholder="Add note or item..." />
-          <button type="button" class="icon-mini-btn plus-tone" title="Add" onclick="addCustomFolderEntry()">+</button>
+        <div class="two-big-boxes">
+          <div class="big-folder-box">
+            <div class="big-box-top">
+              <span class="big-box-title" id="customBigLeftLabel">Box 1</span>
+              <button type="button" class="icon-mini-btn" title="Rename" onclick="renameCustomSubLabel('left')">✎</button>
+            </div>
+            <div class="big-box-value" id="customBigLeftCount">0</div>
+          </div>
+
+          <div class="big-folder-box">
+            <div class="big-box-top">
+              <span class="big-box-title" id="customBigRightLabel">Box 2</span>
+              <button type="button" class="icon-mini-btn" title="Rename" onclick="renameCustomSubLabel('right')">✎</button>
+            </div>
+            <div class="big-box-value" id="customBigRightCount">0</div>
+          </div>
         </div>
-        <div id="customFolderEntriesList" class="clean-row-list"></div>
+
+        <div class="sub-block">
+          <div class="folder-view-header" style="border:none; padding:0; margin-bottom:8px;">
+            <div class="sub-block-title" style="margin:0;">Items / Boxes</div>
+            <button type="button" class="icon-mini-btn plus-tone" title="Add Box (Max 50)" onclick="addCustomFolderEntry()">+</button>
+          </div>
+          <div id="customFolderEntriesList" class="clean-row-list"></div>
+        </div>
+
+        <div class="sub-block bottom-name-box" style="margin-bottom:0;">
+          <div class="sub-block-title">Set Name</div>
+          <div class="phone-line-row">
+            <input type="text" id="customEntryInput" placeholder="Enter name..." />
+            <button type="button" class="btn-primary btn-compact" onclick="addCustomFolderEntry()">Save</button>
+          </div>
+        </div>
       </div>
     </section>
   </main>
+
+  <!-- Expand Limits Modal (Owner Boxes Max 50, Index Boxes Max 50, Covers Max 10) -->
+  <div class="modal-backdrop z-70" id="expandLimitsModal">
+    <div class="modal-card modal-wide">
+      <h3>Expand Boxes & Covers</h3>
+      <div class="field">
+        <label>Owner Boxes Limit (Max 50)</label>
+        <input type="number" id="ownerBoxLimitInput" min="1" max="50" />
+      </div>
+      <div class="field">
+        <label>Store (index.html) Extra Boxes (Max 50)</label>
+        <input type="number" id="indexBoxLimitInput" min="0" max="50" />
+      </div>
+      <div class="field">
+        <label>Cover Photos Slots (Max 10 — Default 1)</label>
+        <input type="number" id="coverSlotsLimitInput" min="1" max="10" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="closeExpandLimitsModal()">Cancel</button>
+        <button type="button" class="btn-primary" onclick="saveExpandLimits()">Save Limits</button>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>
