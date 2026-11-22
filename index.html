@@ -77,7 +77,7 @@
       padding: 14px 12px;
     }
 
-    /* Each of the 15 Row Sections */
+    /* Each Section */
     .row-section {
       margin-bottom: 20px;
     }
@@ -112,7 +112,78 @@
       font-weight: 600;
     }
 
-    /* Horizontal Scroll Container */
+    /* Row 1: 5 Small Rounded Boxes */
+    .five-boxes-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .mini-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+    }
+
+    .mini-box img {
+      width: 100%;
+      height: 74px;
+      object-fit: cover;
+      background: #e5e7eb;
+      display: block;
+    }
+
+    .mini-box-body {
+      padding: 6px;
+      text-align: center;
+    }
+
+    .mini-box-name {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mini-box-price {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-top: 2px;
+    }
+
+    /* 5th User Box: Shows Only Uploaded Photo When Saved */
+    .user-photo-only-box {
+      padding: 0;
+      justify-content: center;
+      align-items: center;
+      min-height: 108px;
+      position: relative;
+    }
+
+    .user-photo-only-box.has-photo img {
+      width: 100%;
+      height: 100%;
+      min-height: 108px;
+      object-fit: cover;
+    }
+
+    .user-placeholder-label {
+      padding: 6px;
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    /* Horizontal Scroll Container for Sections 2-15 */
     .scroll-row {
       display: flex;
       gap: 12px;
@@ -195,12 +266,13 @@
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.55);
+      background: rgba(15, 23, 42, 0.58);
       display: none;
       align-items: center;
       justify-content: center;
-      padding: 16px;
-      z-index: 50;
+      padding: 14px;
+      z-index: 60;
+      overflow-y: auto;
     }
 
     .modal-backdrop.active {
@@ -210,15 +282,42 @@
     .modal-card {
       background: var(--surface);
       width: 100%;
-      max-width: 380px;
-      border-radius: 16px;
+      max-width: 400px;
+      border-radius: 18px;
       padding: 18px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+      max-height: 92vh;
+      overflow-y: auto;
     }
 
     .modal-card h3 {
       font-size: 1.1rem;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .profile-top-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .round-avatar-preview {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--primary);
+      background: #e5e7eb;
+    }
+
+    .avatar-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     .field {
@@ -227,45 +326,108 @@
 
     .field label {
       display: block;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       color: var(--muted);
       margin-bottom: 4px;
     }
 
-    .field input, .field select {
+    .field input,
+    .field select {
       width: 100%;
       padding: 9px 10px;
       border: 1px solid #cbd5e1;
       border-radius: 10px;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
+      background: #fff;
+    }
+
+    .two-small-boxes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    /* OTP Strip Pop-up Directly Below Phone Input */
+    .otp-strip-popup {
+      display: none;
+      background: #f0fdfa;
+      border: 1px solid var(--primary);
+      border-left: 4px solid var(--primary);
+      border-radius: 10px;
+      padding: 10px;
+      margin-top: 8px;
+      margin-bottom: 10px;
+    }
+
+    .otp-strip-popup.active {
+      display: block;
+    }
+
+    .otp-strip-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      margin-bottom: 6px;
+    }
+
+    .otp-strip-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .otp-strip-row input {
+      flex: 1;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: #fff;
+    }
+
+    .social-auth-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+      margin-bottom: 12px;
     }
 
     .modal-actions {
       display: flex;
       gap: 8px;
-      margin-top: 12px;
+      margin-top: 10px;
     }
 
     .btn-secondary {
       flex: 1;
-      padding: 9px;
+      padding: 9px 10px;
       border: none;
       border-radius: 10px;
       background: #e5e7eb;
       color: var(--text);
       font-weight: 600;
+      font-size: 0.86rem;
       cursor: pointer;
     }
 
     .btn-primary {
       flex: 1;
-      padding: 9px;
+      padding: 9px 10px;
       border: none;
       border-radius: 10px;
       background: var(--primary);
       color: #ffffff;
       font-weight: 600;
+      font-size: 0.86rem;
       cursor: pointer;
+    }
+
+    .btn-primary:active {
+      background: var(--primary-dark);
     }
 
     .btn-danger {
@@ -283,7 +445,7 @@
       padding: 5px 9px;
       border: none;
       border-radius: 8px;
-      background: #0284c7;
+      background: var(--primary);
       color: #fff;
       font-size: 0.78rem;
       font-weight: 600;
@@ -343,7 +505,8 @@
       gap: 8px;
     }
 
-    .form-grid input, .form-grid select {
+    .form-grid input,
+    .form-grid select {
       width: 100%;
       padding: 9px;
       border-radius: 10px;
@@ -384,7 +547,8 @@
       margin-top: 8px;
     }
 
-    th, td {
+    th,
+    td {
       text-align: left;
       padding: 8px 6px;
       border-bottom: 1px solid var(--border);
@@ -406,8 +570,78 @@
     </div>
   </section>
 
-  <!-- 15 Strip Sections with Horizontal Scroll Boxes -->
+  <!-- Sections Container -->
   <main class="container" id="sectionsContainer"></main>
+
+  <!-- User Profile & Registration Modal (Opened from 5th Box in Row 1) -->
+  <div class="modal-backdrop" id="userProfileModal">
+    <div class="modal-card">
+      <h3>User Registration & Profile</h3>
+
+      <div class="profile-top-center">
+        <img id="modalAvatarPreview" class="round-avatar-preview" src="" alt="User Avatar" />
+        <input type="file" id="userPhotoInput" accept="image/*" style="display:none;" onchange="handleUserPhotoUpload(event)" />
+        <div class="avatar-actions">
+          <button type="button" class="btn-primary" onclick="document.getElementById('userPhotoInput').click()">Upload Photo</button>
+          <button type="button" class="btn-secondary" onclick="setDemoAvatar()">Demo Avatar</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>First Name</label>
+        <input type="text" id="userFirstName" placeholder="Enter first name" />
+      </div>
+
+      <div class="field">
+        <label>Surname</label>
+        <input type="text" id="userSurname" placeholder="Enter surname" />
+      </div>
+
+      <div class="two-small-boxes">
+        <div class="field" style="margin-bottom:0;">
+          <label>Age</label>
+          <input type="number" id="userAge" placeholder="Age" min="1" max="120" />
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Gender</label>
+          <select id="userGender">
+            <option value="">Select</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Mobile Number</label>
+        <input type="tel" id="userPhone" placeholder="Enter mobile number" oninput="handlePhoneInput()" />
+
+        <!-- OTP Strip Pop-up Directly Below Number -->
+        <div class="otp-strip-popup" id="otpStripPopup">
+          <div class="otp-strip-header">
+            <span>OTP Verification</span>
+            <span id="otpTimerText">30s</span>
+          </div>
+          <div class="otp-strip-row">
+            <input type="text" id="userOtpInput" maxlength="6" placeholder="Enter OTP" />
+            <button type="button" class="btn-primary" style="flex:0 0 auto; padding:8px 12px;" onclick="verifyUserOtp()">Verify</button>
+          </div>
+          <div id="otpStatusMsg" style="font-size:0.75rem; color:var(--primary-dark); margin-top:5px;"></div>
+        </div>
+      </div>
+
+      <div class="social-auth-row">
+        <button type="button" class="btn-primary" onclick="socialRegister('Google')">Continue with Google</button>
+        <button type="button" class="btn-primary" onclick="socialRegister('Facebook')">Continue with Facebook</button>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="closeUserProfileModal()">Cancel</button>
+        <button type="button" class="btn-primary" onclick="saveUserProfile()">Save</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Owner Dashboard -->
   <section class="owner-panel" id="ownerPanel">
@@ -431,7 +665,6 @@
       </div>
     </div>
 
-    <!-- 1. Update Store Name & Cover Photo -->
     <div class="owner-box">
       <h4>1. Store Name & Cover Photo</h4>
       <div class="form-grid">
@@ -442,19 +675,17 @@
       </div>
     </div>
 
-    <!-- 2. Add New Item with Photo & Price -->
     <div class="owner-box">
       <h4>2. Add New Item (Photo + Name + Price)</h4>
       <div class="form-grid">
         <select id="newSectionIndex"></select>
-        <input id="newItemName" type="text" placeholder="Item Name (e.g. Basmati Rice 5kg)" />
-        <input id="newItemPrice" type="number" placeholder="Price in ₹ (e.g. 450)" min="1" />
+        <input id="newItemName" type="text" placeholder="Item Name" />
+        <input id="newItemPrice" type="number" placeholder="Price in ₹" min="1" />
         <input id="newItemFile" type="file" accept="image/*" />
         <button class="btn-primary" onclick="addNewItem()">Add Item</button>
       </div>
     </div>
 
-    <!-- 3. Manage Existing Items (Edit Price / Delete) -->
     <div class="owner-box">
       <h4>3. Edit Item Price or Remove Item</h4>
       <div style="margin-bottom:8px;">
@@ -472,7 +703,6 @@
       </table>
     </div>
 
-    <!-- 4. Customer Orders -->
     <div class="owner-box">
       <h4>4. Customer Orders & Sales Record</h4>
       <table>
@@ -533,23 +763,23 @@
     const OWNER_PIN = "1234";
     const DEFAULT_COVER = "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80";
     const FALLBACK_IMG = "https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8?auto=format&fit=crop&w=500&q=70";
+    const DEMO_AVATAR_IMG = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80";
 
     const SAMPLE_CATALOG = [
       {
         title: "1. Trending Deals",
         items: [
-          { name: "Family Grocery Combo", price: 799, img: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=500&q=70" },
-          { name: "Premium Dry Fruit Box", price: 540, img: "https://images.unsplash.com/photo-1596591606975-97ee5cef3a1e?auto=format&fit=crop&w=500&q=70" },
-          { name: "Organic Honey 500g", price: 295, img: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=500&q=70" },
-          { name: "Assam Gold Tea 1kg", price: 420, img: "https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?auto=format&fit=crop&w=500&q=70" },
-          { name: "Olive Cooking Oil 1L", price: 680, img: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=500&q=70" }
+          { name: "Grocery Combo", price: 799, img: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=500&q=70" },
+          { name: "Dry Fruit Box", price: 540, img: "https://images.unsplash.com/photo-1596591606975-97ee5cef3a1e?auto=format&fit=crop&w=500&q=70" },
+          { name: "Organic Honey", price: 295, img: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=500&q=70" },
+          { name: "Assam Gold Tea", price: 420, img: "https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?auto=format&fit=crop&w=500&q=70" }
         ]
       },
       {
         title: "2. Fresh Fruits & Vegetables",
         items: [
           { name: "Shimla Apples 1kg", price: 160, img: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=500&q=70" },
-          { name: "Fresh Bananas 1 Dozen", price: 60, img: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=500&q=70" },
+          { name: "Fresh Bananas", price: 60, img: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=500&q=70" },
           { name: "Farm Tomatoes 1kg", price: 45, img: "https://images.unsplash.com/photo-1546470427-227c7369a9b9?auto=format&fit=crop&w=500&q=70" },
           { name: "Red Onions 2kg", price: 70, img: "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?auto=format&fit=crop&w=500&q=70" },
           { name: "Fresh Potatoes 2kg", price: 65, img: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=500&q=70" }
@@ -633,15 +863,41 @@
         storeSubtitle: "Daily Essentials • Fast Delivery • Best Local Prices",
         coverImg: DEFAULT_COVER,
         sections,
-        orders: []
+        orders: [],
+        userProfile: {
+          photo: "",
+          firstName: "",
+          surname: "",
+          age: "",
+          gender: "",
+          phone: "",
+          otpVerified: false,
+          provider: ""
+        }
       };
     }
 
-    let storeData = JSON.parse(localStorage.getItem("storeDemoV2")) || buildInitialData();
+    let storeData = JSON.parse(localStorage.getItem("storeDemoV3")) || buildInitialData();
+    if (!storeData.userProfile) {
+      storeData.userProfile = {
+        photo: "",
+        firstName: "",
+        surname: "",
+        age: "",
+        gender: "",
+        phone: "",
+        otpVerified: false,
+        provider: ""
+      };
+    }
+
     let activeOrderItem = null;
+    let draftAvatar = storeData.userProfile.photo || DEMO_AVATAR_IMG;
+    let otpCountdownInterval = null;
+    let otpTriggeredForCurrentNumber = false;
 
     function saveData() {
-      localStorage.setItem("storeDemoV2", JSON.stringify(storeData));
+      localStorage.setItem("storeDemoV3", JSON.stringify(storeData));
     }
 
     function readImageAsDataURL(file, maxWidth = 600) {
@@ -683,30 +939,193 @@
         stripEl.className = "strip-bar";
         stripEl.innerHTML = `
           <span class="strip-title">${sec.title}</span>
-          <span class="strip-tag">Swipe →</span>
+          <span class="strip-tag">${sIdx === 0 ? "5 Boxes" : "Swipe →"}</span>
         `;
 
-        const scrollEl = document.createElement("div");
-        scrollEl.className = "scroll-row";
-
-        sec.items.forEach((item) => {
-          const box = document.createElement("div");
-          box.className = "item-box";
-          box.innerHTML = `
-            <img src="${item.img || FALLBACK_IMG}" alt="${item.name}" onerror="this.src='${FALLBACK_IMG}'" />
-            <div class="item-info">
-              <div class="item-name" title="${item.name}">${item.name}</div>
-              <div class="item-price">₹${item.price}</div>
-              <button class="buy-btn" onclick="openOrderModal(${sIdx}, '${item.id}')">Order</button>
-            </div>
-          `;
-          scrollEl.appendChild(box);
-        });
-
         sectionEl.appendChild(stripEl);
-        sectionEl.appendChild(scrollEl);
+
+        if (sIdx === 0) {
+          // Row 1: 5 Small Rounded Boxes; 5th Box is User Box
+          const fiveRow = document.createElement("div");
+          fiveRow.className = "five-boxes-row";
+
+          const firstFour = sec.items.slice(0, 4);
+          firstFour.forEach((item) => {
+            const box = document.createElement("div");
+            box.className = "mini-box";
+            box.onclick = () => openOrderModal(0, item.id);
+            box.innerHTML = `
+              <img src="${item.img || FALLBACK_IMG}" alt="${item.name}" onerror="this.src='${FALLBACK_IMG}'" />
+              <div class="mini-box-body">
+                <div class="mini-box-name">${item.name}</div>
+                <div class="mini-box-price">₹${item.price}</div>
+              </div>
+            `;
+            fiveRow.appendChild(box);
+          });
+
+          // 5th Box: User Registration / Photo Box
+          const fifthBox = document.createElement("div");
+          fifthBox.className = "mini-box user-photo-only-box" + (storeData.userProfile.photo ? " has-photo" : "");
+          fifthBox.onclick = openUserProfileModal;
+
+          if (storeData.userProfile.photo) {
+            fifthBox.innerHTML = `<img src="${storeData.userProfile.photo}" alt="User Photo" />`;
+          } else {
+            fifthBox.innerHTML = `<div class="user-placeholder-label">User / Photo</div>`;
+          }
+
+          fiveRow.appendChild(fifthBox);
+          sectionEl.appendChild(fiveRow);
+        } else {
+          // Sections 2-15: Normal Rounded Boxes with Horizontal Scroll
+          const scrollEl = document.createElement("div");
+          scrollEl.className = "scroll-row";
+
+          sec.items.forEach((item) => {
+            const box = document.createElement("div");
+            box.className = "item-box";
+            box.innerHTML = `
+              <img src="${item.img || FALLBACK_IMG}" alt="${item.name}" onerror="this.src='${FALLBACK_IMG}'" />
+              <div class="item-info">
+                <div class="item-name" title="${item.name}">${item.name}</div>
+                <div class="item-price">₹${item.price}</div>
+                <button class="buy-btn" onclick="openOrderModal(${sIdx}, '${item.id}')">Order</button>
+              </div>
+            `;
+            scrollEl.appendChild(box);
+          });
+
+          sectionEl.appendChild(scrollEl);
+        }
+
         container.appendChild(sectionEl);
       });
+    }
+
+    function openUserProfileModal() {
+      const up = storeData.userProfile;
+      draftAvatar = up.photo || DEMO_AVATAR_IMG;
+      document.getElementById("modalAvatarPreview").src = draftAvatar;
+      document.getElementById("userFirstName").value = up.firstName || "";
+      document.getElementById("userSurname").value = up.surname || "";
+      document.getElementById("userAge").value = up.age || "";
+      document.getElementById("userGender").value = up.gender || "";
+      document.getElementById("userPhone").value = up.phone || "";
+      document.getElementById("userOtpInput").value = "";
+      document.getElementById("otpStatusMsg").textContent = up.otpVerified ? "OTP Verified" : "";
+      otpTriggeredForCurrentNumber = false;
+
+      const otpPopup = document.getElementById("otpStripPopup");
+      if (up.phone && up.phone.replace(/\D/g, "").length >= 10) {
+        otpPopup.classList.add("active");
+        startOtpTimer(30);
+      } else {
+        otpPopup.classList.remove("active");
+        clearInterval(otpCountdownInterval);
+      }
+
+      document.getElementById("userProfileModal").classList.add("active");
+    }
+
+    function closeUserProfileModal() {
+      clearInterval(otpCountdownInterval);
+      document.getElementById("userProfileModal").classList.remove("active");
+    }
+
+    async function handleUserPhotoUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const imgData = await readImageAsDataURL(file, 400);
+      if (imgData) {
+        draftAvatar = imgData;
+        document.getElementById("modalAvatarPreview").src = draftAvatar;
+      }
+    }
+
+    function setDemoAvatar() {
+      draftAvatar = DEMO_AVATAR_IMG;
+      document.getElementById("modalAvatarPreview").src = draftAvatar;
+    }
+
+    function startOtpTimer(seconds = 30) {
+      clearInterval(otpCountdownInterval);
+      let left = seconds;
+      const timerEl = document.getElementById("otpTimerText");
+      timerEl.textContent = `${left}s`;
+
+      otpCountdownInterval = setInterval(() => {
+        left -= 1;
+        if (left <= 0) {
+          clearInterval(otpCountdownInterval);
+          timerEl.textContent = "0s";
+          document.getElementById("otpStatusMsg").textContent = "Time expired. Enter number again to resend.";
+          otpTriggeredForCurrentNumber = false;
+        } else {
+          timerEl.textContent = `${left}s`;
+        }
+      }, 1000);
+    }
+
+    function handlePhoneInput() {
+      const phoneVal = document.getElementById("userPhone").value.trim();
+      const digitsOnly = phoneVal.replace(/\D/g, "");
+      const otpPopup = document.getElementById("otpStripPopup");
+
+      if (digitsOnly.length >= 10) {
+        otpPopup.classList.add("active");
+        if (!otpTriggeredForCurrentNumber) {
+          otpTriggeredForCurrentNumber = true;
+          document.getElementById("otpStatusMsg").textContent = "OTP sent (Demo OTP: 1234)";
+          startOtpTimer(30);
+        }
+      } else {
+        otpTriggeredForCurrentNumber = false;
+        clearInterval(otpCountdownInterval);
+        otpPopup.classList.remove("active");
+      }
+    }
+
+    function verifyUserOtp() {
+      const code = document.getElementById("userOtpInput").value.trim();
+      if (code.length >= 4) {
+        storeData.userProfile.otpVerified = true;
+        clearInterval(otpCountdownInterval);
+        document.getElementById("otpStatusMsg").textContent = "OTP Verified!";
+      } else {
+        document.getElementById("otpStatusMsg").textContent = "Enter valid OTP";
+      }
+    }
+
+    function socialRegister(provider) {
+      storeData.userProfile.provider = provider;
+      if (!draftAvatar) {
+        draftAvatar = DEMO_AVATAR_IMG;
+        document.getElementById("modalAvatarPreview").src = draftAvatar;
+      }
+      alert(`${provider} selected. Tap Save to apply.`);
+    }
+
+    function saveUserProfile() {
+      const firstName = document.getElementById("userFirstName").value.trim();
+      const surname = document.getElementById("userSurname").value.trim();
+      const age = document.getElementById("userAge").value.trim();
+      const gender = document.getElementById("userGender").value;
+      const phone = document.getElementById("userPhone").value.trim();
+
+      storeData.userProfile = {
+        ...storeData.userProfile,
+        photo: draftAvatar || DEMO_AVATAR_IMG,
+        firstName,
+        surname,
+        age,
+        gender,
+        phone
+      };
+
+      saveData();
+      renderSections();
+      closeUserProfileModal();
     }
 
     function openOrderModal(sectionIdx, itemId) {
