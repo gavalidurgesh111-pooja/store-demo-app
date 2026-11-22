@@ -1,4 +1,4 @@
-const STORAGE_KEY = "storeCleanNoDemoImgV1";
+const STORAGE_KEY = "storeOwnerModularV2";
 const OWNER_PIN = "1234";
 
 const CARTOON_AVATARS = [
@@ -14,7 +14,7 @@ const CARTOON_AVATARS = [
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='60' fill='%23e0f2fe'/><ellipse cx='46' cy='24' rx='6' ry='16' fill='%23ffffff'/><ellipse cx='74' cy='24' rx='6' ry='16' fill='%23ffffff'/><circle cx='60' cy='54' r='23' fill='%23ffffff'/><circle cx='51' cy='51' r='3' fill='%23111827'/><circle cx='69' cy='51' r='3' fill='%23111827'/><circle cx='60' cy='57' r='3' fill='%23f43f5e'/><path d='M52 64q8 6 16 0' stroke='%23111827' stroke-width='2.5' fill='none' stroke-linecap='round'/><path d='M30 110c5-20 16-28 30-28s25 8 30 28' fill='%230284c7'/></svg>"
 ];
 
-const SECTION_TITLES = [
+const DEFAULT_SECTION_TITLES = [
   "1. Trending Deals",
   "2. Fresh Fruits & Vegetables",
   "3. Dairy & Bakery",
@@ -33,19 +33,25 @@ const SECTION_TITLES = [
 ];
 
 function buildInitialData() {
-  const sections = SECTION_TITLES.map((title, idx) => {
+  const sections = DEFAULT_SECTION_TITLES.map((title, idx) => {
     const count = idx === 0 ? 4 : 5;
     const items = [];
     for (let i = 1; i <= count; i++) {
-      items.push({
-        id: `${idx}-${i}`,
-        name: `Item ${i}`,
-        price: 0,
-        img: ""
-      });
+      items.push({ id: `${idx}-${i}`, name: `Item ${i}`, price: 0, img: "" });
     }
     return { title, items };
   });
+
+  // 4 Core Owner Folders + 10 Empty Editable Folders
+  const ownerFolders = [
+    { id: "store", name: "Store Setup", isCustom: false, entries: [] },
+    { id: "users", name: "Active Users", isCustom: false, entries: [] },
+    { id: "sales", name: "Sold Items", isCustom: false, entries: [] },
+    { id: "buyers", name: "Customer Orders", isCustom: false, entries: [] }
+  ];
+  for (let i = 1; i <= 10; i++) {
+    ownerFolders.push({ id: `custom-${i}`, name: "", isCustom: true, entries: [] });
+  }
 
   return {
     storeTitle: "Store Name",
@@ -53,6 +59,8 @@ function buildInitialData() {
     coverImg: "",
     sections,
     orders: [],
+    activeUsers: [],
+    ownerFolders,
     mediaPermissionGranted: false,
     userProfile: {
       photo: "",
@@ -68,14 +76,18 @@ function buildInitialData() {
 }
 
 let storeData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || buildInitialData();
-if (!storeData.userProfile) {
-  storeData.userProfile = { photo: "", firstName: "", surname: "", age: "", gender: "", phone: "", otpVerified: false, provider: "" };
+if (!storeData.ownerFolders || storeData.ownerFolders.length < 14) {
+  storeData.ownerFolders = buildInitialData().ownerFolders;
 }
+if (!storeData.activeUsers) storeData.activeUsers = [];
 
 let activeOrderItem = null;
-let draftPhoto = storeData.userProfile.photo || "";
+let draftPhoto = storeData.userProfile?.photo || "";
 let tempManagerPhoto = "";
 let otpCountdownInterval = null;
+
+let activeFolderIdx = 0;
+let usersVisibleLimit = 10;
 
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(storeData));
@@ -205,7 +217,10 @@ function openOrderModal(sectionIdx, itemId) {
   activeOrderItem = item;
   document.getElementById("modalItemTitle").textContent = item.name;
   document.getElementById("modalItemPrice").textContent = `Price: ₹${item.price}`;
-  document.getElementById("orderCustomer").value = "";
+
+  const up = storeData.userProfile || {};
+  const fullName = [up.firstName, up.surname].filter(Boolean).join(" ");
+  document.getElementById("orderCustomer").value = fullName;
   document.getElementById("orderQty").value = "1";
   document.getElementById("orderModal").classList.add("active");
 }
@@ -217,42 +232,43 @@ function closeOrderModal() {
 
 function confirmOrder() {
   if (!activeOrderItem) return;
-  const customer = document.getElementById("orderCustomer").value.trim() || "Customer";
+  const up = storeData.userProfile || {};
+  const defaultName = [up.firstName, up.surname].filter(Boolean).join(" ") || "Customer";
+  const customer = document.getElementById("orderCustomer").value.trim() || defaultName;
   const qty = Math.max(1, parseInt(document.getElementById("orderQty").value, 10) || 1);
   const amount = activeOrderItem.price * qty;
 
-  storeData.orders.push({ customer, itemName: activeOrderItem.name, qty, amount });
+  storeData.orders.push({
+    customer,
+    customerPhoto: up.photo || "",
+    itemId: activeOrderItem.id,
+    itemName: activeOrderItem.name,
+    itemPrice: activeOrderItem.price,
+    itemImg: activeOrderItem.img || "",
+    qty,
+    amount
+  });
+
   saveData();
   closeOrderModal();
-  renderOwnerDashboard();
   alert(`Order Placed: ${activeOrderItem.name} x${qty} (₹${amount})`);
 }
 
 function openPinModal() {
-  const page = document.body.getAttribute("data-page");
-  if (page !== "owner") {
-    window.location.href = "owner.html";
-    return;
-  }
-  document.getElementById("ownerPinInput").value = "";
-  document.getElementById("pinModal").classList.add("active");
+  window.location.href = "owner.html";
 }
 
-function closePinModal() {
-  document.getElementById("pinModal").classList.remove("active");
-}
-
+/* ==================== OWNER WORKSPACE (owner.html) ==================== */
 function goToStoreFromPin() {
   window.location.href = "index.html";
 }
 
 function verifyPin() {
   if (document.getElementById("ownerPinInput").value.trim() === OWNER_PIN) {
-    closePinModal();
+    document.getElementById("pinModal").classList.remove("active");
     const panel = document.getElementById("ownerPanel");
     panel.classList.add("active");
-    renderOwnerDashboard();
-    panel.scrollIntoView({ behavior: "smooth" });
+    renderOwnerWorkspace();
   } else {
     alert("Incorrect PIN");
   }
@@ -265,17 +281,122 @@ function lockOwnerPage() {
   document.getElementById("pinModal").classList.add("active");
 }
 
-function closeOwnerPanel() {
-  const panel = document.getElementById("ownerPanel");
-  if (panel) panel.classList.remove("active");
+function renderOwnerWorkspace() {
+  renderFolderGrid();
+  selectOwnerFolder(activeFolderIdx);
 }
 
-function renderOwnerDashboard() {
-  const panel = document.getElementById("ownerPanel");
-  if (!panel) return;
+function renderFolderGrid() {
+  const grid = document.getElementById("ownerFoldersGrid");
+  if (!grid) return;
+  grid.innerHTML = "";
 
+  storeData.ownerFolders.forEach((folder, idx) => {
+    const card = document.createElement("div");
+    const isNamed = Boolean(folder.name && folder.name.trim());
+    const label = isNamed ? folder.name : `Folder ${idx - 3}`;
+
+    card.className =
+      "folder-card" +
+      (idx === activeFolderIdx ? " active" : "") +
+      (folder.isCustom ? " empty-custom" : "") +
+      (isNamed ? " named" : "");
+
+    card.onclick = () => selectOwnerFolder(idx);
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "folder-card-name";
+    nameSpan.textContent = label;
+
+    const editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.className = "icon-mini-btn";
+    editBtn.title = "Edit Name";
+    editBtn.textContent = "✎";
+    editBtn.onclick = (e) => {
+      e.stopPropagation();
+      renameFolderAt(idx);
+    };
+
+    card.appendChild(nameSpan);
+    card.appendChild(editBtn);
+    grid.appendChild(card);
+  });
+}
+
+function renameFolderAt(idx) {
+  const folder = storeData.ownerFolders[idx];
+  const current = folder.name || (folder.isCustom ? "" : folder.name);
+  const next = prompt("Enter Folder Name:", current);
+  if (next !== null) {
+    folder.name = next.trim();
+    saveData();
+    renderFolderGrid();
+    if (idx === activeFolderIdx) {
+      document.getElementById("activeFolderHeading").textContent =
+        folder.name || `Folder ${idx - 3}`;
+    }
+  }
+}
+
+function renameActiveFolder() {
+  renameFolderAt(activeFolderIdx);
+}
+
+function selectOwnerFolder(idx) {
+  activeFolderIdx = idx;
+  renderFolderGrid();
+
+  const folder = storeData.ownerFolders[idx];
+  document.getElementById("activeFolderHeading").textContent =
+    folder.name || (folder.isCustom ? `Folder ${idx - 3}` : "");
+
+  document.querySelectorAll(".folder-tab-pane").forEach((el) => {
+    el.style.display = "none";
+  });
+
+  if (idx === 0) {
+    document.getElementById("tabStoreSetup").style.display = "block";
+    renderStoreSetupTab();
+  } else if (idx === 1) {
+    document.getElementById("tabActiveUsers").style.display = "block";
+    renderActiveUsersTab();
+  } else if (idx === 2) {
+    document.getElementById("tabSoldItems").style.display = "block";
+    renderSoldItemsTab();
+  } else if (idx === 3) {
+    document.getElementById("tabBuyers").style.display = "block";
+    renderBuyersTab();
+  } else {
+    document.getElementById("tabCustomFolder").style.display = "block";
+    renderCustomFolderTab();
+  }
+}
+
+/* Tab 0: Store Setup */
+function renderStoreSetupTab() {
   document.getElementById("editStoreTitle").value = storeData.storeTitle || "";
   document.getElementById("editStoreSubtitle").value = storeData.storeSubtitle || "";
+
+  const thumb = document.getElementById("ownerCoverThumb");
+  if (storeData.coverImg) {
+    thumb.innerHTML = `<img src="${storeData.coverImg}" alt="Cover" />`;
+  } else {
+    thumb.innerHTML = `<span class="plus-sign-icon">+</span>`;
+  }
+
+  // 15 Section Names Editor
+  const namesList = document.getElementById("sectionNamesEditorList");
+  namesList.innerHTML = "";
+  storeData.sections.forEach((sec, sIdx) => {
+    const chip = document.createElement("div");
+    chip.className = "name-edit-chip";
+    chip.innerHTML = `
+      <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sec.title}</span>
+      <button type="button" class="icon-mini-btn" title="Rename" onclick="renameStoreSection(${sIdx})">✎</button>
+    `;
+    namesList.appendChild(chip);
+  });
 
   const select = document.getElementById("newSectionIndex");
   const filter = document.getElementById("manageSectionFilter");
@@ -283,53 +404,57 @@ function renderOwnerDashboard() {
 
   select.innerHTML = "";
   filter.innerHTML = "";
-  storeData.sections.forEach((sec, idx) => {
-    const opt1 = document.createElement("option");
-    opt1.value = idx;
-    opt1.textContent = sec.title;
-    select.appendChild(opt1);
+  storeData.sections.forEach((sec, sIdx) => {
+    const o1 = document.createElement("option");
+    o1.value = sIdx;
+    o1.textContent = sec.title;
+    select.appendChild(o1);
 
-    const opt2 = document.createElement("option");
-    opt2.value = idx;
-    opt2.textContent = sec.title;
-    filter.appendChild(opt2);
+    const o2 = document.createElement("option");
+    o2.value = sIdx;
+    o2.textContent = sec.title;
+    filter.appendChild(o2);
   });
   filter.value = prevFilter;
 
-  const totalSold = storeData.orders.reduce((s, o) => s + o.qty, 0);
-  const totalRev = storeData.orders.reduce((s, o) => s + o.amount, 0);
-
-  document.getElementById("statSold").textContent = totalSold;
-  document.getElementById("statRevenue").textContent = `₹${totalRev}`;
-  document.getElementById("statOrders").textContent = storeData.orders.length;
-
   renderOwnerItemsTable();
-
-  const tbody = document.getElementById("ordersTableBody");
-  tbody.innerHTML = "";
-  storeData.orders.slice().reverse().forEach((o) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${o.customer}</td><td>${o.itemName}</td><td>${o.qty}</td><td>₹${o.amount}</td>`;
-    tbody.appendChild(tr);
-  });
 }
 
-async function updateStoreHeader() {
+async function previewAndSaveCover(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const imgData = await readImageAsDataURL(file, 900);
+  if (imgData) {
+    storeData.coverImg = imgData;
+    saveData();
+    renderStoreSetupTab();
+  }
+  event.target.value = "";
+}
+
+function removeStoreCover() {
+  storeData.coverImg = "";
+  saveData();
+  renderStoreSetupTab();
+}
+
+function updateStoreHeader() {
   const title = document.getElementById("editStoreTitle").value.trim();
   const sub = document.getElementById("editStoreSubtitle").value.trim();
-  const file = document.getElementById("editCoverFile").files[0];
-
   if (title) storeData.storeTitle = title;
   storeData.storeSubtitle = sub;
-  if (file) {
-    const imgData = await readImageAsDataURL(file, 900);
-    if (imgData) storeData.coverImg = imgData;
-  }
-
   saveData();
-  renderHeader();
-  document.getElementById("editCoverFile").value = "";
-  alert("Store info saved!");
+  alert("Saved!");
+}
+
+function renameStoreSection(sIdx) {
+  const sec = storeData.sections[sIdx];
+  const updated = prompt("Edit Section Name:", sec.title);
+  if (updated && updated.trim()) {
+    sec.title = updated.trim();
+    saveData();
+    renderStoreSetupTab();
+  }
 }
 
 async function addNewItem() {
@@ -338,8 +463,8 @@ async function addNewItem() {
   const price = parseInt(document.getElementById("newItemPrice").value, 10);
   const file = document.getElementById("newItemFile").files[0];
 
-  if (!name || !price || price <= 0) {
-    alert("Please enter valid item name and price.");
+  if (!name || isNaN(price) || price < 0) {
+    alert("Enter valid item name and price.");
     return;
   }
 
@@ -349,55 +474,234 @@ async function addNewItem() {
     if (uploaded) imgUrl = uploaded;
   }
 
-  storeData.sections[sIdx].items.unshift({ id: `${sIdx}-${Date.now()}`, name, price, img: imgUrl });
-  saveData();
-  renderSections();
-  renderOwnerItemsTable();
+  storeData.sections[sIdx].items.unshift({
+    id: `${sIdx}-${Date.now()}`,
+    name,
+    price,
+    img: imgUrl
+  });
 
+  saveData();
+  renderOwnerItemsTable();
   document.getElementById("newItemName").value = "";
   document.getElementById("newItemPrice").value = "";
   document.getElementById("newItemFile").value = "";
-  alert("Item added!");
 }
 
 function renderOwnerItemsTable() {
   const filter = document.getElementById("manageSectionFilter");
   if (!filter) return;
   const sIdx = parseInt(filter.value, 10) || 0;
-  const tbody = document.getElementById("ownerItemsTableBody");
-  tbody.innerHTML = "";
+  const list = document.getElementById("ownerItemsList");
+  list.innerHTML = "";
 
   storeData.sections[sIdx].items.forEach((item) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${item.name}</td>
-      <td>₹${item.price}</td>
-      <td class="action-cell">
-        <button type="button" class="btn-small" onclick="editItemPrice(${sIdx}, '${item.id}')">Price</button>
-        <button type="button" class="btn-danger" onclick="deleteItem(${sIdx}, '${item.id}')">Delete</button>
-      </td>
+    const row = document.createElement("div");
+    row.className = "list-row-card";
+    const thumbHtml = item.img
+      ? `<img class="row-thumb" src="${item.img}" alt="${item.name}" />`
+      : `<div class="row-thumb">+</div>`;
+
+    row.innerHTML = `
+      <div class="list-row-left">
+        ${thumbHtml}
+        <div>
+          <div class="row-main-text">${item.name}</div>
+          <div class="row-sub-text">₹${item.price}</div>
+        </div>
+      </div>
+      <div class="row-actions">
+        <button type="button" class="icon-mini-btn" title="Edit Name & Price" onclick="editItemDetails(${sIdx}, '${item.id}')">✎</button>
+        <button type="button" class="icon-mini-btn danger-tone" title="Remove" onclick="deleteItem(${sIdx}, '${item.id}')">×</button>
+      </div>
     `;
-    tbody.appendChild(tr);
+    list.appendChild(row);
   });
 }
 
-function editItemPrice(sIdx, itemId) {
+function editItemDetails(sIdx, itemId) {
   const item = storeData.sections[sIdx].items.find((i) => i.id === itemId);
   if (!item) return;
-  const num = parseInt(prompt(`New price for ${item.name} (₹):`, item.price), 10);
-  if (num && num > 0) {
-    item.price = num;
-    saveData();
-    renderSections();
-    renderOwnerItemsTable();
+  const newName = prompt("Edit Item Name:", item.name);
+  if (newName && newName.trim()) item.name = newName.trim();
+
+  const newPriceStr = prompt(`Edit Price for ${item.name} (₹):`, item.price);
+  if (newPriceStr !== null) {
+    const num = parseInt(newPriceStr, 10);
+    if (!isNaN(num) && num >= 0) item.price = num;
   }
+  saveData();
+  renderOwnerItemsTable();
 }
 
 function deleteItem(sIdx, itemId) {
   storeData.sections[sIdx].items = storeData.sections[sIdx].items.filter((i) => i.id !== itemId);
   saveData();
-  renderSections();
   renderOwnerItemsTable();
+}
+
+/* Tab 1: Active Users (Counter First, List on Tap) */
+function renderActiveUsersTab() {
+  const users = storeData.activeUsers || [];
+  document.getElementById("activeUsersCount").textContent = users.length;
+  renderPaginatedUsers();
+}
+
+function toggleUsersList() {
+  const wrap = document.getElementById("activeUsersListWrap");
+  const btn = document.getElementById("toggleUsersBtn");
+  const isHidden = wrap.style.display === "none";
+  wrap.style.display = isHidden ? "block" : "none";
+  btn.textContent = isHidden ? "Hide List" : "View List";
+  if (isHidden) renderPaginatedUsers();
+}
+
+function renderPaginatedUsers() {
+  const users = storeData.activeUsers || [];
+  const list = document.getElementById("activeUsersList");
+  const loadMoreBtn = document.getElementById("loadMoreUsersBtn");
+  list.innerHTML = "";
+
+  const slice = users.slice(0, usersVisibleLimit);
+  slice.forEach((u) => {
+    const fullName = [u.firstName, u.surname].filter(Boolean).join(" ") || "User";
+    const thumbHtml = u.photo
+      ? `<img class="row-thumb round" src="${u.photo}" alt="${fullName}" />`
+      : `<div class="row-thumb round">${fullName.charAt(0).toUpperCase()}</div>`;
+
+    const row = document.createElement("div");
+    row.className = "list-row-card";
+    row.innerHTML = `
+      <div class="list-row-left">
+        ${thumbHtml}
+        <div>
+          <div class="row-main-text">${fullName}</div>
+          <div class="row-sub-text">${u.phone || u.provider || "Active"}</div>
+        </div>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+
+  loadMoreBtn.style.display = users.length > usersVisibleLimit ? "block" : "none";
+}
+
+function loadMoreUsers() {
+  usersVisibleLimit += 10;
+  renderPaginatedUsers();
+}
+
+/* Tab 2: Sold Items (Photo + Name + Price + Total Qty Sold) */
+function renderSoldItemsTab() {
+  const totalSold = storeData.orders.reduce((s, o) => s + o.qty, 0);
+  const totalRev = storeData.orders.reduce((s, o) => s + o.amount, 0);
+
+  document.getElementById("statSold").textContent = totalSold;
+  document.getElementById("statRevenue").textContent = `₹${totalRev}`;
+
+  const grouped = {};
+  storeData.orders.forEach((o) => {
+    const key = o.itemName;
+    if (!grouped[key]) {
+      grouped[key] = {
+        name: o.itemName,
+        price: o.itemPrice || 0,
+        img: o.itemImg || "",
+        soldQty: 0
+      };
+    }
+    grouped[key].soldQty += o.qty;
+  });
+
+  const list = document.getElementById("soldItemsList");
+  list.innerHTML = "";
+  Object.values(grouped).forEach((item) => {
+    const thumbHtml = item.img
+      ? `<img class="row-thumb" src="${item.img}" alt="${item.name}" />`
+      : `<div class="row-thumb">Item</div>`;
+
+    const row = document.createElement("div");
+    row.className = "list-row-card";
+    row.innerHTML = `
+      <div class="list-row-left">
+        ${thumbHtml}
+        <div>
+          <div class="row-main-text">${item.name}</div>
+          <div class="row-sub-text">Price: ₹${item.price}</div>
+        </div>
+      </div>
+      <div class="row-actions">
+        <span style="font-size:0.85rem; font-weight:700; color:var(--primary-dark);">Sold: ${item.soldQty}</span>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+/* Tab 3: Buyers / Customer Orders (Photo + Name + Purchased Item) */
+function renderBuyersTab() {
+  document.getElementById("statOrders").textContent = storeData.orders.length;
+  const list = document.getElementById("buyersList");
+  list.innerHTML = "";
+
+  storeData.orders.slice().reverse().forEach((o) => {
+    const thumbHtml = o.customerPhoto
+      ? `<img class="row-thumb round" src="${o.customerPhoto}" alt="${o.customer}" />`
+      : `<div class="row-thumb round">${(o.customer || "C").charAt(0).toUpperCase()}</div>`;
+
+    const row = document.createElement("div");
+    row.className = "list-row-card";
+    row.innerHTML = `
+      <div class="list-row-left">
+        ${thumbHtml}
+        <div>
+          <div class="row-main-text">${o.customer}</div>
+          <div class="row-sub-text">${o.itemName} × ${o.qty}</div>
+        </div>
+      </div>
+      <div class="row-actions">
+        <span style="font-size:0.85rem; font-weight:700; color:var(--primary);">₹${o.amount}</span>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+/* Tabs 4..13: 10 Custom Empty Editable Folders */
+function renderCustomFolderTab() {
+  const folder = storeData.ownerFolders[activeFolderIdx];
+  const list = document.getElementById("customFolderEntriesList");
+  list.innerHTML = "";
+
+  (folder.entries || []).forEach((text, eIdx) => {
+    const row = document.createElement("div");
+    row.className = "list-row-card";
+    row.innerHTML = `
+      <div class="row-main-text">${text}</div>
+      <div class="row-actions">
+        <button type="button" class="icon-mini-btn danger-tone" title="Remove" onclick="removeCustomFolderEntry(${eIdx})">×</button>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function addCustomFolderEntry() {
+  const input = document.getElementById("customEntryInput");
+  const val = input.value.trim();
+  if (!val) return;
+  const folder = storeData.ownerFolders[activeFolderIdx];
+  folder.entries.unshift(val);
+  saveData();
+  input.value = "";
+  renderCustomFolderTab();
+}
+
+function removeCustomFolderEntry(eIdx) {
+  const folder = storeData.ownerFolders[activeFolderIdx];
+  folder.entries.splice(eIdx, 1);
+  saveData();
+  renderCustomFolderTab();
 }
 
 /* ==================== PROFILE PAGE (profile.html) ==================== */
@@ -592,7 +896,7 @@ function socialRegister(provider) {
 }
 
 function saveUserProfile() {
-  storeData.userProfile = {
+  const updatedProfile = {
     ...storeData.userProfile,
     photo: draftPhoto,
     firstName: document.getElementById("userFirstName").value.trim(),
@@ -602,6 +906,19 @@ function saveUserProfile() {
     phone: document.getElementById("userPhone").value.trim()
   };
 
+  storeData.userProfile = updatedProfile;
+
+  // Register/Update in Active Users list for Owner Dashboard
+  const userKey = updatedProfile.phone || `${updatedProfile.firstName}-${updatedProfile.surname}` || "user-1";
+  const existingIdx = storeData.activeUsers.findIndex((u) => u.key === userKey);
+  const userRecord = { key: userKey, ...updatedProfile };
+
+  if (existingIdx >= 0) {
+    storeData.activeUsers[existingIdx] = userRecord;
+  } else {
+    storeData.activeUsers.unshift(userRecord);
+  }
+
   saveData();
   window.location.href = "index.html";
 }
@@ -609,6 +926,7 @@ function saveUserProfile() {
 /* ==================== PAGE INIT ==================== */
 window.addEventListener("storage", () => {
   storeData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || storeData;
+  renderHeader();
   renderSections();
 });
 
