@@ -34,10 +34,10 @@
 
     <!-- Top Two Boxes with Center '+' Sign Only -->
     <div class="owner-top-two-bars">
-      <button type="button" class="owner-bar-btn bar-user" onclick="openOwnerStoreEditView()">
+      <button type="button" class="owner-bar-btn bar-user" onclick="if(typeof openOwnerStoreEditView==='function'){openOwnerStoreEditView();}else{var v=document.getElementById('ownerStoreEditView');if(v)v.style.display='block';}">
         <span class="bar-plus-center">+</span>
       </button>
-      <button type="button" class="owner-bar-btn bar-expand" onclick="openExpandLimitsModal()">
+      <button type="button" class="owner-bar-btn bar-expand" onclick="if(typeof openExpandLimitsModal==='function'){openExpandLimitsModal();}else{var m=document.getElementById('expandLimitsModal');if(m)m.classList.add('active');}">
         <span class="bar-plus-center">+</span>
       </button>
     </div>
@@ -46,7 +46,7 @@
     <section class="owner-box" id="ownerStoreEditView" style="display:none; margin-bottom:14px;">
       <div class="folder-view-header">
         <span class="sub-block-title" style="margin:0;">Store</span>
-        <button type="button" class="icon-mini-btn danger-tone" title="Close" onclick="closeOwnerStoreEditView()">×</button>
+        <button type="button" class="icon-mini-btn danger-tone" title="Close" onclick="if(typeof closeOwnerStoreEditView==='function'){closeOwnerStoreEditView();}else{var v=document.getElementById('ownerStoreEditView');if(v)v.style.display='none';}">×</button>
       </div>
 
       <!-- Cover Banner in Same Position -->
