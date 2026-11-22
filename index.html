@@ -13,6 +13,7 @@
       --muted: #6b7280;
       --primary: #0f766e;
       --primary-dark: #115e59;
+      --danger: #dc2626;
       --border: #e5e7eb;
     }
 
@@ -43,13 +44,13 @@
       height: 100%;
       object-fit: cover;
       display: block;
-      opacity: 0.85;
+      opacity: 0.88;
     }
 
     .cover-overlay {
       position: absolute;
       inset: 0;
-      background: linear-gradient(to top, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.15));
+      background: linear-gradient(to top, rgba(15, 23, 42, 0.88), rgba(15, 23, 42, 0.12));
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
@@ -81,7 +82,7 @@
       margin-bottom: 20px;
     }
 
-    /* Wide Strip Bar (Patty) */
+    /* Wide Strip Bar */
     .strip-bar {
       width: 100%;
       min-height: 44px;
@@ -190,7 +191,7 @@
       background: var(--primary-dark);
     }
 
-    /* Quick Order Modal / Bottom Drawer */
+    /* Modal Styles */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -267,7 +268,29 @@
       cursor: pointer;
     }
 
-    /* Subtle Footer with Hidden/Discrete Owner Access */
+    .btn-danger {
+      padding: 5px 9px;
+      border: none;
+      border-radius: 8px;
+      background: var(--danger);
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-small {
+      padding: 5px 9px;
+      border: none;
+      border-radius: 8px;
+      background: #0284c7;
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Footer */
     footer {
       max-width: 1080px;
       margin: 24px auto 0;
@@ -286,19 +309,47 @@
       cursor: pointer;
     }
 
-    /* Owner Panel Overlay */
+    /* Owner Panel */
     .owner-panel {
       display: none;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 16px;
       padding: 16px;
-      margin: 16px auto;
+      margin: 16px 12px;
       max-width: 1080px;
     }
 
     .owner-panel.active {
       display: block;
+    }
+
+    .owner-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+
+    .owner-box h4 {
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 8px;
+    }
+
+    .form-grid input, .form-grid select {
+      width: 100%;
+      padding: 9px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      font-size: 0.88rem;
+      background: #fff;
     }
 
     .stats-grid {
@@ -329,7 +380,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.85rem;
+      font-size: 0.84rem;
       margin-top: 8px;
     }
 
@@ -358,9 +409,9 @@
   <!-- 15 Strip Sections with Horizontal Scroll Boxes -->
   <main class="container" id="sectionsContainer"></main>
 
-  <!-- Owner Dashboard (Hidden by default) -->
+  <!-- Owner Dashboard -->
   <section class="owner-panel" id="ownerPanel">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
       <h3>Owner Dashboard</h3>
       <button class="btn-secondary" style="flex:0 0 auto; padding:6px 12px;" onclick="closeOwnerPanel()">Close</button>
     </div>
@@ -380,27 +431,62 @@
       </div>
     </div>
 
-    <h4 style="margin-bottom:8px;">Add Item to Section</h4>
-    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
-      <select id="newSectionIndex" style="flex:1 1 160px; padding:9px; border-radius:10px; border:1px solid #cbd5e1;"></select>
-      <input id="newItemName" type="text" placeholder="Item Name" style="flex:1 1 150px; padding:9px; border-radius:10px; border:1px solid #cbd5e1;" />
-      <input id="newItemPrice" type="number" placeholder="Price (₹)" style="flex:1 1 100px; padding:9px; border-radius:10px; border:1px solid #cbd5e1;" />
-      <input id="newItemImg" type="text" placeholder="Photo URL (Optional)" style="flex:1 1 180px; padding:9px; border-radius:10px; border:1px solid #cbd5e1;" />
-      <button class="btn-primary" style="flex:0 0 auto; padding:9px 14px;" onclick="addNewItem()">Add Item</button>
+    <!-- 1. Update Store Name & Cover Photo -->
+    <div class="owner-box">
+      <h4>1. Store Name & Cover Photo</h4>
+      <div class="form-grid">
+        <input id="editStoreTitle" type="text" placeholder="Store Name" />
+        <input id="editStoreSubtitle" type="text" placeholder="Store Tagline" />
+        <input id="editCoverFile" type="file" accept="image/*" />
+        <button class="btn-primary" onclick="updateStoreHeader()">Save Store Info</button>
+      </div>
     </div>
 
-    <h4>Recent Customer Orders</h4>
-    <table>
-      <thead>
-        <tr>
-          <th>Customer</th>
-          <th>Item</th>
-          <th>Qty</th>
-          <th>Amount</th>
-        </tr>
-      </thead>
-      <tbody id="ordersTableBody"></tbody>
-    </table>
+    <!-- 2. Add New Item with Photo & Price -->
+    <div class="owner-box">
+      <h4>2. Add New Item (Photo + Name + Price)</h4>
+      <div class="form-grid">
+        <select id="newSectionIndex"></select>
+        <input id="newItemName" type="text" placeholder="Item Name (e.g. Basmati Rice 5kg)" />
+        <input id="newItemPrice" type="number" placeholder="Price in ₹ (e.g. 450)" min="1" />
+        <input id="newItemFile" type="file" accept="image/*" />
+        <button class="btn-primary" onclick="addNewItem()">Add Item</button>
+      </div>
+    </div>
+
+    <!-- 3. Manage Existing Items (Edit Price / Delete) -->
+    <div class="owner-box">
+      <h4>3. Edit Item Price or Remove Item</h4>
+      <div style="margin-bottom:8px;">
+        <select id="manageSectionFilter" onchange="renderOwnerItemsTable()" style="width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e1;"></select>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Price</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="ownerItemsTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 4. Customer Orders -->
+    <div class="owner-box">
+      <h4>4. Customer Orders & Sales Record</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody id="ordersTableBody"></tbody>
+      </table>
+    </div>
   </section>
 
   <!-- Order Popup Modal -->
@@ -423,7 +509,7 @@
     </div>
   </div>
 
-  <!-- Discrete Owner Login Modal -->
+  <!-- Owner Login Modal -->
   <div class="modal-backdrop" id="pinModal">
     <div class="modal-card">
       <h3>Owner Access</h3>
@@ -445,14 +531,63 @@
 
   <script>
     const OWNER_PIN = "1234";
+    const DEFAULT_COVER = "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80";
     const FALLBACK_IMG = "https://images.unsplash.com/photo-1583258292688-d0213dc5a3a8?auto=format&fit=crop&w=500&q=70";
 
-    const DEFAULT_SECTIONS = [
-      "1. Trending Deals",
-      "2. Fresh Fruits & Vegetables",
-      "3. Dairy & Bakery",
-      "4. Snacks & Namkeen",
-      "5. Cold Drinks & Juices",
+    const SAMPLE_CATALOG = [
+      {
+        title: "1. Trending Deals",
+        items: [
+          { name: "Family Grocery Combo", price: 799, img: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=500&q=70" },
+          { name: "Premium Dry Fruit Box", price: 540, img: "https://images.unsplash.com/photo-1596591606975-97ee5cef3a1e?auto=format&fit=crop&w=500&q=70" },
+          { name: "Organic Honey 500g", price: 295, img: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=500&q=70" },
+          { name: "Assam Gold Tea 1kg", price: 420, img: "https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?auto=format&fit=crop&w=500&q=70" },
+          { name: "Olive Cooking Oil 1L", price: 680, img: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=500&q=70" }
+        ]
+      },
+      {
+        title: "2. Fresh Fruits & Vegetables",
+        items: [
+          { name: "Shimla Apples 1kg", price: 160, img: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=500&q=70" },
+          { name: "Fresh Bananas 1 Dozen", price: 60, img: "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=500&q=70" },
+          { name: "Farm Tomatoes 1kg", price: 45, img: "https://images.unsplash.com/photo-1546470427-227c7369a9b9?auto=format&fit=crop&w=500&q=70" },
+          { name: "Red Onions 2kg", price: 70, img: "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?auto=format&fit=crop&w=500&q=70" },
+          { name: "Fresh Potatoes 2kg", price: 65, img: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=500&q=70" }
+        ]
+      },
+      {
+        title: "3. Dairy & Bakery",
+        items: [
+          { name: "Full Cream Milk 1L", price: 68, img: "https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&w=500&q=70" },
+          { name: "Brown Bread Pack", price: 45, img: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=500&q=70" },
+          { name: "Table Butter 500g", price: 275, img: "https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?auto=format&fit=crop&w=500&q=70" },
+          { name: "Fresh Paneer 200g", price: 95, img: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=500&q=70" },
+          { name: "Cheese Slices Pack", price: 140, img: "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&w=500&q=70" }
+        ]
+      },
+      {
+        title: "4. Snacks & Namkeen",
+        items: [
+          { name: "Classic Salted Chips", price: 30, img: "https://images.unsplash.com/photo-1566478989037-eec170784d0b?auto=format&fit=crop&w=500&q=70" },
+          { name: "Aloo Bhujia 400g", price: 95, img: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=500&q=70" },
+          { name: "Roasted Peanuts 250g", price: 65, img: "https://images.unsplash.com/photo-1567892320421-1c657571ea4a?auto=format&fit=crop&w=500&q=70" },
+          { name: "Masala Mixture 500g", price: 120, img: "https://images.unsplash.com/photo-1599490659213-e2b9527bd087?auto=format&fit=crop&w=500&q=70" },
+          { name: "Butter Popcorn Pack", price: 50, img: "https://images.unsplash.com/photo-1578849278619-e73505e9610f?auto=format&fit=crop&w=500&q=70" }
+        ]
+      },
+      {
+        title: "5. Cold Drinks & Juices",
+        items: [
+          { name: "Mixed Fruit Juice 1L", price: 110, img: "https://images.unsplash.com/photo-1600271886742-f049cd451bba?auto=format&fit=crop&w=500&q=70" },
+          { name: "Orange Juice Pack 1L", price: 115, img: "https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?auto=format&fit=crop&w=500&q=70" },
+          { name: "Sparkling Cola 2L", price: 95, img: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=500&q=70" },
+          { name: "Mango Drink 1.2L", price: 75, img: "https://images.unsplash.com/photo-1546173159-315724a31696?auto=format&fit=crop&w=500&q=70" },
+          { name: "Lemon Iced Tea 500ml", price: 60, img: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=500&q=70" }
+        ]
+      }
+    ];
+
+    const EXTRA_TITLES = [
       "6. Atta, Rice & Dal",
       "7. Cooking Oil & Ghee",
       "8. Spices & Masala",
@@ -465,27 +600,75 @@
       "15. Combo Value Packs"
     ];
 
-    function createInitialData() {
-      const sections = DEFAULT_SECTIONS.map((title, idx) => {
-        const items = [];
-        for (let i = 1; i <= 6; i++) {
-          items.push({
-            id: `${idx}-${i}`,
-            name: `Product ${idx + 1}.${i}`,
-            price: (idx + 1) * 25 + i * 15,
-            img: FALLBACK_IMG
-          });
-        }
-        return { title, items };
+    function buildInitialData() {
+      const sections = [];
+      SAMPLE_CATALOG.forEach((sec, sIdx) => {
+        sections.push({
+          title: sec.title,
+          items: sec.items.map((it, iIdx) => ({
+            id: `${sIdx}-${iIdx}`,
+            name: it.name,
+            price: it.price,
+            img: it.img
+          }))
+        });
       });
-      return { sections, orders: [] };
+
+      EXTRA_TITLES.forEach((title, idx) => {
+        const sIdx = idx + 5;
+        const baseSamples = SAMPLE_CATALOG[idx % SAMPLE_CATALOG.length].items;
+        sections.push({
+          title,
+          items: baseSamples.map((it, iIdx) => ({
+            id: `${sIdx}-${iIdx}`,
+            name: `${it.name} Pack`,
+            price: it.price + (idx + 1) * 10,
+            img: it.img
+          }))
+        });
+      });
+
+      return {
+        storeTitle: "Urban Fresh Mart",
+        storeSubtitle: "Daily Essentials • Fast Delivery • Best Local Prices",
+        coverImg: DEFAULT_COVER,
+        sections,
+        orders: []
+      };
     }
 
-    let storeData = JSON.parse(localStorage.getItem("store15RowsDemo")) || createInitialData();
+    let storeData = JSON.parse(localStorage.getItem("storeDemoV2")) || buildInitialData();
     let activeOrderItem = null;
 
     function saveData() {
-      localStorage.setItem("store15RowsDemo", JSON.stringify(storeData));
+      localStorage.setItem("storeDemoV2", JSON.stringify(storeData));
+    }
+
+    function readImageAsDataURL(file, maxWidth = 600) {
+      return new Promise((resolve) => {
+        if (!file) return resolve(null);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            const scale = Math.min(1, maxWidth / img.width);
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", 0.78));
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function renderHeader() {
+      document.getElementById("storeTitle").textContent = storeData.storeTitle;
+      document.getElementById("storeSubtitle").textContent = storeData.storeSubtitle;
+      document.getElementById("coverImage").src = storeData.coverImg || DEFAULT_COVER;
     }
 
     function renderSections() {
@@ -589,14 +772,27 @@
     }
 
     function renderOwnerDashboard() {
+      document.getElementById("editStoreTitle").value = storeData.storeTitle;
+      document.getElementById("editStoreSubtitle").value = storeData.storeSubtitle;
+
       const select = document.getElementById("newSectionIndex");
+      const filter = document.getElementById("manageSectionFilter");
+      const prevFilter = filter.value || "0";
+
       select.innerHTML = "";
+      filter.innerHTML = "";
       storeData.sections.forEach((sec, idx) => {
-        const opt = document.createElement("option");
-        opt.value = idx;
-        opt.textContent = sec.title;
-        select.appendChild(opt);
+        const opt1 = document.createElement("option");
+        opt1.value = idx;
+        opt1.textContent = sec.title;
+        select.appendChild(opt1);
+
+        const opt2 = document.createElement("option");
+        opt2.value = idx;
+        opt2.textContent = sec.title;
+        filter.appendChild(opt2);
       });
+      filter.value = prevFilter;
 
       const totalSold = storeData.orders.reduce((s, o) => s + o.qty, 0);
       const totalRev = storeData.orders.reduce((s, o) => s + o.amount, 0);
@@ -604,6 +800,8 @@
       document.getElementById("statSold").textContent = totalSold;
       document.getElementById("statRevenue").textContent = `₹${totalRev}`;
       document.getElementById("statOrders").textContent = storeData.orders.length;
+
+      renderOwnerItemsTable();
 
       const tbody = document.getElementById("ordersTableBody");
       tbody.innerHTML = "";
@@ -619,31 +817,98 @@
       });
     }
 
-    function addNewItem() {
+    async function updateStoreHeader() {
+      const title = document.getElementById("editStoreTitle").value.trim();
+      const sub = document.getElementById("editStoreSubtitle").value.trim();
+      const file = document.getElementById("editCoverFile").files[0];
+
+      if (title) storeData.storeTitle = title;
+      if (sub) storeData.storeSubtitle = sub;
+      if (file) {
+        const imgData = await readImageAsDataURL(file, 900);
+        if (imgData) storeData.coverImg = imgData;
+      }
+
+      saveData();
+      renderHeader();
+      document.getElementById("editCoverFile").value = "";
+      alert("Store header updated!");
+    }
+
+    async function addNewItem() {
       const sIdx = parseInt(document.getElementById("newSectionIndex").value, 10);
       const name = document.getElementById("newItemName").value.trim();
       const price = parseInt(document.getElementById("newItemPrice").value, 10);
-      const img = document.getElementById("newItemImg").value.trim() || FALLBACK_IMG;
+      const file = document.getElementById("newItemFile").files[0];
 
       if (!name || !price || price <= 0) {
-        alert("Enter valid item name and price");
+        alert("Please enter valid item name and price.");
         return;
+      }
+
+      let imgUrl = FALLBACK_IMG;
+      if (file) {
+        const uploaded = await readImageAsDataURL(file, 500);
+        if (uploaded) imgUrl = uploaded;
       }
 
       storeData.sections[sIdx].items.unshift({
         id: `${sIdx}-${Date.now()}`,
         name,
         price,
-        img
+        img: imgUrl
       });
+
       saveData();
       renderSections();
+      renderOwnerItemsTable();
 
       document.getElementById("newItemName").value = "";
       document.getElementById("newItemPrice").value = "";
-      document.getElementById("newItemImg").value = "";
+      document.getElementById("newItemFile").value = "";
+      alert("Item added with photo and price!");
     }
 
+    function renderOwnerItemsTable() {
+      const sIdx = parseInt(document.getElementById("manageSectionFilter").value, 10) || 0;
+      const tbody = document.getElementById("ownerItemsTableBody");
+      tbody.innerHTML = "";
+
+      storeData.sections[sIdx].items.forEach((item) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${item.name}</td>
+          <td>₹${item.price}</td>
+          <td style="display:flex; gap:6px;">
+            <button class="btn-small" onclick="editItemPrice(${sIdx}, '${item.id}')">Price</button>
+            <button class="btn-danger" onclick="deleteItem(${sIdx}, '${item.id}')">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function editItemPrice(sIdx, itemId) {
+      const item = storeData.sections[sIdx].items.find((i) => i.id === itemId);
+      if (!item) return;
+      const updated = prompt(`New price for ${item.name} (₹):`, item.price);
+      const num = parseInt(updated, 10);
+      if (num && num > 0) {
+        item.price = num;
+        saveData();
+        renderSections();
+        renderOwnerItemsTable();
+      }
+    }
+
+    function deleteItem(sIdx, itemId) {
+      storeData.sections[sIdx].items = storeData.sections[sIdx].items.filter((i) => i.id !== itemId);
+      saveData();
+      renderSections();
+      renderOwnerItemsTable();
+    }
+
+    renderHeader();
     renderSections();
   </script>
 </body>
