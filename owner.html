@@ -32,108 +32,24 @@
   <!-- Main Owner Page -->
   <main class="owner-panel" id="ownerPanel">
 
-    <!-- Owner Page Name Inside a Clean Box -->
-    <div class="owner-page-name-box">
-      <span id="ownerPageNameText">Owner Page</span>
-      <button type="button" class="icon-mini-btn" title="Rename Owner Page" onclick="renameOwnerPageBox()">✎</button>
-    </div>
-
-    <!-- Top Two Boxes (Users Page Manage + Boxes/Covers Limit) -->
+    <!-- Top Two Boxes with Center '+' Sign Only -->
     <div class="owner-top-two-bars">
       <button type="button" class="owner-bar-btn bar-user" onclick="openOwnerUserView()">
-        <span>Users</span>
+        <span class="bar-plus-center">+</span>
       </button>
       <button type="button" class="owner-bar-btn bar-expand" onclick="openExpandLimitsModal()">
-        <span id="limitsSummaryBadge">50 / 50 / 10</span>
+        <span class="bar-plus-center">+</span>
       </button>
     </div>
 
-    <!-- Owner User View Box (Same Flow + Owner Edit/Photo/Box Controls; Fixed Registration) -->
-    <section class="owner-box" id="ownerUserViewSection" style="display:none; margin-bottom:14px;">
-      <div class="folder-view-header">
-        <span class="sub-block-title" style="margin:0;">Users</span>
-        <div class="row-actions">
-          <button type="button" class="icon-mini-btn plus-tone" title="Add Box (Max 50)" onclick="addOwnerUserBox()">+</button>
-          <button type="button" class="icon-mini-btn danger-tone" title="Close" onclick="closeOwnerUserView()">×</button>
-        </div>
-      </div>
-      <div id="ownerUsersManageGrid" class="owner-user-cards-grid"></div>
-    </section>
-
-    <!-- Clean Boxes Grid (No Photo Name / No Logo) -->
+    <!-- Clean Boxes Grid (Moved Up Directly Below Top Two Boxes) -->
     <div class="clean-boxes-grid" id="ownerFoldersGrid"></div>
 
-    <!-- Folder Content Area (No Top Photo Line -> Two Big Boxes -> Sub Boxes -> Bottom Name Input) -->
+    <!-- Folder Content Area -->
     <section class="owner-box" id="activeFolderView" style="margin-top:14px;">
       <div class="folder-view-header">
         <span id="activeFolderHeading" class="sub-block-title" style="margin:0;">Folder</span>
         <button type="button" class="icon-mini-btn" title="Edit Name" onclick="renameActiveFolder()">✎</button>
-      </div>
-
-      <!-- TAB 0: Store Setup -->
-      <div id="tabStoreSetup" class="folder-tab-pane">
-        <!-- Two Big Boxes Below -->
-        <div class="two-big-boxes">
-          <div class="big-folder-box" onclick="renameBigBox('left')">
-            <div class="big-box-top">
-              <span class="big-box-title" id="bigBoxLeftTitle">Sections</span>
-              <span class="big-box-value" id="bigBoxLeftCountDisplay">15</span>
-            </div>
-          </div>
-
-          <div class="big-folder-box" onclick="addOwnerBoxItem()">
-            <div class="big-box-top">
-              <span class="big-box-title" id="bigBoxRightTitle">Boxes</span>
-              <span class="big-box-value" id="bigBoxRightCount">0</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Cover Box (Starts with 1, Owner can expand up to 10) -->
-        <div class="sub-block">
-          <div class="folder-view-header" style="border:none; padding:0; margin-bottom:8px;">
-            <span class="sub-block-title" style="margin:0;"><span id="coverCountLabel">1</span> / <span id="coverMaxLabel">1</span></span>
-            <button type="button" class="icon-mini-btn plus-tone" title="Add Cover (Max 10)" onclick="addCoverSlot()">+</button>
-          </div>
-          <div id="ownerCoversRow" class="cover-multi-row"></div>
-          <input id="editCoverFile" type="file" accept="image/*" hidden onchange="previewAndSaveCover(event)" />
-
-          <div class="form-grid" style="margin-top:10px;">
-            <input id="editStoreTitle" type="text" placeholder="Name" />
-            <input id="editStoreSubtitle" type="text" placeholder="Details" />
-            <button type="button" class="btn-primary" onclick="updateStoreHeader()">Save</button>
-          </div>
-        </div>
-
-        <!-- Boxes Below -->
-        <div class="sub-block">
-          <div class="folder-view-header" style="border:none; padding:0; margin-bottom:8px;">
-            <span class="sub-block-title" style="margin:0;">Boxes</span>
-            <button type="button" class="icon-mini-btn plus-tone" title="Add Box (Max 50)" onclick="addOwnerBoxItem()">+</button>
-          </div>
-          <div id="sectionNamesEditorList" class="editable-names-list"></div>
-
-          <div class="form-grid" style="margin-top:10px;">
-            <select id="newSectionIndex"></select>
-            <input id="newItemName" type="text" placeholder="Name" />
-            <input id="newItemPrice" type="number" placeholder="Price" min="0" />
-            <input id="newItemFile" type="file" accept="image/*" />
-            <button type="button" class="btn-primary" onclick="addNewItem()">+</button>
-          </div>
-
-          <div class="field" style="margin-top:10px;">
-            <select id="manageSectionFilter" onchange="renderOwnerItemsTable()"></select>
-          </div>
-          <div id="ownerItemsList" class="clean-row-list"></div>
-        </div>
-
-        <!-- Bottom Name Input Box -->
-        <div class="sub-block bottom-name-box" style="margin-bottom:0;">
-          <div class="phone-line-row">
-            <input type="text" id="bottomCustomNameInput" placeholder="Enter name" />
-            <button type="button" class="btn-primary btn-compact" onclick="saveBottomCustomName()">Save</button>
-          </div>
-        </div>
       </div>
 
       <!-- TAB 1: Users -->
@@ -223,7 +139,7 @@
         </div>
       </div>
 
-      <!-- TABS 4..13: Custom Folders (No Top Photo Line -> Two Big Boxes -> Boxes -> Bottom Name Input) -->
+      <!-- Custom Folders (No Top Photo Line -> Two Big Boxes -> Boxes -> Bottom Name Input) -->
       <div id="tabCustomFolder" class="folder-tab-pane" style="display:none;">
         <div class="two-big-boxes">
           <div class="big-folder-box" onclick="renameCustomSubLabel('left')">
