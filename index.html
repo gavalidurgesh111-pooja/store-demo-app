@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#111827" />
+  <title>Apni Dukaan Demo — Store & Owner Panel</title>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #0f766e;
+      --primary-dark: #115e59;
+      --danger: #dc2626;
+      --border: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 40px;
+    }
+    header {
+      background: #111827;
+      color: #fff;
+      padding: 14px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .badge {
+      font-size: 0.75rem;
+      background: #1f2937;
+      color: #d1d5db;
+      padding: 4px 8px;
+      border-radius: 999px;
+      margin-left: 6px;
+    }
+    .nav-btns {
+      display: flex;
+      gap: 8px;
+    }
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-light { background: #e5e7eb; color: #111827; }
+    .btn-danger { background: var(--danger); color: #fff; padding: 6px 10px; font-size: 0.8rem; }
+    .container {
+      max-width: 960px;
+      margin: 16px auto;
+      padding: 0 14px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .card img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      background: #e5e7eb;
+      display: block;
+    }
+    .card-body {
+      padding: 12px;
+    }
+    .price {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 6px 0 10px;
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    input {
+      flex: 1 1 180px;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-box {
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .stat-val {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 9px 6px;
+      text-align: left;
+    }
+    .hidden { display: none; }
+    .note {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <span class="brand" id="storeTitle">Smart Store Demo</span>
+    <span class="badge">Web + Mobile Ready</span>
+  </div>
+  <div class="nav-btns">
+    <button class="btn-light" onclick="showView('customer')">ग्राहक व्यू</button>
+    <button class="btn-primary" onclick="showView('owner')">मालिक पैनल</button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- CUSTOMER VIEW -->
+  <section id="customerView">
+    <h2>उपलब्ध सामान</h2>
+    <div class="grid" id="productGrid"></div>
+
+    <div class="panel">
+      <h3>ग्राहक ऑर्डर / चयन</h3>
+      <div class="row">
+        <input type="text" id="customerName" placeholder="ग्राहक का नाम लिखें" />
+        <input type="number" id="customerQty" placeholder="संख्या (Qty)" value="1" min="1" />
+      </div>
+      <div id="selectedInfo" class="note">कोई आइटम नहीं चुना गया है—ऊपर किसी आइटम पर "चुनें / खरीदें" दबाएँ।</div>
+      <div style="margin-top:10px;">
+        <button class="btn-primary" onclick="placeOrder()">ऑर्डर दर्ज करें</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- OWNER LOGIN -->
+  <section id="ownerLoginView" class="panel hidden">
+    <h2>मालिक लॉगिन</h2>
+    <p class="note">डेमो पिन: <b>1234</b> (बाद में कोड में बदला जा सकता है)</p>
+    <div class="row">
+      <input type="password" id="ownerPin" placeholder="पिन डालें (1234)" />
+      <button class="btn-primary" onclick="loginOwner()">लॉगिन करें</button>
+    </div>
+    <p id="loginMsg" style="color:var(--danger);"></p>
+  </section>
+
+  <!-- OWNER DASHBOARD -->
+  <section id="ownerDashboardView" class="hidden">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <h2>मालिक डैशबोर्ड</h2>
+      <button class="btn-light" onclick="logoutOwner()">लॉगआउट</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat-box">
+        <div class="note">कुल बिके आइटम</div>
+        <div class="stat-val" id="totalItemsSold">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="note">कुल बिक्री राशि</div>
+        <div class="stat-val" id="totalRevenue">₹0</div>
+      </div>
+      <div class="stat-box">
+        <div class="note">कुल ऑर्डर</div>
+        <div class="stat-val" id="totalOrdersCount">0</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>नया आइटम जोड़ें</h3>
+      <div class="row">
+        <input type="text" id="itemName" placeholder="आइटम का नाम" />
+        <input type="number" id="itemPrice" placeholder="कीमत (₹)" min="1" />
+        <input type="text" id="itemImg" placeholder="फ़ोटो लिंक (URL - वैकल्पिक)" />
+        <button class="btn-primary" onclick="addProduct()">आइटम जोड़ें</button>
+      </div>
+
+      <h4>मौजूदा आइटम</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>आइटम</th>
+            <th>कीमत</th>
+            <th>हटाएँ</th>
+          </tr>
+        </thead>
+        <tbody id="ownerProductTable"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h3>ग्राहक खरीद और बिक्री का हिसाब</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>ग्राहक</th>
+            <th>आइटम</th>
+            <th>संख्या</th>
+            <th>कुल राशि</th>
+          </tr>
+        </thead>
+        <tbody id="salesTable"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+  const OWNER_PIN = "1234";
+  const DEFAULT_IMG = "https://via.placeholder.com/400x250?text=Store+Item";
+
+  let state = JSON.parse(localStorage.getItem("storeDemoStateV1")) || {
+    products: [
+      { id: 1, name: "Premium Tea Pack", price: 180, img: DEFAULT_IMG },
+      { id: 2, name: "Organic Honey 500g", price: 320, img: DEFAULT_IMG },
+      { id: 3, name: "Daily Grocery Combo", price: 650, img: DEFAULT_IMG }
+    ],
+    orders: []
+  };
+
+  let selectedProductId = state.products[0]?.id || null;
+  let isOwnerLoggedIn = false;
+
+  function saveState() {
+    localStorage.setItem("storeDemoStateV1", JSON.stringify(state));
+  }
+
+  function showView(view) {
+    document.getElementById("customerView").classList.add("hidden");
+    document.getElementById("ownerLoginView").classList.add("hidden");
+    document.getElementById("ownerDashboardView").classList.add("hidden");
+
+    if (view === "customer") {
+      document.getElementById("customerView").classList.remove("hidden");
+      renderCustomer();
+    } else if (view === "owner") {
+      if (isOwnerLoggedIn) {
+        document.getElementById("ownerDashboardView").classList.remove("hidden");
+        renderOwner();
+      } else {
+        document.getElementById("ownerLoginView").classList.remove("hidden");
+      }
+    }
+  }
+
+  function selectProduct(id) {
+    selectedProductId = id;
+    updateSelectedInfo();
+  }
+
+  function updateSelectedInfo() {
+    const prod = state.products.find(p => p.id === selectedProductId);
+    const el = document.getElementById("selectedInfo");
+    if (!prod) {
+      el.textContent = "कोई आइटम नहीं चुना गया है।";
+      return;
+    }
+    el.textContent = `चुना गया आइटम: ${prod.name} — ₹${prod.price} प्रति नग`;
+  }
+
+  function renderCustomer() {
+    const grid = document.getElementById("productGrid");
+    grid.innerHTML = "";
+    state.products.forEach(p => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <img src="${p.img || DEFAULT_IMG}" alt="${p.name}" onerror="this.src='${DEFAULT_IMG}'" />
+        <div class="card-body">
+          <div><strong>${p.name}</strong></div>
+          <div class="price">₹${p.price}</div>
+          <button class="btn-primary" onclick="selectProduct(${p.id})">चुनें / खरीदें</button>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+    updateSelectedInfo();
+  }
+
+  function placeOrder() {
+    const nameInput = document.getElementById("customerName");
+    const qtyInput = document.getElementById("customerQty");
+    const customer = nameInput.value.trim() || "Walk-in Customer";
+    const qty = Math.max(1, parseInt(qtyInput.value, 10) || 1);
+    const prod = state.products.find(p => p.id === selectedProductId);
+
+    if (!prod) {
+      alert("कृपया पहले कोई आइटम चुनें।");
+      return;
+    }
+
+    const total = prod.price * qty;
+    state.orders.push({
+      id: Date.now(),
+      customer,
+      itemName: prod.name,
+      qty,
+      total
+    });
+    saveState();
+    nameInput.value = "";
+    qtyInput.value = "1";
+    alert(`ऑर्डर दर्ज हो गया: ${customer} — ${prod.name} (${qty}) = ₹${total}`);
+  }
+
+  function loginOwner() {
+    const pin = document.getElementById("ownerPin").value.trim();
+    const msg = document.getElementById("loginMsg");
+    if (pin === OWNER_PIN) {
+      isOwnerLoggedIn = true;
+      msg.textContent = "";
+      document.getElementById("ownerPin").value = "";
+      showView("owner");
+    } else {
+      msg.textContent = "गलत पिन! डेमो पिन 1234 डालें।";
+    }
+  }
+
+  function logoutOwner() {
+    isOwnerLoggedIn = false;
+    showView("customer");
+  }
+
+  function addProduct() {
+    const name = document.getElementById("itemName").value.trim();
+    const price = parseInt(document.getElementById("itemPrice").value, 10);
+    const img = document.getElementById("itemImg").value.trim() || DEFAULT_IMG;
+
+    if (!name || !price || price <= 0) {
+      alert("कृपया सही आइटम नाम और कीमत डालें।");
+      return;
+    }
+
+    const newItem = {
+      id: Date.now(),
+      name,
+      price,
+      img
+    };
+    state.products.push(newItem);
+    if (!selectedProductId) selectedProductId = newItem.id;
+    saveState();
+
+    document.getElementById("itemName").value = "";
+    document.getElementById("itemPrice").value = "";
+    document.getElementById("itemImg").value = "";
+    renderOwner();
+  }
+
+  function deleteProduct(id) {
+    state.products = state.products.filter(p => p.id !== id);
+    if (selectedProductId === id) {
+      selectedProductId = state.products[0]?.id || null;
+    }
+    saveState();
+    renderOwner();
+  }
+
+  function renderOwner() {
+    const totalSold = state.orders.reduce((sum, o) => sum + o.qty, 0);
+    const totalRev = state.orders.reduce((sum, o) => sum + o.total, 0);
+
+    document.getElementById("totalItemsSold").textContent = totalSold;
+    document.getElementById("totalRevenue").textContent = `₹${totalRev}`;
+    document.getElementById("totalOrdersCount").textContent = state.orders.length;
+
+    const prodTbody = document.getElementById("ownerProductTable");
+    prodTbody.innerHTML = "";
+    state.products.forEach(p => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${p.name}</td>
+        <td>₹${p.price}</td>
+        <td><button class="btn-danger" onclick="deleteProduct(${p.id})">हटाएँ</button></td>
+      `;
+      prodTbody.appendChild(tr);
+    });
+
+    const salesTbody = document.getElementById("salesTable");
+    salesTbody.innerHTML = "";
+    state.orders.slice().reverse().forEach(o => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${o.customer}</td>
+        <td>${o.itemName}</td>
+        <td>${o.qty}</td>
+        <td>₹${o.total}</td>
+      `;
+      salesTbody.appendChild(tr);
+    });
+  }
+
+  renderCustomer();
+</script>
+</body>
+</html>
