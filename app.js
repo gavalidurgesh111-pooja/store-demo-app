@@ -1,5 +1,9 @@
-const STORAGE_KEY = "storeOwnerModularV2";
+const STORAGE_KEY = "storeOwnerModularV3";
 const OWNER_PIN = "1234";
+
+const MAX_OWNER_BOXES = 50;
+const MAX_INDEX_BOXES = 50;
+const MAX_COVER_SLOTS = 10;
 
 const CARTOON_AVATARS = [
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='60' fill='%23dbeafe'/><circle cx='60' cy='46' r='22' fill='%23f59e0b'/><path d='M36 44c0-15 11-26 24-26s24 11 24 26c-6-6-14-9-24-9s-18 3-24 9z' fill='%231e293b'/><circle cx='52' cy='46' r='3' fill='%23111827'/><circle cx='68' cy='46' r='3' fill='%23111827'/><path d='M52 56q8 7 16 0' stroke='%23111827' stroke-width='3' fill='none' stroke-linecap='round'/><path d='M26 110c4-22 18-32 34-32s30 10 34 32' fill='%230f766e'/></svg>",
@@ -44,25 +48,41 @@ function buildInitialData() {
 
   // 4 Core Owner Folders + 10 Empty Editable Folders
   const ownerFolders = [
-    { id: "store", name: "Store Setup", isCustom: false, entries: [] },
-    { id: "users", name: "Active Users", isCustom: false, entries: [] },
-    { id: "sales", name: "Sold Items", isCustom: false, entries: [] },
-    { id: "buyers", name: "Customer Orders", isCustom: false, entries: [] }
+    { id: "store", name: "Store Setup", isCustom: false, entries: [], bigLeftLabel: "Sections", bigRightLabel: "Store Boxes", customName: "" },
+    { id: "users", name: "Active Users", isCustom: false, entries: [], bigLeftLabel: "Active Users", bigRightLabel: "Box Limit", customName: "" },
+    { id: "sales", name: "Sold Items", isCustom: false, entries: [], bigLeftLabel: "Total Units Sold", bigRightLabel: "Total Sales", customName: "" },
+    { id: "buyers", name: "Customer Orders", isCustom: false, entries: [], bigLeftLabel: "Total Orders", bigRightLabel: "Buyers", customName: "" }
   ];
   for (let i = 1; i <= 10; i++) {
-    ownerFolders.push({ id: `custom-${i}`, name: "", isCustom: true, entries: [] });
+    ownerFolders.push({
+      id: `custom-${i}`,
+      name: "",
+      isCustom: true,
+      entries: [],
+      bigLeftLabel: "Box 1",
+      bigRightLabel: "Box 2",
+      customName: ""
+    });
   }
 
   return {
     storeTitle: "Store Name",
     storeSubtitle: "",
     coverImg: "",
+    coverSlots: [""], // Starts with 1 cover photo slot; Owner can expand up to 10
+    coverSlotsLimit: 1,
+    ownerBoxLimit: MAX_OWNER_BOXES,
+    indexBoxLimit: MAX_INDEX_BOXES,
+    ownerExtraBoxes: [],
+    ownerUserBoxes: [],
+    ownerBuyerBoxes: [],
     sections,
     orders: [],
     activeUsers: [],
     ownerFolders,
     mediaPermissionGranted: false,
     userProfile: {
+      fixedRegistration: true, // Fixed per user identity
       photo: "",
       firstName: "",
       surname: "",
@@ -80,6 +100,15 @@ if (!storeData.ownerFolders || storeData.ownerFolders.length < 14) {
   storeData.ownerFolders = buildInitialData().ownerFolders;
 }
 if (!storeData.activeUsers) storeData.activeUsers = [];
+if (!Array.isArray(storeData.coverSlots) || storeData.coverSlots.length === 0) {
+  storeData.coverSlots = [storeData.coverImg || ""];
+}
+if (!storeData.coverSlotsLimit) storeData.coverSlotsLimit = storeData.coverSlots.length || 1;
+if (!storeData.ownerBoxLimit) storeData.ownerBoxLimit = MAX_OWNER_BOXES;
+if (!storeData.indexBoxLimit) storeData.indexBoxLimit = MAX_INDEX_BOXES;
+if (!storeData.ownerExtraBoxes) storeData.ownerExtraBoxes = [];
+if (!storeData.ownerUserBoxes) storeData.ownerUserBoxes = [];
+if (!storeData.ownerBuyerBoxes) storeData.ownerBuyerBoxes = [];
 
 let activeOrderItem = null;
 let draftPhoto = storeData.userProfile?.photo || "";
@@ -88,6 +117,7 @@ let otpCountdownInterval = null;
 
 let activeFolderIdx = 0;
 let usersVisibleLimit = 10;
+let activeCoverTargetIdx = 0;
 
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(storeData));
@@ -129,9 +159,10 @@ function renderHeader() {
   titleEl.textContent = storeData.storeTitle || "Store";
   document.getElementById("storeSubtitle").textContent = storeData.storeSubtitle || "";
 
+  const firstCover = storeData.coverSlots.find(Boolean) || storeData.coverImg || "";
   const coverImgEl = document.getElementById("coverImage");
-  if (storeData.coverImg) {
-    coverImgEl.src = storeData.coverImg;
+  if (firstCover) {
+    coverImgEl.src = firstCover;
     coverImgEl.style.display = "block";
   } else {
     coverImgEl.removeAttribute("src");
@@ -282,10 +313,188 @@ function lockOwnerPage() {
 }
 
 function renderOwnerWorkspace() {
+  updateLimitsBadge();
   renderFolderGrid();
   selectOwnerFolder(activeFolderIdx);
 }
 
+function updateLimitsBadge() {
+  const badge = document.getElementById("limitsSummaryBadge");
+  if (badge) {
+    badge.textContent = `${storeData.ownerBoxLimit} / ${storeData.coverSlotsLimit}`;
+  }
+}
+
+/* Top Two Bars: Users Page & Boxes/Covers Limits */
+function openOwnerUserView() {
+  const sec = document.getElementById("ownerUserViewSection");
+  if (!sec) return;
+  sec.style.display = "block";
+  renderOwnerUserViewCards();
+  sec.scrollIntoView({ behavior: "smooth" });
+}
+
+function closeOwnerUserView() {
+  const sec = document.getElementById("ownerUserViewSection");
+  if (sec) sec.style.display = "none";
+}
+
+function renderOwnerUserViewCards() {
+  const grid = document.getElementById("ownerUsersManageGrid");
+  if (!grid) return;
+  grid.innerHTML = "";
+
+  // Fixed user registration identity card
+  const up = storeData.userProfile || {};
+  const regName = [up.firstName, up.surname].filter(Boolean).join(" ") || "Registered User";
+  const regCard = document.createElement("div");
+  regCard.className = "list-row-card";
+  regCard.innerHTML = `
+    <div class="list-row-left">
+      ${up.photo ? `<img class="row-thumb round" src="${up.photo}" alt="${regName}" />` : `<div class="row-thumb round">U</div>`}
+      <div>
+        <div class="row-main-text">${regName}</div>
+        <div class="row-sub-text">Fixed Registration Card</div>
+      </div>
+    </div>
+    <div class="row-actions">
+      <button type="button" class="icon-mini-btn" title="Edit Name" onclick="editFixedUserName()">✎</button>
+      <button type="button" class="icon-mini-btn plus-tone" title="Set Photo" onclick="setFixedUserPhoto()">+</button>
+    </div>
+  `;
+  grid.appendChild(regCard);
+
+  // Owner expandable user boxes (Max 50)
+  storeData.ownerUserBoxes.forEach((box, bIdx) => {
+    const card = document.createElement("div");
+    card.className = "list-row-card";
+    card.innerHTML = `
+      <div class="list-row-left">
+        ${box.photo ? `<img class="row-thumb round" src="${box.photo}" alt="${box.name}" />` : `<div class="row-thumb round">+</div>`}
+        <div>
+          <div class="row-main-text">${box.name || `User Box ${bIdx + 1}`}</div>
+          <div class="row-sub-text">Box ${bIdx + 1} / ${storeData.ownerBoxLimit}</div>
+        </div>
+      </div>
+      <div class="row-actions">
+        <button type="button" class="icon-mini-btn" title="Edit Name" onclick="editOwnerUserBoxName(${bIdx})">✎</button>
+        <button type="button" class="icon-mini-btn plus-tone" title="Set Photo" onclick="setOwnerUserBoxPhoto(${bIdx})">+</button>
+        <button type="button" class="icon-mini-btn danger-tone" title="Remove" onclick="removeOwnerUserBox(${bIdx})">×</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function editFixedUserName() {
+  const up = storeData.userProfile || {};
+  const current = [up.firstName, up.surname].filter(Boolean).join(" ");
+  const next = prompt("Edit User Name:", current);
+  if (next && next.trim()) {
+    const parts = next.trim().split(/\s+/);
+    up.firstName = parts[0] || "";
+    up.surname = parts.slice(1).join(" ") || "";
+    storeData.userProfile = up;
+    saveData();
+    renderOwnerUserViewCards();
+  }
+}
+
+function setFixedUserPhoto() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const dataUrl = await readImageAsDataURL(file, 400);
+    if (dataUrl) {
+      storeData.userProfile.photo = dataUrl;
+      draftPhoto = dataUrl;
+      saveData();
+      renderOwnerUserViewCards();
+    }
+  };
+  input.click();
+}
+
+function addOwnerUserBox() {
+  if (storeData.ownerUserBoxes.length >= storeData.ownerBoxLimit) {
+    alert(`Limit reached (${storeData.ownerBoxLimit} boxes max).`);
+    return;
+  }
+  storeData.ownerUserBoxes.push({ name: `User Box ${storeData.ownerUserBoxes.length + 1}`, photo: "" });
+  saveData();
+  renderOwnerUserViewCards();
+  if (activeFolderIdx === 1) renderActiveUsersTab();
+}
+
+function editOwnerUserBoxName(bIdx) {
+  const box = storeData.ownerUserBoxes[bIdx];
+  const next = prompt("Edit Name:", box.name);
+  if (next && next.trim()) {
+    box.name = next.trim();
+    saveData();
+    renderOwnerUserViewCards();
+  }
+}
+
+function setOwnerUserBoxPhoto(bIdx) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const dataUrl = await readImageAsDataURL(file, 400);
+    if (dataUrl) {
+      storeData.ownerUserBoxes[bIdx].photo = dataUrl;
+      saveData();
+      renderOwnerUserViewCards();
+    }
+  };
+  input.click();
+}
+
+function removeOwnerUserBox(bIdx) {
+  storeData.ownerUserBoxes.splice(bIdx, 1);
+  saveData();
+  renderOwnerUserViewCards();
+  if (activeFolderIdx === 1) renderActiveUsersTab();
+}
+
+/* Expand Limits Modal (Owner Boxes Max 50, Index Boxes Max 50, Cover Slots Max 10) */
+function openExpandLimitsModal() {
+  document.getElementById("ownerBoxLimitInput").value = storeData.ownerBoxLimit;
+  document.getElementById("indexBoxLimitInput").value = storeData.indexBoxLimit;
+  document.getElementById("coverSlotsLimitInput").value = storeData.coverSlotsLimit;
+  document.getElementById("expandLimitsModal").classList.add("active");
+}
+
+function closeExpandLimitsModal() {
+  document.getElementById("expandLimitsModal").classList.remove("active");
+}
+
+function saveExpandLimits() {
+  const ownerLim = Math.min(MAX_OWNER_BOXES, Math.max(1, parseInt(document.getElementById("ownerBoxLimitInput").value, 10) || MAX_OWNER_BOXES));
+  const indexLim = Math.min(MAX_INDEX_BOXES, Math.max(0, parseInt(document.getElementById("indexBoxLimitInput").value, 10) || MAX_INDEX_BOXES));
+  const coverLim = Math.min(MAX_COVER_SLOTS, Math.max(1, parseInt(document.getElementById("coverSlotsLimitInput").value, 10) || 1));
+
+  storeData.ownerBoxLimit = ownerLim;
+  storeData.indexBoxLimit = indexLim;
+  storeData.coverSlotsLimit = coverLim;
+
+  while (storeData.coverSlots.length > coverLim) {
+    storeData.coverSlots.pop();
+  }
+
+  saveData();
+  closeExpandLimitsModal();
+  updateLimitsBadge();
+  if (activeFolderIdx === 0) renderStoreSetupTab();
+}
+
+/* Folders Grid & Navigation */
 function renderFolderGrid() {
   const grid = document.getElementById("ownerFoldersGrid");
   if (!grid) return;
@@ -326,7 +535,7 @@ function renderFolderGrid() {
 
 function renameFolderAt(idx) {
   const folder = storeData.ownerFolders[idx];
-  const current = folder.name || (folder.isCustom ? "" : folder.name);
+  const current = folder.name || "";
   const next = prompt("Enter Folder Name:", current);
   if (next !== null) {
     folder.name = next.trim();
@@ -375,15 +584,39 @@ function selectOwnerFolder(idx) {
 
 /* Tab 0: Store Setup */
 function renderStoreSetupTab() {
+  const folder = storeData.ownerFolders[0];
   document.getElementById("editStoreTitle").value = storeData.storeTitle || "";
   document.getElementById("editStoreSubtitle").value = storeData.storeSubtitle || "";
+  document.getElementById("bottomCustomNameInput").value = folder.customName || "";
 
-  const thumb = document.getElementById("ownerCoverThumb");
-  if (storeData.coverImg) {
-    thumb.innerHTML = `<img src="${storeData.coverImg}" alt="Cover" />`;
-  } else {
-    thumb.innerHTML = `<span class="plus-sign-icon">+</span>`;
+  document.getElementById("coverCountLabel").textContent = storeData.coverSlots.length;
+  document.getElementById("coverMaxLabel").textContent = storeData.coverSlotsLimit;
+
+  // Render Cover Slots (Default 1, Max 10)
+  const coversRow = document.getElementById("ownerCoversRow");
+  if (coversRow) {
+    coversRow.innerHTML = "";
+    storeData.coverSlots.forEach((src, cIdx) => {
+      const slot = document.createElement("div");
+      slot.className = "cover-manage-row";
+      slot.innerHTML = `
+        <div class="cover-thumb-box" onclick="triggerCoverSlotUpload(${cIdx})">
+          ${src ? `<img src="${src}" alt="Cover ${cIdx + 1}" />` : `<span class="plus-sign-icon">+</span>`}
+        </div>
+        <div class="cover-thumb-actions">
+          <button type="button" class="icon-mini-btn plus-tone" title="Set Cover" onclick="triggerCoverSlotUpload(${cIdx})">+</button>
+          <button type="button" class="icon-mini-btn danger-tone" title="Remove Cover" onclick="clearCoverSlot(${cIdx})">×</button>
+        </div>
+      `;
+      coversRow.appendChild(slot);
+    });
   }
+
+  // Two Big Boxes Counts & Labels
+  document.getElementById("bigBoxLeftTitle").textContent = folder.bigLeftLabel || "Sections";
+  document.getElementById("bigBoxRightTitle").textContent = folder.bigRightLabel || "Store Boxes";
+  document.getElementById("bigBoxLeftCount").textContent = storeData.sections.length;
+  document.getElementById("bigBoxRightCount").textContent = storeData.ownerExtraBoxes.length;
 
   // 15 Section Names Editor
   const namesList = document.getElementById("sectionNamesEditorList");
@@ -420,22 +653,81 @@ function renderStoreSetupTab() {
   renderOwnerItemsTable();
 }
 
+function addCoverSlot() {
+  if (storeData.coverSlots.length >= MAX_COVER_SLOTS || storeData.coverSlots.length >= storeData.coverSlotsLimit) {
+    if (storeData.coverSlotsLimit < MAX_COVER_SLOTS) {
+      storeData.coverSlotsLimit += 1;
+    } else {
+      alert(`Cover limit reached (Max ${MAX_COVER_SLOTS}).`);
+      return;
+    }
+  }
+  storeData.coverSlots.push("");
+  saveData();
+  updateLimitsBadge();
+  renderStoreSetupTab();
+}
+
+function triggerCoverSlotUpload(cIdx) {
+  activeCoverTargetIdx = cIdx;
+  document.getElementById("editCoverFile").click();
+}
+
 async function previewAndSaveCover(event) {
   const file = event.target.files[0];
   if (!file) return;
   const imgData = await readImageAsDataURL(file, 900);
   if (imgData) {
-    storeData.coverImg = imgData;
+    storeData.coverSlots[activeCoverTargetIdx] = imgData;
+    storeData.coverImg = storeData.coverSlots[0] || imgData;
     saveData();
     renderStoreSetupTab();
   }
   event.target.value = "";
 }
 
-function removeStoreCover() {
-  storeData.coverImg = "";
+function clearCoverSlot(cIdx) {
+  storeData.coverSlots[cIdx] = "";
+  if (cIdx === 0) storeData.coverImg = "";
   saveData();
   renderStoreSetupTab();
+}
+
+function removeStoreCover() {
+  clearCoverSlot(0);
+}
+
+function renameBigBox(side) {
+  const folder = storeData.ownerFolders[0];
+  if (side === "left") {
+    const next = prompt("Edit Name:", folder.bigLeftLabel || "Sections");
+    if (next && next.trim()) folder.bigLeftLabel = next.trim();
+  } else {
+    const next = prompt("Edit Name:", folder.bigRightLabel || "Store Boxes");
+    if (next && next.trim()) folder.bigRightLabel = next.trim();
+  }
+  saveData();
+  renderStoreSetupTab();
+}
+
+function addOwnerBoxItem() {
+  if (storeData.ownerExtraBoxes.length >= storeData.ownerBoxLimit) {
+    alert(`Owner box limit reached (Max ${storeData.ownerBoxLimit}).`);
+    return;
+  }
+  const name = prompt("Enter Box Name:", `Box ${storeData.ownerExtraBoxes.length + 1}`);
+  if (name === null) return;
+  storeData.ownerExtraBoxes.push({ name: name.trim() || `Box ${storeData.ownerExtraBoxes.length + 1}` });
+  saveData();
+  renderStoreSetupTab();
+}
+
+function saveBottomCustomName() {
+  const val = document.getElementById("bottomCustomNameInput").value.trim();
+  storeData.ownerFolders[0].customName = val;
+  if (val) storeData.storeTitle = val;
+  saveData();
+  alert("Saved!");
 }
 
 function updateStoreHeader() {
@@ -540,10 +832,13 @@ function deleteItem(sIdx, itemId) {
   renderOwnerItemsTable();
 }
 
-/* Tab 1: Active Users (Counter First, List on Tap) */
+/* Tab 1: Active Users */
 function renderActiveUsersTab() {
   const users = storeData.activeUsers || [];
   document.getElementById("activeUsersCount").textContent = users.length;
+  document.getElementById("ownerUserBoxesCount").textContent = `${storeData.ownerUserBoxes.length} / ${storeData.ownerBoxLimit}`;
+  const input = document.getElementById("usersTabNameInput");
+  if (input) input.value = storeData.ownerFolders[1]?.customName || "";
   renderPaginatedUsers();
 }
 
@@ -591,13 +886,15 @@ function loadMoreUsers() {
   renderPaginatedUsers();
 }
 
-/* Tab 2: Sold Items (Photo + Name + Price + Total Qty Sold) */
+/* Tab 2: Sold Items */
 function renderSoldItemsTab() {
   const totalSold = storeData.orders.reduce((s, o) => s + o.qty, 0);
   const totalRev = storeData.orders.reduce((s, o) => s + o.amount, 0);
 
   document.getElementById("statSold").textContent = totalSold;
   document.getElementById("statRevenue").textContent = `₹${totalRev}`;
+  const input = document.getElementById("salesTabNameInput");
+  if (input) input.value = storeData.ownerFolders[2]?.customName || "";
 
   const grouped = {};
   storeData.orders.forEach((o) => {
@@ -638,9 +935,23 @@ function renderSoldItemsTab() {
   });
 }
 
-/* Tab 3: Buyers / Customer Orders (Photo + Name + Purchased Item) */
+/* Tab 3: Buyers */
+function addOwnerBuyerBox() {
+  if (storeData.ownerBuyerBoxes.length >= storeData.ownerBoxLimit) {
+    alert(`Box limit reached (Max ${storeData.ownerBoxLimit}).`);
+    return;
+  }
+  storeData.ownerBuyerBoxes.push({ name: `Buyer Box ${storeData.ownerBuyerBoxes.length + 1}` });
+  saveData();
+  renderBuyersTab();
+}
+
 function renderBuyersTab() {
   document.getElementById("statOrders").textContent = storeData.orders.length;
+  document.getElementById("ownerBuyerBoxesCount").textContent = `${storeData.ownerBuyerBoxes.length} / ${storeData.ownerBoxLimit}`;
+  const input = document.getElementById("buyersTabNameInput");
+  if (input) input.value = storeData.ownerFolders[3]?.customName || "";
+
   const list = document.getElementById("buyersList");
   list.innerHTML = "";
 
@@ -667,9 +978,28 @@ function renderBuyersTab() {
   });
 }
 
+function saveTabName(inputId) {
+  const el = document.getElementById(inputId);
+  if (!el) return;
+  const val = el.value.trim();
+  storeData.ownerFolders[activeFolderIdx].customName = val;
+  if (val) {
+    storeData.ownerFolders[activeFolderIdx].name = val;
+    renderFolderGrid();
+    document.getElementById("activeFolderHeading").textContent = val;
+  }
+  saveData();
+  alert("Saved!");
+}
+
 /* Tabs 4..13: 10 Custom Empty Editable Folders */
 function renderCustomFolderTab() {
   const folder = storeData.ownerFolders[activeFolderIdx];
+  document.getElementById("customBigLeftLabel").textContent = folder.bigLeftLabel || "Box 1";
+  document.getElementById("customBigRightLabel").textContent = folder.bigRightLabel || "Box 2";
+  document.getElementById("customBigLeftCount").textContent = (folder.entries || []).length;
+  document.getElementById("customBigRightCount").textContent = `${(folder.entries || []).length} / ${storeData.ownerBoxLimit}`;
+
   const list = document.getElementById("customFolderEntriesList");
   list.innerHTML = "";
 
@@ -686,11 +1016,27 @@ function renderCustomFolderTab() {
   });
 }
 
-function addCustomFolderEntry() {
-  const input = document.getElementById("customEntryInput");
-  const val = input.value.trim();
-  if (!val) return;
+function renameCustomSubLabel(side) {
   const folder = storeData.ownerFolders[activeFolderIdx];
+  if (side === "left") {
+    const next = prompt("Edit Name:", folder.bigLeftLabel || "Box 1");
+    if (next && next.trim()) folder.bigLeftLabel = next.trim();
+  } else {
+    const next = prompt("Edit Name:", folder.bigRightLabel || "Box 2");
+    if (next && next.trim()) folder.bigRightLabel = next.trim();
+  }
+  saveData();
+  renderCustomFolderTab();
+}
+
+function addCustomFolderEntry() {
+  const folder = storeData.ownerFolders[activeFolderIdx];
+  if ((folder.entries || []).length >= storeData.ownerBoxLimit) {
+    alert(`Box limit reached (Max ${storeData.ownerBoxLimit}).`);
+    return;
+  }
+  const input = document.getElementById("customEntryInput");
+  const val = input.value.trim() || `Item ${(folder.entries || []).length + 1}`;
   folder.entries.unshift(val);
   saveData();
   input.value = "";
@@ -898,6 +1244,7 @@ function socialRegister(provider) {
 function saveUserProfile() {
   const updatedProfile = {
     ...storeData.userProfile,
+    fixedRegistration: true,
     photo: draftPhoto,
     firstName: document.getElementById("userFirstName").value.trim(),
     surname: document.getElementById("userSurname").value.trim(),
@@ -908,16 +1255,9 @@ function saveUserProfile() {
 
   storeData.userProfile = updatedProfile;
 
-  // Register/Update in Active Users list for Owner Dashboard
-  const userKey = updatedProfile.phone || `${updatedProfile.firstName}-${updatedProfile.surname}` || "user-1";
-  const existingIdx = storeData.activeUsers.findIndex((u) => u.key === userKey);
-  const userRecord = { key: userKey, ...updatedProfile };
-
-  if (existingIdx >= 0) {
-    storeData.activeUsers[existingIdx] = userRecord;
-  } else {
-    storeData.activeUsers.unshift(userRecord);
-  }
+  // Fixed single registration identity record
+  const userRecord = { key: "fixed-user-registration", ...updatedProfile };
+  storeData.activeUsers = [userRecord];
 
   saveData();
   window.location.href = "index.html";
