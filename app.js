@@ -159,6 +159,12 @@ function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
 }
 
+function removeOwnerStoreEditUI() {
+  const bar = document.getElementById("ownerLiveSaveBar");
+  if (bar) bar.remove();
+  document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
+}
+
 function ensureOwnerInlineFileInput() {
   let input = document.getElementById("ownerLivePhotoInput");
   if (!input) {
@@ -200,61 +206,94 @@ function attachOwnerStoreEditHandlers() {
   if (!OWNER_EDIT_MODE || document.body.getAttribute("data-page") === "owner") return;
 
   const fileInput = ensureOwnerInlineFileInput();
+  removeOwnerStoreEditUI();
 
-  if (!document.getElementById("ownerLiveSaveBar")) {
-    const bar = document.createElement("div");
-    bar.id = "ownerLiveSaveBar";
-    bar.style.cssText =
-      "position:sticky;top:0;z-index:80;background:#0f766e;color:#ffffff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;";
+  // Top bar with Save & Store buttons
+  const bar = document.createElement("div");
+  bar.id = "ownerLiveSaveBar";
+  bar.style.cssText =
+    "position:sticky;top:0;z-index:80;background:#0f766e;color:#ffffff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;";
 
-    const saveBtn = document.createElement("button");
-    saveBtn.type = "button";
-    saveBtn.textContent = "Save";
-    saveBtn.style.cssText =
-      "padding:7px 16px;border:none;border-radius:8px;background:#ffffff;color:#0f766e;font-weight:700;cursor:pointer;";
-    saveBtn.onclick = () => {
-      saveData();
-      window.location.href = "index.html";
-    };
+  const info = document.createElement("span");
+  info.textContent = "Edit photo or name buttons, then Save";
+  info.style.cssText = "font-size:0.82rem;font-weight:600;";
 
-    const backBtn = document.createElement("button");
-    backBtn.type = "button";
-    backBtn.textContent = "Store";
-    backBtn.style.cssText =
-      "padding:7px 12px;border:1px solid rgba(255,255,255,0.55);border-radius:8px;background:transparent;color:#ffffff;font-weight:600;cursor:pointer;";
-    backBtn.onclick = () => {
-      window.location.href = "index.html";
-    };
+  const actions = document.createElement("div");
+  actions.style.cssText = "display:flex;gap:8px;";
 
-    bar.appendChild(saveBtn);
-    bar.appendChild(backBtn);
-    document.body.prepend(bar);
-  }
+  const saveBtn = document.createElement("button");
+  saveBtn.type = "button";
+  saveBtn.textContent = "Save";
+  saveBtn.style.cssText =
+    "padding:7px 14px;border:none;border-radius:8px;background:#ffffff;color:#0f766e;font-weight:700;cursor:pointer;";
+  saveBtn.onclick = () => {
+    saveData();
+    removeOwnerStoreEditUI();
+    window.location.href = "index.html";
+  };
 
+  const backBtn = document.createElement("button");
+  backBtn.type = "button";
+  backBtn.textContent = "Store";
+  backBtn.style.cssText =
+    "padding:7px 10px;border:1px solid rgba(255,255,255,0.55);border-radius:8px;background:transparent;color:#ffffff;font-weight:600;cursor:pointer;";
+  backBtn.onclick = () => {
+    removeOwnerStoreEditUI();
+    window.location.href = "index.html";
+  };
+
+  actions.appendChild(saveBtn);
+  actions.appendChild(backBtn);
+  bar.appendChild(info);
+  bar.appendChild(actions);
+  document.body.prepend(bar);
+
+  // Cover Photo Edit Button
   const coverWrap = document.querySelector(".cover-wrapper");
-  if (coverWrap && !coverWrap.dataset.ownerCoverBound) {
-    coverWrap.dataset.ownerCoverBound = "1";
-    coverWrap.style.cursor = "pointer";
-    coverWrap.addEventListener("click", () => {
+  if (coverWrap) {
+    coverWrap.style.position = "relative";
+    const coverBtn = document.createElement("button");
+    coverBtn.type = "button";
+    coverBtn.className = "owner-inline-edit-btn";
+    coverBtn.textContent = "✎ Photo";
+    coverBtn.style.cssText =
+      "position:absolute;top:10px;right:10px;z-index:5;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:#0f766e;font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);";
+    coverBtn.onclick = (e) => {
+      e.stopPropagation();
       pendingOwnerEditSlot = { type: "cover" };
       fileInput.value = "";
       fileInput.click();
-    });
+    };
+    coverWrap.appendChild(coverBtn);
   }
 
+  // Section Name & Item Photo/Name Edit Buttons
   const sectionEls = document.querySelectorAll("#sectionsContainer .row-section");
   sectionEls.forEach((secEl, sIdx) => {
     const sec = storeData.sections[sIdx];
     if (!sec) return;
 
+    const stripEl = secEl.querySelector(".strip-bar");
     const stripTitle = secEl.querySelector(".strip-title");
-    if (stripTitle && !stripTitle.dataset.ownerTitleBound) {
-      stripTitle.dataset.ownerTitleBound = "1";
-      stripTitle.contentEditable = "true";
-      stripTitle.addEventListener("input", () => {
-        sec.title = stripTitle.textContent.trim();
-        saveData();
-      });
+    if (stripEl && stripTitle) {
+      const secEditBtn = document.createElement("button");
+      secEditBtn.type = "button";
+      secEditBtn.className = "owner-inline-edit-btn";
+      secEditBtn.textContent = "✎";
+      secEditBtn.title = "Edit Name";
+      secEditBtn.style.cssText =
+        "margin-left:8px;padding:3px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
+      secEditBtn.onclick = (e) => {
+        e.stopPropagation();
+        const next = prompt("Edit Name:", sec.title || "");
+        if (next !== null) {
+          sec.title = next.trim();
+          saveData();
+          renderSections();
+          attachOwnerStoreEditHandlers();
+        }
+      };
+      stripTitle.insertAdjacentElement("afterend", secEditBtn);
     }
 
     const cards = secEl.querySelectorAll(".mini-box:not(.user-photo-only-box), .item-box");
@@ -262,28 +301,45 @@ function attachOwnerStoreEditHandlers() {
       const item = sIdx === 0 ? sec.items.slice(0, 4)[idx] : sec.items[idx];
       if (!item) return;
 
-      const mediaTarget = card.querySelector("img") || card.firstElementChild;
-      if (mediaTarget && !mediaTarget.dataset.ownerPhotoBound) {
-        mediaTarget.dataset.ownerPhotoBound = "1";
-        mediaTarget.style.cursor = "pointer";
-        mediaTarget.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          pendingOwnerEditSlot = { type: "item", sIdx, itemId: item.id };
-          fileInput.value = "";
-          fileInput.click();
-        });
-      }
+      card.style.position = "relative";
+
+      const photoBtn = document.createElement("button");
+      photoBtn.type = "button";
+      photoBtn.className = "owner-inline-edit-btn";
+      photoBtn.textContent = "✎";
+      photoBtn.title = "Edit Photo";
+      photoBtn.style.cssText =
+        "position:absolute;top:6px;right:6px;z-index:4;width:24px;height:24px;border:none;border-radius:6px;background:rgba(15,118,110,0.92);color:#ffffff;font-size:0.75rem;font-weight:700;cursor:pointer;";
+      photoBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        pendingOwnerEditSlot = { type: "item", sIdx, itemId: item.id };
+        fileInput.value = "";
+        fileInput.click();
+      };
+      card.appendChild(photoBtn);
 
       const nameEl = card.querySelector(".mini-box-name, .item-name");
-      if (nameEl && !nameEl.dataset.ownerNameBound) {
-        nameEl.dataset.ownerNameBound = "1";
-        nameEl.contentEditable = "true";
-        nameEl.addEventListener("click", (e) => e.stopPropagation());
-        nameEl.addEventListener("input", () => {
-          item.name = nameEl.textContent.trim();
-          saveData();
-        });
+      if (nameEl) {
+        const nameBtn = document.createElement("button");
+        nameBtn.type = "button";
+        nameBtn.className = "owner-inline-edit-btn";
+        nameBtn.textContent = "✎";
+        nameBtn.title = "Edit Name";
+        nameBtn.style.cssText =
+          "margin-left:4px;padding:1px 6px;border:1px solid #cbd5e1;border-radius:5px;background:#f1f5f9;color:#111827;font-size:0.72rem;font-weight:700;cursor:pointer;";
+        nameBtn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const next = prompt("Edit Name:", item.name || "");
+          if (next !== null) {
+            item.name = next.trim();
+            saveData();
+            renderSections();
+            attachOwnerStoreEditHandlers();
+          }
+        };
+        nameEl.insertAdjacentElement("afterend", nameBtn);
       }
     });
   });
@@ -465,7 +521,6 @@ function updateLimitsBadge() {
   }
 }
 
-/* Expand Limits Modal (Owner Boxes Max 50, Index Boxes Max 50, Cover Slots Max 10) */
 function openExpandLimitsModal() {
   document.getElementById("ownerBoxLimitInput").value = storeData.ownerBoxLimit;
   document.getElementById("indexBoxLimitInput").value = storeData.indexBoxLimit;
@@ -495,7 +550,6 @@ function saveExpandLimits() {
   updateLimitsBadge();
 }
 
-/* Folders Grid & Navigation */
 function renderFolderGrid() {
   const grid = document.getElementById("ownerFoldersGrid");
   if (!grid) return;
@@ -594,7 +648,6 @@ function selectOwnerFolder(idx) {
   }
 }
 
-/* Tab 1: Active Users */
 function renderActiveUsersTab() {
   const users = storeData.activeUsers || [];
   const countEl = document.getElementById("activeUsersCount") || document.getElementById("activeUsersTabCount");
@@ -654,7 +707,6 @@ function loadMoreUsers() {
   renderPaginatedUsers();
 }
 
-/* Tab 2: Sold Items */
 function renderSoldItemsTab() {
   const totalSold = storeData.orders.reduce((s, o) => s + o.qty, 0);
   const totalRev = storeData.orders.reduce((s, o) => s + o.amount, 0);
@@ -706,7 +758,6 @@ function renderSoldItemsTab() {
   });
 }
 
-/* Tab 3: Buyers */
 function addOwnerBuyerBox() {
   if (storeData.ownerBuyerBoxes.length >= storeData.ownerBoxLimit) {
     alert(`Box limit reached (Max ${storeData.ownerBoxLimit}).`);
@@ -767,7 +818,6 @@ function saveTabName(inputId) {
   alert("Saved!");
 }
 
-/* Tabs 4..13: 10 Custom Empty Editable Folders */
 function renderCustomFolderTab() {
   const folder = storeData.ownerFolders[activeFolderIdx];
   const leftLbl = document.getElementById("customBigLeftLabel");
