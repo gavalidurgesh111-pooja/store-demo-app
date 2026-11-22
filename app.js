@@ -67,6 +67,7 @@ function buildInitialData() {
   return {
     storeTitle: "Store Name",
     storeSubtitle: "",
+    themeColor: "#0f766e",
     coverImg: "",
     coverSlots: [""],
     coverSlotsLimit: 1,
@@ -99,6 +100,7 @@ if (!storeData.ownerFolders || storeData.ownerFolders.length < 14) {
   storeData.ownerFolders = buildInitialData().ownerFolders;
 }
 if (!storeData.activeUsers) storeData.activeUsers = [];
+if (!storeData.themeColor) storeData.themeColor = "#0f766e";
 if (!Array.isArray(storeData.coverSlots) || storeData.coverSlots.length === 0) {
   storeData.coverSlots = [storeData.coverImg || ""];
 }
@@ -164,7 +166,16 @@ function removeOwnerStoreEditUI() {
   if (bar) bar.remove();
   const bottomBar = document.getElementById("ownerBottomRowControls");
   if (bottomBar) bottomBar.remove();
+  const colorPicker = document.getElementById("ownerThemeColorPicker");
+  if (colorPicker) colorPicker.remove();
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
+}
+
+function applyStoreThemeColor(hexColor) {
+  if (!hexColor) return;
+  storeData.themeColor = hexColor;
+  document.documentElement.style.setProperty("--primary", hexColor);
+  saveData();
 }
 
 function ensureOwnerInlineFileInput() {
@@ -183,8 +194,9 @@ function ensureOwnerInlineFileInput() {
       if (!dataUrl) return;
 
       if (pendingOwnerEditSlot.type === "cover") {
-        storeData.coverSlots[0] = dataUrl;
-        storeData.coverImg = dataUrl;
+        const slotIdx = Number.isInteger(pendingOwnerEditSlot.slotIdx) ? pendingOwnerEditSlot.slotIdx : 0;
+        storeData.coverSlots[slotIdx] = dataUrl;
+        storeData.coverImg = storeData.coverSlots[0] || dataUrl;
       } else if (pendingOwnerEditSlot.type === "item") {
         const { sIdx, itemId } = pendingOwnerEditSlot;
         const item = storeData.sections[sIdx]?.items?.find((i) => i.id === itemId);
@@ -202,6 +214,28 @@ function ensureOwnerInlineFileInput() {
     document.body.appendChild(input);
   }
   return input;
+}
+
+function addCoverInEditMode() {
+  const maxAllowed = Math.min(MAX_COVER_SLOTS, Math.max(1, Number(storeData.coverSlotsLimit ?? 1)));
+  if (!Array.isArray(storeData.coverSlots)) storeData.coverSlots = [""];
+  if (storeData.coverSlots.length >= maxAllowed) {
+    alert(`Cover limit reached (${maxAllowed} max).`);
+    return;
+  }
+  storeData.coverSlots.push("");
+  saveData();
+  renderHeader();
+  attachOwnerStoreEditHandlers();
+}
+
+function removeCoverInEditMode() {
+  if (!Array.isArray(storeData.coverSlots) || storeData.coverSlots.length <= 1) return;
+  storeData.coverSlots.pop();
+  storeData.coverImg = storeData.coverSlots[0] || "";
+  saveData();
+  renderHeader();
+  attachOwnerStoreEditHandlers();
 }
 
 function addBoxToSection(sIdx) {
@@ -276,18 +310,38 @@ function attachOwnerStoreEditHandlers() {
   const fileInput = ensureOwnerInlineFileInput();
   removeOwnerStoreEditUI();
 
-  // Top bar with Save & Store buttons
+  const activeColor = storeData.themeColor || "#0f766e";
+  document.documentElement.style.setProperty("--primary", activeColor);
+
+  // Color Picker for Color Option
+  const colorInput = document.createElement("input");
+  colorInput.type = "color";
+  colorInput.id = "ownerThemeColorPicker";
+  colorInput.value = activeColor;
+  colorInput.style.cssText = "position:fixed;opacity:0;pointer-events:none;width:1px;height:1px;";
+  colorInput.addEventListener("input", (e) => applyStoreThemeColor(e.target.value));
+  colorInput.addEventListener("change", (e) => applyStoreThemeColor(e.target.value));
+  document.body.appendChild(colorInput);
+
+  // Top bar with Color, Save & Store buttons
   const bar = document.createElement("div");
   bar.id = "ownerLiveSaveBar";
   bar.style.cssText =
-    "position:sticky;top:0;z-index:80;background:#0f766e;color:#ffffff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;";
+    "position:sticky;top:0;z-index:80;background:#0f766e;color:#ffffff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;";
 
   const info = document.createElement("span");
-  info.textContent = "Edit photo, name, boxes or rows, then Save";
-  info.style.cssText = "font-size:0.82rem;font-weight:600;";
+  info.textContent = "Edit photo, name, color, boxes or rows";
+  info.style.cssText = "font-size:0.8rem;font-weight:600;";
 
   const actions = document.createElement("div");
-  actions.style.cssText = "display:flex;gap:8px;";
+  actions.style.cssText = "display:flex;gap:6px;align-items:center;";
+
+  const colorBtn = document.createElement("button");
+  colorBtn.type = "button";
+  colorBtn.textContent = "✎ Color";
+  colorBtn.style.cssText =
+    "padding:6px 10px;border:1px solid rgba(255,255,255,0.65);border-radius:8px;background:rgba(255,255,255,0.16);color:#ffffff;font-size:0.78rem;font-weight:700;cursor:pointer;";
+  colorBtn.onclick = () => colorInput.click();
 
   const saveBtn = document.createElement("button");
   saveBtn.type = "button";
@@ -310,16 +364,18 @@ function attachOwnerStoreEditHandlers() {
     window.location.href = "index.html";
   };
 
+  actions.appendChild(colorBtn);
   actions.appendChild(saveBtn);
   actions.appendChild(backBtn);
   bar.appendChild(info);
   bar.appendChild(actions);
   document.body.prepend(bar);
 
-  // Cover Photo Edit Button
+  // Cover Photo Edit, Add & Remove Buttons
   const coverWrap = document.querySelector(".cover-wrapper");
   if (coverWrap) {
     coverWrap.style.position = "relative";
+
     const coverBtn = document.createElement("button");
     coverBtn.type = "button";
     coverBtn.className = "owner-inline-edit-btn";
@@ -328,11 +384,36 @@ function attachOwnerStoreEditHandlers() {
       "position:absolute;top:10px;right:10px;z-index:5;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:#0f766e;font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);";
     coverBtn.onclick = (e) => {
       e.stopPropagation();
-      pendingOwnerEditSlot = { type: "cover" };
+      pendingOwnerEditSlot = { type: "cover", slotIdx: 0 };
       fileInput.value = "";
       fileInput.click();
     };
+
+    const addCoverBtn = document.createElement("button");
+    addCoverBtn.type = "button";
+    addCoverBtn.className = "owner-inline-edit-btn";
+    addCoverBtn.textContent = "+ Cover";
+    addCoverBtn.style.cssText =
+      "position:absolute;bottom:10px;right:10px;z-index:5;padding:4px 9px;border:none;border-radius:8px;background:#ffffff;color:#0f766e;font-size:0.74rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);";
+    addCoverBtn.onclick = (e) => {
+      e.stopPropagation();
+      addCoverInEditMode();
+    };
+
+    const remCoverBtn = document.createElement("button");
+    remCoverBtn.type = "button";
+    remCoverBtn.className = "owner-inline-edit-btn";
+    remCoverBtn.textContent = "− Cover";
+    remCoverBtn.style.cssText =
+      "position:absolute;bottom:10px;right:78px;z-index:5;padding:4px 8px;border:none;border-radius:8px;background:#fee2e2;color:#dc2626;font-size:0.74rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);";
+    remCoverBtn.onclick = (e) => {
+      e.stopPropagation();
+      removeCoverInEditMode();
+    };
+
     coverWrap.appendChild(coverBtn);
+    coverWrap.appendChild(addCoverBtn);
+    coverWrap.appendChild(remCoverBtn);
   }
 
   // Section Name, Item Photo/Name & Box Add/Remove Buttons
@@ -476,6 +557,9 @@ function attachOwnerStoreEditHandlers() {
 
 /* ==================== STORE PAGE (index.html) ==================== */
 function renderHeader() {
+  if (storeData.themeColor) {
+    document.documentElement.style.setProperty("--primary", storeData.themeColor);
+  }
   const titleEl = document.getElementById("storeTitle");
   if (!titleEl) return;
   titleEl.textContent = storeData.storeTitle || "Store";
