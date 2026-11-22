@@ -95,7 +95,13 @@ function buildInitialData() {
   };
 }
 
-let storeData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || buildInitialData();
+let storeData;
+try {
+  storeData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || buildInitialData();
+} catch (err) {
+  storeData = buildInitialData();
+}
+
 if (!storeData.ownerFolders || storeData.ownerFolders.length < 14) {
   storeData.ownerFolders = buildInitialData().ownerFolders;
 }
@@ -124,7 +130,11 @@ const OWNER_EDIT_MODE = new URLSearchParams(window.location.search).get("ownerEd
 let pendingOwnerEditSlot = null;
 
 function saveData() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(storeData));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(storeData));
+  } catch (err) {
+    alert("Storage full. Remove some photos or items.");
+  }
 }
 
 function readImageAsDataURL(file, maxWidth = 600) {
@@ -231,7 +241,6 @@ function openCustomColourPickerModal() {
   card.style.cssText =
     "width:100%;max-width:440px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,0.28);";
 
-  // Top Header: "Colour picker" + Live Color Name + Close
   const header = document.createElement("div");
   header.style.cssText =
     "display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #e2e8f0;gap:10px;";
@@ -261,7 +270,6 @@ function openCustomColourPickerModal() {
   header.appendChild(leftHead);
   header.appendChild(closeBtn);
 
-  // Body: Left Solid Preview + Right Shade Box
   const body = document.createElement("div");
   body.style.cssText = "display:flex;height:190px;width:100%;";
 
@@ -291,7 +299,6 @@ function openCustomColourPickerModal() {
   body.appendChild(leftSwatch);
   body.appendChild(shadeArea);
 
-  // Bottom Scroll / Drag Hue Slider + Color Name + Apply
   const sliderWrap = document.createElement("div");
   sliderWrap.style.cssText = "padding:16px;background:#ffffff;";
 
@@ -547,7 +554,6 @@ function attachOwnerStoreEditHandlers() {
   const activeColor = storeData.themeColor || "#0f766e";
   document.documentElement.style.setProperty("--primary", activeColor);
 
-  // Top bar with Color, Save & Store buttons
   const bar = document.createElement("div");
   bar.id = "ownerLiveSaveBar";
   bar.style.cssText =
@@ -599,7 +605,6 @@ function attachOwnerStoreEditHandlers() {
   bar.appendChild(actions);
   document.body.prepend(bar);
 
-  // Cover Photo Edit, Add & Remove Buttons
   const coverWrap = document.querySelector(".cover-wrapper");
   if (coverWrap) {
     coverWrap.style.position = "relative";
@@ -644,7 +649,6 @@ function attachOwnerStoreEditHandlers() {
     coverWrap.appendChild(remCoverBtn);
   }
 
-  // Section Name, Item Photo/Name & Box Add/Remove Buttons
   const sectionEls = document.querySelectorAll("#sectionsContainer .row-section");
   sectionEls.forEach((secEl, sIdx) => {
     const sec = storeData.sections[sIdx];
@@ -720,7 +724,6 @@ function attachOwnerStoreEditHandlers() {
       }
     });
 
-    // Box Add (+ Box) and Remove (−) controls on each row
     if (sIdx > 0) {
       const scrollEl = secEl.querySelector(".scroll-row");
       if (scrollEl) {
@@ -753,7 +756,6 @@ function attachOwnerStoreEditHandlers() {
     }
   });
 
-  // Bottom controls to add/remove strips (rows) within limit
   const sectionsContainer = document.getElementById("sectionsContainer");
   if (sectionsContainer) {
     const bottomControls = document.createElement("div");
@@ -791,16 +793,19 @@ function renderHeader() {
   const titleEl = document.getElementById("storeTitle");
   if (!titleEl) return;
   titleEl.textContent = storeData.storeTitle || "Store";
-  document.getElementById("storeSubtitle").textContent = storeData.storeSubtitle || "";
+  const subEl = document.getElementById("storeSubtitle");
+  if (subEl) subEl.textContent = storeData.storeSubtitle || "";
 
   const firstCover = storeData.coverSlots.find(Boolean) || storeData.coverImg || "";
   const coverImgEl = document.getElementById("coverImage");
-  if (firstCover) {
-    coverImgEl.src = firstCover;
-    coverImgEl.style.display = "block";
-  } else {
-    coverImgEl.removeAttribute("src");
-    coverImgEl.style.display = "none";
+  if (coverImgEl) {
+    if (firstCover) {
+      coverImgEl.src = firstCover;
+      coverImgEl.style.display = "block";
+    } else {
+      coverImgEl.removeAttribute("src");
+      coverImgEl.style.display = "none";
+    }
   }
 }
 
@@ -937,7 +942,7 @@ function verifyPin() {
   if (document.getElementById("ownerPinInput").value.trim() === OWNER_PIN) {
     document.getElementById("pinModal").classList.remove("active");
     const panel = document.getElementById("ownerPanel");
-    panel.classList.add("active");
+    if (panel) panel.classList.add("active");
     renderOwnerWorkspace();
   } else {
     alert("Incorrect PIN");
@@ -947,8 +952,10 @@ function verifyPin() {
 function lockOwnerPage() {
   const panel = document.getElementById("ownerPanel");
   if (panel) panel.classList.remove("active");
-  document.getElementById("ownerPinInput").value = "";
-  document.getElementById("pinModal").classList.add("active");
+  const pinInput = document.getElementById("ownerPinInput");
+  if (pinInput) pinInput.value = "";
+  const pinModal = document.getElementById("pinModal");
+  if (pinModal) pinModal.classList.add("active");
 }
 
 function renderOwnerWorkspace() {
@@ -1536,7 +1543,9 @@ function saveUserProfile() {
 
 /* ==================== PAGE INIT ==================== */
 window.addEventListener("storage", () => {
-  storeData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || storeData;
+  try {
+    storeData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || storeData;
+  } catch (err) {}
   renderHeader();
   renderSections();
   if (OWNER_EDIT_MODE) attachOwnerStoreEditHandlers();
@@ -1550,5 +1559,6 @@ if (currentPage === "store") {
 } else if (currentPage === "profile") {
   openRegistrationPopup();
 } else if (currentPage === "owner") {
-  document.getElementById("pinModal").classList.add("active");
+  const pinModal = document.getElementById("pinModal");
+  if (pinModal) pinModal.classList.add("active");
 }
