@@ -414,14 +414,13 @@ function openStoreNameEditorPopup() {
   syncPreview();
 }
 
-// ==================== SMALL POP-UP PHOTO EDITOR FOR COVER ====================
+// ==================== PHOTO EDITOR (#screenPhotoEditor) FOR COVER ====================
 let rawImageObj = null;
 let posX = 0, posY = 0, imgScale = 1, minScale = 1, maxScale = 2.5;
 let baseLeft = 0, baseTop = 0;
 let isDraggingImg = false, startMouseX = 0, startMouseY = 0;
 let initialPinchDistance = null;
 let onCoverEditorDone = null;
-let coverEditorEventsBound = false;
 
 function ensureCoverEditorDOM() {
   let screen = document.getElementById("screenPhotoEditor");
@@ -429,18 +428,16 @@ function ensureCoverEditorDOM() {
     screen = document.createElement("div");
     screen.id = "screenPhotoEditor";
     screen.style.cssText =
-      "display:none;position:fixed;inset:0;background:rgba(15,23,42,0.68);z-index:99999;align-items:center;justify-content:center;padding:14px;";
+      "display:none;position:fixed;inset:0;background:#ffffff;z-index:99999;flex-direction:column;justify-content:space-between;align-items:center;";
 
     screen.innerHTML = `
-      <div class="editor-popup-card" style="width:100%;max-width:340px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,0.35);display:flex;flex-direction:column;">
-        <div class="editor-canvas-area" id="editorCanvasArea" style="width:100%;height:210px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:none;background:#1e293b;">
-          <img id="editorImagePreview" src="" alt="Preview" style="position:absolute;cursor:grab;user-select:none;z-index:5;display:block;max-width:none;max-height:none;will-change:transform;transform:translate3d(0, 0, 0);" />
-          <div class="crop-frame-box" id="cropFrameBox" style="width:270px;height:130px;border:2px solid #ffffff;box-shadow:0 0 0 9999px rgba(0, 0, 0, 0.48);position:relative;pointer-events:none;z-index:10;"></div>
-        </div>
-        <div class="editor-bottom-bar" style="width:100%;height:48px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:0 22px;z-index:25;border-top:1px solid #e2e8f0;">
-          <button type="button" class="editor-bottom-btn" onclick="cancelEditor()" title="Cancel" style="background:none;border:none;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#334155;font-weight:700;">✕</button>
-          <button type="button" class="editor-bottom-btn" onclick="confirmEditor()" title="Save" style="background:none;border:none;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#0f766e;font-weight:700;">✓</button>
-        </div>
+      <div class="editor-canvas-area" id="editorCanvasArea" style="flex:1;width:100%;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:none;background:#ffffff;">
+        <img id="editorImagePreview" src="" alt="Preview" style="position:absolute;cursor:grab;user-select:none;z-index:5;display:block;max-width:none;max-height:none;will-change:transform;transform:translate3d(0, 0, 0);" />
+        <div class="crop-frame-box" id="cropFrameBox" style="width:100%;max-width:100%;height:380px;border:2px solid #ffffff;box-shadow:0 0 0 9999px rgba(0, 0, 0, 0.45);position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);pointer-events:none;z-index:10;"></div>
+      </div>
+      <div class="editor-bottom-bar" style="width:100%;height:65px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:0 35px;z-index:25;border-top:1px solid #ddd;">
+        <button type="button" class="editor-bottom-btn" onclick="cancelEditor()" title="Cancel" style="background:none;border:none;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:45px;height:45px;border-radius:50%;color:#333;">✕</button>
+        <button type="button" class="editor-bottom-btn" onclick="confirmEditor()" title="Save" style="background:none;border:none;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:45px;height:45px;border-radius:50%;color:#333;">✓</button>
       </div>
     `;
     document.body.appendChild(screen);
@@ -452,10 +449,10 @@ function ensureCoverEditorDOM() {
 function applySmartBoundaryAndSnap() {
   const preview = document.getElementById("editorImagePreview");
   const box = document.getElementById("cropFrameBox")?.getBoundingClientRect();
-  if (!preview || !box || !rawImageObj) return;
+  if (!preview || !box) return;
 
-  const renderW = rawImageObj.width * imgScale;
-  const renderH = rawImageObj.height * imgScale;
+  const renderW = parseFloat(preview.style.width);
+  const renderH = parseFloat(preview.style.height);
 
   const currentLeft = baseLeft + posX;
   const currentTop = baseTop + posY;
@@ -479,15 +476,11 @@ function applySmartBoundaryAndSnap() {
 }
 
 function bindCoverEditorEvents() {
-  if (coverEditorEventsBound) return;
-  coverEditorEventsBound = true;
-
   const editorArea = document.getElementById("editorCanvasArea");
   const preview = document.getElementById("editorImagePreview");
   if (!editorArea || !preview) return;
 
   editorArea.addEventListener("mousedown", (e) => {
-    if (!rawImageObj) return;
     isDraggingImg = true;
     startMouseX = e.clientX;
     startMouseY = e.clientY;
@@ -496,7 +489,7 @@ function bindCoverEditorEvents() {
   });
 
   window.addEventListener("mousemove", (e) => {
-    if (!isDraggingImg || !rawImageObj) return;
+    if (!isDraggingImg) return;
     posX += (e.clientX - startMouseX) * 1.25;
     posY += (e.clientY - startMouseY) * 1.25;
     startMouseX = e.clientX;
@@ -513,8 +506,6 @@ function bindCoverEditorEvents() {
 
   window.addEventListener("wheel", (e) => {
     if (!rawImageObj) return;
-    const screen = document.getElementById("screenPhotoEditor");
-    if (!screen || screen.style.display === "none") return;
     e.preventDefault();
     const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
     const newScale = imgScale * zoomFactor;
@@ -585,8 +576,6 @@ function bindCoverEditorEvents() {
 
 function cancelEditor() {
   const screen = document.getElementById("screenPhotoEditor");
-  const preview = document.getElementById("editorImagePreview");
-  if (preview) preview.src = "";
   if (screen) screen.style.display = "none";
   rawImageObj = null;
   onCoverEditorDone = null;
@@ -598,13 +587,13 @@ function confirmEditor() {
   if (!rawImageObj || !preview || !box) return;
 
   const canvas = document.createElement("canvas");
-  canvas.width = 900;
-  canvas.height = Math.round(900 / (box.width / box.height));
+  canvas.width = 1080;
+  canvas.height = Math.round(1080 / (box.width / box.height));
   const ctx = canvas.getContext("2d");
 
+  const renderedWidth = parseFloat(preview.style.width);
+  const renderedHeight = parseFloat(preview.style.height);
   const previewRect = preview.getBoundingClientRect();
-  const renderedWidth = previewRect.width || (rawImageObj.width * imgScale);
-  const renderedHeight = previewRect.height || (rawImageObj.height * imgScale);
 
   const sX = ((box.left - previewRect.left) / renderedWidth) * rawImageObj.width;
   const sY = ((box.top - previewRect.top) / renderedHeight) * rawImageObj.height;
@@ -612,9 +601,8 @@ function confirmEditor() {
   const sH = (box.height / renderedHeight) * rawImageObj.height;
 
   ctx.drawImage(rawImageObj, sX, sY, sW, sH, 0, 0, canvas.width, canvas.height);
-  const croppedUrl = canvas.toDataURL("image/jpeg", 0.85);
+  const croppedUrl = canvas.toDataURL("image/jpeg", 0.9);
 
-  if (preview) preview.src = "";
   document.getElementById("screenPhotoEditor").style.display = "none";
   rawImageObj = null;
 
@@ -639,26 +627,24 @@ function openCoverPhotoEditor(file, onDone) {
     preview.src = e.target.result;
 
     rawImageObj.onload = function () {
-      requestAnimationFrame(() => {
-        const box = document.getElementById("cropFrameBox").getBoundingClientRect();
-        minScale = Math.max(box.width / rawImageObj.width, box.height / rawImageObj.height);
-        maxScale = minScale * 2.5;
-        imgScale = minScale;
+      const box = document.getElementById("cropFrameBox").getBoundingClientRect();
+      minScale = Math.max(box.width / rawImageObj.width, box.height / rawImageObj.height);
+      maxScale = minScale * 2.5;
+      imgScale = minScale;
 
-        const renderW = rawImageObj.width * imgScale;
-        const renderH = rawImageObj.height * imgScale;
-        preview.style.width = renderW + "px";
-        preview.style.height = renderH + "px";
+      const renderW = rawImageObj.width * imgScale;
+      const renderH = rawImageObj.height * imgScale;
+      preview.style.width = renderW + "px";
+      preview.style.height = renderH + "px";
 
-        baseLeft = box.left + (box.width - renderW) / 2;
-        baseTop = box.top + (box.height - renderH) / 2;
+      baseLeft = box.left + (box.width - renderW) / 2;
+      baseTop = box.top + (box.height - renderH) / 2;
 
-        preview.style.left = baseLeft + "px";
-        preview.style.top = baseTop + "px";
-        posX = 0;
-        posY = 0;
-        preview.style.transform = "translate3d(0px, 0px, 0px)";
-      });
+      preview.style.left = baseLeft + "px";
+      preview.style.top = baseTop + "px";
+      posX = 0;
+      posY = 0;
+      preview.style.transform = "translate3d(0px, 0px, 0px)";
     };
     rawImageObj.src = e.target.result;
   };
