@@ -414,7 +414,7 @@ function openStoreNameEditorPopup() {
   syncPreview();
 }
 
-// ==================== PHOTO EDITOR (#screenPhotoEditor) FOR COVER ====================
+// ==================== SMALL POP-UP PHOTO EDITOR FOR COVER ====================
 let rawImageObj = null;
 let posX = 0, posY = 0, imgScale = 1, minScale = 1, maxScale = 2.5;
 let baseLeft = 0, baseTop = 0;
@@ -428,16 +428,18 @@ function ensureCoverEditorDOM() {
     screen = document.createElement("div");
     screen.id = "screenPhotoEditor";
     screen.style.cssText =
-      "display:none;position:fixed;inset:0;background:#ffffff;z-index:99999;flex-direction:column;justify-content:space-between;align-items:center;";
+      "display:none;position:fixed;inset:0;background:rgba(15,23,42,0.68);z-index:99999;align-items:center;justify-content:center;padding:14px;";
 
     screen.innerHTML = `
-      <div class="editor-canvas-area" id="editorCanvasArea" style="flex:1;width:100%;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:none;background:#ffffff;">
-        <img id="editorImagePreview" src="" alt="Preview" style="position:absolute;cursor:grab;user-select:none;z-index:5;display:block;max-width:none;max-height:none;will-change:transform;transform:translate3d(0, 0, 0);" />
-        <div class="crop-frame-box" id="cropFrameBox" style="width:100%;max-width:100%;height:380px;border:2px solid #ffffff;box-shadow:0 0 0 9999px rgba(0, 0, 0, 0.45);position:absolute;top:50%;left:50%;transform:translate(-50%, -50%);pointer-events:none;z-index:10;"></div>
-      </div>
-      <div class="editor-bottom-bar" style="width:100%;height:65px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:0 35px;z-index:25;border-top:1px solid #ddd;">
-        <button type="button" class="editor-bottom-btn" onclick="cancelEditor()" title="Cancel" style="background:none;border:none;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:45px;height:45px;border-radius:50%;color:#333;">✕</button>
-        <button type="button" class="editor-bottom-btn" onclick="confirmEditor()" title="Save" style="background:none;border:none;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:45px;height:45px;border-radius:50%;color:#333;">✓</button>
+      <div class="editor-popup-card" style="width:100%;max-width:340px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,0.35);display:flex;flex-direction:column;">
+        <div class="editor-canvas-area" id="editorCanvasArea" style="width:100%;height:210px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:none;background:#1e293b;">
+          <img id="editorImagePreview" src="" alt="Preview" style="position:absolute;cursor:grab;user-select:none;z-index:5;display:block;max-width:none;max-height:none;will-change:transform;transform:translate3d(0, 0, 0);" />
+          <div class="crop-frame-box" id="cropFrameBox" style="width:270px;height:130px;border:2px solid #ffffff;box-shadow:0 0 0 9999px rgba(0, 0, 0, 0.48);position:relative;pointer-events:none;z-index:10;"></div>
+        </div>
+        <div class="editor-bottom-bar" style="width:100%;height:48px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:0 22px;z-index:25;border-top:1px solid #e2e8f0;">
+          <button type="button" class="editor-bottom-btn" onclick="cancelEditor()" title="Cancel" style="background:none;border:none;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#334155;font-weight:700;">✕</button>
+          <button type="button" class="editor-bottom-btn" onclick="confirmEditor()" title="Save" style="background:none;border:none;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#0f766e;font-weight:700;">✓</button>
+        </div>
       </div>
     `;
     document.body.appendChild(screen);
