@@ -37,9 +37,10 @@ const DEFAULT_SECTION_TITLES = [
 ];
 
 function cleanDisplayName(text, fallback = "Item") {
-  const raw = String(text || "").trim();
-  const stripped = raw.replace(/^\d+[\.\)\-\:\s]+/, "").trim();
-  return stripped || fallback;
+  let raw = String(text || "").trim();
+  raw = raw.replace(/^\d+[\.\)\-\:\s]+/, "").trim();
+  raw = raw.replace(/^Item[\s\-:#]*\d+$/i, "Item").trim();
+  return raw || fallback;
 }
 
 function buildInitialData() {
@@ -496,9 +497,8 @@ function addBoxToSection(sIdx) {
     return;
   }
 
-  const nextNum = sec.items.length + 1;
   sec.items.push({
-    id: `${sIdx}-${Date.now()}-${nextNum}`,
+    id: `${sIdx}-${Date.now()}-${sec.items.length + 1}`,
     name: "Item",
     price: 0,
     img: ""
@@ -1187,10 +1187,10 @@ function renderSoldItemsTab() {
 
   const grouped = {};
   storeData.orders.forEach((o) => {
-    const key = o.itemName;
+    const key = cleanDisplayName(o.itemName || "", "Item");
     if (!grouped[key]) {
       grouped[key] = {
-        name: o.itemName,
+        name: key,
         price: o.itemPrice || 0,
         img: o.itemImg || "",
         soldQty: 0
@@ -1255,6 +1255,7 @@ function renderBuyersTab() {
       : `<div class="row-thumb round">${(o.customer || "C").charAt(0).toUpperCase()}</div>`;
 
     const phoneLine = o.customerPhone || savedPhone;
+    const cleanItem = cleanDisplayName(o.itemName || "", "Item");
 
     const row = document.createElement("div");
     row.className = "list-row-card";
@@ -1263,7 +1264,7 @@ function renderBuyersTab() {
         ${thumbHtml}
         <div>
           <div class="row-main-text">${o.customer}</div>
-          <div class="row-sub-text">${o.itemName} × ${o.qty}${phoneLine ? ` • ${phoneLine}` : ""}</div>
+          <div class="row-sub-text">${cleanItem} × ${o.qty}${phoneLine ? ` • ${phoneLine}` : ""}</div>
         </div>
       </div>
       <div class="row-actions">
