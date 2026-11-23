@@ -4,6 +4,7 @@ const OWNER_PIN = "1234";
 const MAX_OWNER_BOXES = 50;
 const MAX_INDEX_BOXES = 50;
 const MAX_COVER_SLOTS = 10;
+const MAX_TOP_ROW_BOXES = 30;
 
 const STORE_FONT_OPTIONS = [
   { label: "Sans", value: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" },
@@ -72,7 +73,7 @@ function hideDigitsOnUserPage() {
   const textNodes = [];
   let node;
   while ((node = walker.nextNode())) {
-    if (node.parentElement && node.parentElement.closest("#ownerLiveSaveBar, #ownerCustomColorPickerModal, #ownerPhotoPositionModal, #ownerStoreNameModal")) {
+    if (node.parentElement && node.parentElement.closest("#ownerLiveSaveBar, #ownerCustomColorPickerModal, #ownerPhotoPositionModal, #ownerStoreNameModal, #screenPhotoEditor")) {
       continue;
     }
     if (/\d/.test(node.nodeValue)) {
@@ -422,8 +423,9 @@ function renderSections() {
     if (sIdx === 0) {
       const fiveRow = document.createElement("div");
       fiveRow.className = "five-boxes-row";
+      const topRowLimit = Math.min(MAX_TOP_ROW_BOXES, maxBoxes);
 
-      sec.items.slice(0, Math.min(4, maxBoxes)).forEach((item) => {
+      sec.items.slice(0, topRowLimit).forEach((item) => {
         const cleanItemName = stripAllDigits(item.name || "", "Item");
         const amountVal = Number(item.price || 0);
         const priceDisplay = `₹${amountVal}`;
