@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_IG_POPUP_V3");
+console.log("OWNER_EDIT_IG_POPUP_FIXED_V4");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -416,7 +416,7 @@ function openStoreNameEditorPopup() {
   syncPreview();
 }
 
-// ==================== INSTAGRAM FEED SIZE POP-UP PHOTO EDITOR (#screenPhotoEditor) ====================
+// ==================== FIXED INSTAGRAM FEED SIZE POP-UP PHOTO EDITOR ====================
 let rawImageObj = null;
 let posX = 0, posY = 0, imgScale = 1, minScale = 1, maxScale = 2.5;
 let baseLeft = 0, baseTop = 0;
@@ -451,6 +451,44 @@ function ensureCoverEditorDOM() {
   return screen;
 }
 
+function setEditorZoomAroundCenter(nextScale) {
+  const preview = document.getElementById("editorImagePreview");
+  const area = document.getElementById("editorCanvasArea");
+  const box = document.getElementById("cropFrameBox");
+  if (!preview || !area || !box || !rawImageObj) return;
+
+  const clampedScale = Math.max(minScale, Math.min(maxScale, nextScale));
+  if (clampedScale === imgScale) return;
+
+  const areaRect = area.getBoundingClientRect();
+  const boxRect = box.getBoundingClientRect();
+  const boxCenterX = (boxRect.left + boxRect.right) / 2 - areaRect.left;
+  const boxCenterY = (boxRect.top + boxRect.bottom) / 2 - areaRect.top;
+
+  const oldW = rawImageObj.width * imgScale;
+  const oldH = rawImageObj.height * imgScale;
+  const oldLeft = baseLeft + posX;
+  const oldTop = baseTop + posY;
+
+  const ratioX = oldW ? (boxCenterX - oldLeft) / oldW : 0.5;
+  const ratioY = oldH ? (boxCenterY - oldTop) / oldH : 0.5;
+
+  imgScale = clampedScale;
+  const newW = rawImageObj.width * imgScale;
+  const newH = rawImageObj.height * imgScale;
+
+  preview.style.width = newW + "px";
+  preview.style.height = newH + "px";
+
+  const newLeft = boxCenterX - ratioX * newW;
+  const newTop = boxCenterY - ratioY * newH;
+
+  posX = newLeft - baseLeft;
+  posY = newTop - baseTop;
+
+  applySmartBoundaryAndSnap();
+}
+
 function applySmartBoundaryAndSnap() {
   const preview = document.getElementById("editorImagePreview");
   const box = document.getElementById("cropFrameBox")?.getBoundingClientRect();
@@ -471,7 +509,7 @@ function applySmartBoundaryAndSnap() {
   const clampedTop = Math.max(minY, Math.min(maxY, currentTop));
 
   if (clampedLeft !== currentLeft || clampedTop !== currentTop) {
-    preview.style.transition = "transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+    preview.style.transition = "transform 0.2s ease-out";
     posX = clampedLeft - baseLeft;
     posY = clampedTop - baseTop;
   } else {
@@ -519,19 +557,13 @@ function bindCoverEditorEvents() {
     if (!screen || screen.style.display === "none") return;
     e.preventDefault();
     const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
-    const newScale = imgScale * zoomFactor;
-    if (newScale >= minScale && newScale <= maxScale) {
-      imgScale = newScale;
-      const renderW = rawImageObj.width * imgScale;
-      const renderH = rawImageObj.height * imgScale;
-      preview.style.width = renderW + "px";
-      preview.style.height = renderH + "px";
-      applySmartBoundaryAndSnap();
-    }
+    setEditorZoomAroundCenter(imgScale * zoomFactor);
   }, { passive: false });
 
   window.addEventListener("touchstart", (e) => {
     if (!rawImageObj) return;
+    const screen = document.getElementById("screenPhotoEditor");
+    if (!screen || screen.style.display === "none") return;
     if (e.touches.length === 1) {
       isDraggingImg = true;
       startMouseX = e.touches[0].clientX;
@@ -549,6 +581,8 @@ function bindCoverEditorEvents() {
 
   window.addEventListener("touchmove", (e) => {
     if (!rawImageObj) return;
+    const screen = document.getElementById("screenPhotoEditor");
+    if (!screen || screen.style.display === "none") return;
     if (e.touches.length === 1 && isDraggingImg) {
       posX += (e.touches[0].clientX - startMouseX) * 1.25;
       posY += (e.touches[0].clientY - startMouseY) * 1.25;
@@ -556,20 +590,13 @@ function bindCoverEditorEvents() {
       startMouseY = e.touches[0].clientY;
       preview.style.transform = `translate3d(${posX}px, ${posY}px, 0px)`;
       e.preventDefault();
-    } else if (e.touches.length === 2 && initialPinchDistance !== null) {
+    } else if (e.touches.length === 2 && initialPinchDistance !== null && initialPinchDistance > 0) {
       const currentPinchDistance = Math.hypot(
         e.touches[0].clientX - e.touches[1].clientX,
         e.touches[0].clientY - e.touches[1].clientY
       );
       const zoomFactor = currentPinchDistance / initialPinchDistance;
-      const newScale = imgScale * zoomFactor;
-      if (newScale >= minScale && newScale <= maxScale) {
-        imgScale = newScale;
-        const renderW = rawImageObj.width * imgScale;
-        const renderH = rawImageObj.height * imgScale;
-        preview.style.width = renderW + "px";
-        preview.style.height = renderH + "px";
-      }
+      setEditorZoomAroundCenter(imgScale * zoomFactor);
       initialPinchDistance = currentPinchDistance;
       e.preventDefault();
     }
