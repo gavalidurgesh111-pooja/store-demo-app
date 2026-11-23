@@ -101,14 +101,27 @@ body {
   font-weight: 600;
 }
 
-/* Row 1: 5 Small Rounded Boxes */
+/* Row 1: Scrollable Small Rounded Boxes (Up to 30 + Profile) */
 .five-boxes-row {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  display: flex;
   gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.five-boxes-row::-webkit-scrollbar {
+  height: 5px;
+}
+
+.five-boxes-row::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
 }
 
 .mini-box {
+  flex: 0 0 92px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
