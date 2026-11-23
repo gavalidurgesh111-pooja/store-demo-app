@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_IG_POPUP_FIXED_V4");
+console.log("OWNER_EDIT_FULL_FIXED_V5");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -436,7 +436,7 @@ function ensureCoverEditorDOM() {
     screen.innerHTML = `
       <div class="editor-popup-card" style="width:100%;max-width:320px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 12px 28px rgba(0,0,0,0.4);display:flex;flex-direction:column;">
         <div class="editor-canvas-area" id="editorCanvasArea" style="width:100%;height:290px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:none;background:#1e293b;">
-          <img id="editorImagePreview" src="" alt="Preview" style="position:absolute;cursor:grab;user-select:none;z-index:5;display:block;max-width:none;max-height:none;will-change:transform;transform:translate3d(0, 0, 0);" />
+          <img id="editorImagePreview" src="" alt="Preview" style="position:absolute;cursor:grab;user-select:none;z-index:5;display:block;max-width:none;max-height:none;will-change:transform;transform:translate3d(0px, 0px, 0px);" />
           <div class="crop-frame-box" id="cropFrameBox" style="width:260px;height:260px;border:2px solid #ffffff;box-shadow:0 0 0 9999px rgba(0, 0, 0, 0.5);position:relative;pointer-events:none;z-index:10;"></div>
         </div>
         <div class="editor-bottom-bar" style="width:100%;height:46px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:0 20px;z-index:25;border-top:1px solid #e2e8f0;">
@@ -480,38 +480,44 @@ function setEditorZoomAroundCenter(nextScale) {
   preview.style.width = newW + "px";
   preview.style.height = newH + "px";
 
-  const newLeft = boxCenterX - ratioX * newW;
-  const newTop = boxCenterY - ratioY * newH;
-
-  posX = newLeft - baseLeft;
-  posY = newTop - baseTop;
+  posX = boxCenterX - ratioX * newW - baseLeft;
+  posY = boxCenterY - ratioY * newH - baseTop;
 
   applySmartBoundaryAndSnap();
 }
 
 function applySmartBoundaryAndSnap() {
   const preview = document.getElementById("editorImagePreview");
-  const box = document.getElementById("cropFrameBox")?.getBoundingClientRect();
-  if (!preview || !box || !rawImageObj) return;
+  const area = document.getElementById("editorCanvasArea");
+  const box = document.getElementById("cropFrameBox");
+  if (!preview || !area || !box || !rawImageObj) return;
+
+  const areaRect = area.getBoundingClientRect();
+  const boxRect = box.getBoundingClientRect();
+
+  const boxLeftRel = boxRect.left - areaRect.left;
+  const boxTopRel = boxRect.top - areaRect.top;
+  const boxRightRel = boxRect.right - areaRect.left;
+  const boxBottomRel = boxRect.bottom - areaRect.top;
 
   const renderW = rawImageObj.width * imgScale;
   const renderH = rawImageObj.height * imgScale;
 
-  const currentLeft = baseLeft + posX;
-  const currentTop = baseTop + posY;
+  const currentLeftRel = baseLeft + posX;
+  const currentTopRel = baseTop + posY;
 
-  const minX = box.right - renderW;
-  const maxX = box.left;
-  const minY = box.bottom - renderH;
-  const maxY = box.top;
+  const minLeftRel = boxRightRel - renderW;
+  const maxLeftRel = boxLeftRel;
+  const minTopRel = boxBottomRel - renderH;
+  const maxTopRel = boxTopRel;
 
-  const clampedLeft = Math.max(minX, Math.min(maxX, currentLeft));
-  const clampedTop = Math.max(minY, Math.min(maxY, currentTop));
+  const clampedLeftRel = Math.max(minLeftRel, Math.min(maxLeftRel, currentLeftRel));
+  const clampedTopRel = Math.max(minTopRel, Math.min(maxTopRel, currentTopRel));
 
-  if (clampedLeft !== currentLeft || clampedTop !== currentTop) {
+  if (clampedLeftRel !== currentLeftRel || clampedTopRel !== currentTopRel) {
     preview.style.transition = "transform 0.2s ease-out";
-    posX = clampedLeft - baseLeft;
-    posY = clampedTop - baseTop;
+    posX = clampedLeftRel - baseLeft;
+    posY = clampedTopRel - baseTop;
   } else {
     preview.style.transition = "none";
   }
@@ -644,7 +650,8 @@ function confirmEditor() {
   const croppedUrl = canvas.toDataURL("image/jpeg", 0.85);
 
   if (preview) preview.src = "";
-  document.getElementById("screenPhotoEditor").style.display = "none";
+  const screen = document.getElementById("screenPhotoEditor");
+  if (screen) screen.style.display = "none";
   rawImageObj = null;
 
   if (onCoverEditorDone) {
@@ -662,15 +669,23 @@ function openCoverPhotoEditor(file, onDone) {
   const reader = new FileReader();
   reader.onload = function (e) {
     rawImageObj = new Image();
-    document.getElementById("screenPhotoEditor").style.display = "flex";
+    const screen = document.getElementById("screenPhotoEditor");
     const preview = document.getElementById("editorImagePreview");
+    if (screen) screen.style.display = "flex";
+    if (!preview) return;
+
     preview.style.transition = "none";
     preview.src = e.target.result;
 
     rawImageObj.onload = function () {
       requestAnimationFrame(() => {
-        const areaRect = document.getElementById("editorCanvasArea").getBoundingClientRect();
-        const boxRect = document.getElementById("cropFrameBox").getBoundingClientRect();
+        const area = document.getElementById("editorCanvasArea");
+        const box = document.getElementById("cropFrameBox");
+        if (!area || !box || !rawImageObj) return;
+
+        const areaRect = area.getBoundingClientRect();
+        const boxRect = box.getBoundingClientRect();
+
         minScale = Math.max(boxRect.width / rawImageObj.width, boxRect.height / rawImageObj.height);
         maxScale = minScale * 2.5;
         imgScale = minScale;
@@ -680,11 +695,11 @@ function openCoverPhotoEditor(file, onDone) {
         preview.style.width = renderW + "px";
         preview.style.height = renderH + "px";
 
-        const centerX = (boxRect.left + boxRect.right) / 2 - areaRect.left;
-        const centerY = (boxRect.top + boxRect.bottom) / 2 - areaRect.top;
+        const centerXRel = (boxRect.left + boxRect.right) / 2 - areaRect.left;
+        const centerYRel = (boxRect.top + boxRect.bottom) / 2 - areaRect.top;
 
-        baseLeft = centerX - renderW / 2;
-        baseTop = centerY - renderH / 2;
+        baseLeft = centerXRel - renderW / 2;
+        baseTop = centerYRel - renderH / 2;
 
         preview.style.left = baseLeft + "px";
         preview.style.top = baseTop + "px";
