@@ -55,7 +55,7 @@ function hideDigitsOnUserPage() {
   const textNodes = [];
   let node;
   while ((node = walker.nextNode())) {
-    if (node.parentElement && node.parentElement.closest("#ownerLiveSaveBar, #ownerCustomColorPickerModal")) {
+    if (node.parentElement && node.parentElement.closest("#ownerLiveSaveBar, #ownerCustomColorPickerModal, #ownerPhotoPositionModal")) {
       continue;
     }
     if (/\d/.test(node.nodeValue)) {
@@ -98,10 +98,11 @@ function buildInitialData() {
   return {
     storeTitle: "Store Name",
     storeSubtitle: "",
+    titlePos: { x: 8, y: 72 },
     themeColor: "#0f766e",
     coverImg: "",
     coverSlots: [""],
-    coverSlotsLimit: 1,
+    coverSlotsLimit: MAX_COVER_SLOTS,
     ownerBoxLimit: MAX_OWNER_BOXES,
     indexBoxLimit: MAX_INDEX_BOXES,
     ownerExtraBoxes: [],
@@ -138,10 +139,13 @@ if (!storeData.ownerFolders || storeData.ownerFolders.length < 14) {
 }
 if (!storeData.activeUsers) storeData.activeUsers = [];
 if (!storeData.themeColor) storeData.themeColor = "#0f766e";
+if (!storeData.titlePos || typeof storeData.titlePos.x !== "number" || typeof storeData.titlePos.y !== "number") {
+  storeData.titlePos = { x: 8, y: 72 };
+}
 if (!Array.isArray(storeData.coverSlots) || storeData.coverSlots.length === 0) {
   storeData.coverSlots = [storeData.coverImg || ""];
 }
-if (!storeData.coverSlotsLimit) storeData.coverSlotsLimit = storeData.coverSlots.length || 1;
+if (!storeData.coverSlotsLimit) storeData.coverSlotsLimit = MAX_COVER_SLOTS;
 if (!storeData.ownerBoxLimit) storeData.ownerBoxLimit = MAX_OWNER_BOXES;
 if (!storeData.indexBoxLimit) storeData.indexBoxLimit = MAX_INDEX_BOXES;
 if (!storeData.ownerExtraBoxes) storeData.ownerExtraBoxes = [];
@@ -156,7 +160,6 @@ let coverAutoScrollTimer = null;
 
 let activeFolderIdx = 0;
 let usersVisibleLimit = 10;
-let activeCoverTargetIdx = 0;
 
 const OWNER_EDIT_MODE = new URLSearchParams(window.location.search).get("ownerEdit") === "1";
 let draftStoreData = null;
@@ -205,6 +208,167 @@ function readImageAsDataURL(file, maxWidth = 600) {
   });
 }
 
+function openPhotoPositionEditor(rawDataUrl, aspectRatio = 16 / 9, outWidth = 720) {
+  return new Promise((resolve) => {
+    const existing = document.getElementById("ownerPhotoPositionModal");
+    if (existing) existing.remove();
+
+    const modal = document.createElement("div");
+    modal.id = "ownerPhotoPositionModal";
+    modal.style.cssText =
+      "position:fixed;inset:0;z-index:130;background:rgba(15,23,42,0.72);display:flex;align-items:center;justify-content:center;padding:14px;";
+
+    const card = document.createElement("div");
+    card.style.cssText =
+      "width:100%;max-width:440px;background:#ffffff;border-radius:14px;padding:14px;box-shadow:0 12px 32px rgba(0,0,0,0.35);display:flex;flex-direction:column;gap:12px;";
+
+    const heading = document.createElement("div");
+    heading.textContent = "Adjust Photo Position";
+    heading.style.cssText = "font-size:1rem;font-weight:700;color:#111827;";
+
+    const hint = document.createElement("div");
+    hint.textContent = "Drag photo to position & use slider to zoom";
+    hint.style.cssText = "font-size:0.78rem;color:#475569;";
+
+    const stage = document.createElement("div");
+    const outHeight = Math.round(outWidth / aspectRatio);
+    stage.style.cssText =
+      `position:relative;width:100%;aspect-ratio:${aspectRatio};max-height:240px;background:#0f172a;border-radius:10px;overflow:hidden;touch-action:none;cursor:grab;`;
+
+    const img = document.createElement("img");
+    img.src = rawDataUrl;
+    img.alt = "Edit Photo";
+    img.draggable = false;
+    img.style.cssText =
+      "position:absolute;left:50%;top:50%;max-width:none;user-select:none;pointer-events:none;transform-origin:center center;";
+
+    stage.appendChild(img);
+
+    let zoom = 1;
+    let offsetX = 0;
+    let offsetY = 0;
+    let baseW = 300;
+    let baseH = 180;
+
+    function fitImageToStage() {
+      const rect = stage.getBoundingClientRect();
+      const sw = rect.width || 360;
+      const sh = rect.height || 180;
+      const natW = img.naturalWidth || 1;
+      const natH = img.naturalHeight || 1;
+      const coverScale = Math.max(sw / natW, sh / natH);
+      baseW = natW * coverScale;
+      baseH = natH * coverScale;
+      img.style.width = `${baseW}px`;
+      img.style.height = `${baseH}px`;
+      applyTransform();
+    }
+
+    function applyTransform() {
+      img.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${zoom})`;
+    }
+
+    img.onload = fitImageToStage;
+    if (img.complete) fitImageToStage();
+
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+
+    stage.addEventListener("pointerdown", (e) => {
+      dragging = true;
+      stage.style.cursor = "grabbing";
+      startX = e.clientX - offsetX;
+      startY = e.clientY - offsetY;
+      stage.setPointerCapture(e.pointerId);
+    });
+    stage.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      offsetX = e.clientX - startX;
+      offsetY = e.clientY - startY;
+      applyTransform();
+    });
+    stage.addEventListener("pointerup", () => {
+      dragging = false;
+      stage.style.cursor = "grab";
+    });
+
+    const zoomRow = document.createElement("div");
+    zoomRow.style.cssText = "display:flex;align-items:center;gap:10px;";
+
+    const zoomLbl = document.createElement("span");
+    zoomLbl.textContent = "Zoom";
+    zoomLbl.style.cssText = "font-size:0.82rem;font-weight:700;color:#334155;";
+
+    const zoomSlider = document.createElement("input");
+    zoomSlider.type = "range";
+    zoomSlider.min = "1";
+    zoomSlider.max = "2.5";
+    zoomSlider.step = "0.02";
+    zoomSlider.value = "1";
+    zoomSlider.style.cssText = "flex:1;";
+    zoomSlider.oninput = () => {
+      zoom = parseFloat(zoomSlider.value) || 1;
+      applyTransform();
+    };
+
+    zoomRow.appendChild(zoomLbl);
+    zoomRow.appendChild(zoomSlider);
+
+    const actions = document.createElement("div");
+    actions.style.cssText = "display:flex;justify-content:flex-end;gap:8px;margin-top:4px;";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.textContent = "Cancel";
+    cancelBtn.style.cssText =
+      "padding:8px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:#334155;font-weight:600;cursor:pointer;";
+    cancelBtn.onclick = () => {
+      modal.remove();
+      resolve(null);
+    };
+
+    const doneBtn = document.createElement("button");
+    doneBtn.type = "button";
+    doneBtn.textContent = "Use Photo";
+    doneBtn.style.cssText =
+      "padding:8px 16px;border:none;border-radius:8px;background:#0f766e;color:#ffffff;font-weight:700;cursor:pointer;";
+    doneBtn.onclick = () => {
+      const rect = stage.getBoundingClientRect();
+      const sw = rect.width || 360;
+      const sh = rect.height || 180;
+      const scaleToOutX = outWidth / sw;
+      const scaleToOutY = outHeight / sh;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = outWidth;
+      canvas.height = outHeight;
+      const ctx = canvas.getContext("2d");
+
+      const drawW = baseW * zoom * scaleToOutX;
+      const drawH = baseH * zoom * scaleToOutY;
+      const drawX = (sw / 2 + offsetX) * scaleToOutX - drawW / 2;
+      const drawY = (sh / 2 + offsetY) * scaleToOutY - drawH / 2;
+
+      ctx.drawImage(img, drawX, drawY, drawW, drawH);
+      const finalUrl = canvas.toDataURL("image/jpeg", 0.8);
+      modal.remove();
+      resolve(finalUrl);
+    };
+
+    actions.appendChild(cancelBtn);
+    actions.appendChild(doneBtn);
+
+    card.appendChild(heading);
+    card.appendChild(hint);
+    card.appendChild(stage);
+    card.appendChild(zoomRow);
+    card.appendChild(actions);
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+  });
+}
+
 function imgMarkup(src, altText, isMini = false) {
   if (src) {
     return `<img src="${src}" alt="${altText}" />`;
@@ -213,7 +377,7 @@ function imgMarkup(src, altText, isMini = false) {
   return `<div style="width:100%;height:${h};background:#e5e7eb;"></div>`;
 }
 
-function startCoverAutoScroll(track, slideCount) {
+function startCoverAutoScroll(track, slideCount, onSlideChange) {
   clearInterval(coverAutoScrollTimer);
   if (OWNER_EDIT_MODE || !track || slideCount <= 1) return;
 
@@ -228,7 +392,22 @@ function startCoverAutoScroll(track, slideCount) {
       left: currentSlide * track.clientWidth,
       behavior: "smooth"
     });
+    if (typeof onSlideChange === "function") onSlideChange(currentSlide);
   }, 3000);
+}
+
+function peekNextCoverHint() {
+  const track = document.getElementById("coverSliderTrack");
+  if (!track || OWNER_EDIT_MODE) return;
+  const peekAmount = Math.min(80, Math.round(track.clientWidth * 0.22));
+  if (peekAmount <= 0) return;
+
+  track.scrollTo({ left: peekAmount, behavior: "smooth" });
+  setTimeout(() => {
+    if (document.body.contains(track)) {
+      track.scrollTo({ left: 0, behavior: "smooth" });
+    }
+  }, 650);
 }
 
 /* ==================== OWNER STORE LIVE EDIT (index.html?ownerEdit=1) ==================== */
@@ -497,26 +676,41 @@ function ensureOwnerInlineFileInput() {
       const file = e.target.files && e.target.files[0];
       if (!file || !pendingOwnerEditSlot) return;
 
-      const dataUrl = await readImageAsDataURL(file, 700);
-      if (!dataUrl) return;
+      const rawUrl = await readImageAsDataURL(file, 900);
+      if (!rawUrl) return;
+
+      const slotInfo = pendingOwnerEditSlot;
+      pendingOwnerEditSlot = null;
+
+      const isCover = slotInfo.type === "cover";
+      const adjustedUrl = await openPhotoPositionEditor(
+        rawUrl,
+        isCover ? 16 / 9 : 1,
+        isCover ? 720 : 500
+      );
+      if (!adjustedUrl) return;
 
       const data = getWorkingStoreData();
-      if (pendingOwnerEditSlot.type === "cover") {
-        const slotIdx = Number.isInteger(pendingOwnerEditSlot.slotIdx) ? pendingOwnerEditSlot.slotIdx : 0;
-        data.coverSlots[slotIdx] = dataUrl;
-        data.coverImg = data.coverSlots[0] || dataUrl;
-      } else if (pendingOwnerEditSlot.type === "item") {
-        const { sIdx, itemId } = pendingOwnerEditSlot;
+      if (isCover) {
+        const slotIdx = Number.isInteger(slotInfo.slotIdx) ? slotInfo.slotIdx : 0;
+        const wasFirstEmpty = slotIdx === 0 && !data.coverSlots[0];
+        data.coverSlots[slotIdx] = adjustedUrl;
+        data.coverImg = data.coverSlots[0] || adjustedUrl;
+        renderHeader();
+        attachOwnerStoreEditHandlers();
+        if (wasFirstEmpty) {
+          peekNextCoverHint();
+        }
+      } else if (slotInfo.type === "item") {
+        const { sIdx, itemId } = slotInfo;
         const item = data.sections[sIdx]?.items?.find((i) => i.id === itemId);
         if (item) {
-          item.img = dataUrl;
+          item.img = adjustedUrl;
         }
+        renderHeader();
+        renderSections();
+        attachOwnerStoreEditHandlers();
       }
-
-      pendingOwnerEditSlot = null;
-      renderHeader();
-      renderSections();
-      attachOwnerStoreEditHandlers();
     });
     document.body.appendChild(input);
   }
@@ -627,6 +821,42 @@ function removeBottomStoreRow() {
   attachOwnerStoreEditHandlers();
 }
 
+function enableStoreNameDragOnCover(coverWrap, overlayEl) {
+  const data = getWorkingStoreData();
+  if (!data.titlePos) data.titlePos = { x: 8, y: 72 };
+  overlayEl.style.cursor = "move";
+  overlayEl.style.touchAction = "none";
+
+  let dragging = false;
+  let startX = 0;
+  let startY = 0;
+
+  overlayEl.onpointerdown = (e) => {
+    if (e.target.closest("button")) return;
+    e.stopPropagation();
+    dragging = true;
+    overlayEl.setPointerCapture(e.pointerId);
+    const wrapRect = coverWrap.getBoundingClientRect();
+    const curLeftPx = (data.titlePos.x / 100) * wrapRect.width;
+    const curTopPx = (data.titlePos.y / 100) * wrapRect.height;
+    startX = e.clientX - curLeftPx;
+    startY = e.clientY - curTopPx;
+  };
+
+  overlayEl.onpointermove = (e) => {
+    if (!dragging) return;
+    const wrapRect = coverWrap.getBoundingClientRect();
+    const nx = Math.min(75, Math.max(2, ((e.clientX - startX) / wrapRect.width) * 100));
+    const ny = Math.min(82, Math.max(4, ((e.clientY - startY) / wrapRect.height) * 100));
+    data.titlePos = { x: Math.round(nx), y: Math.round(ny) };
+    applyTitlePositionStyle();
+  };
+
+  overlayEl.onpointerup = () => {
+    dragging = false;
+  };
+}
+
 function attachOwnerStoreEditHandlers() {
   if (!OWNER_EDIT_MODE || document.body.getAttribute("data-page") === "owner") return;
 
@@ -692,15 +922,45 @@ function attachOwnerStoreEditHandlers() {
   const coverWrap = document.querySelector(".cover-wrapper");
   if (coverWrap) {
     coverWrap.style.position = "relative";
+    coverWrap.style.overflow = "hidden";
+
+    const overlayEl = coverWrap.querySelector(".cover-overlay");
+    if (overlayEl) {
+      overlayEl.style.zIndex = "22";
+      enableStoreNameDragOnCover(coverWrap, overlayEl);
+
+      const posBtn = document.createElement("button");
+      posBtn.type = "button";
+      posBtn.className = "owner-inline-edit-btn";
+      posBtn.textContent = "✥ Name";
+      posBtn.title = "Move Store Name";
+      posBtn.style.cssText =
+        "margin-top:6px;padding:3px 9px;border:none;border-radius:6px;background:rgba(255,255,255,0.92);color:#0f172a;font-size:0.72rem;font-weight:700;cursor:pointer;";
+      posBtn.onclick = (e) => {
+        e.stopPropagation();
+        const presets = [
+          { x: 6, y: 12 },
+          { x: 28, y: 42 },
+          { x: 8, y: 72 }
+        ];
+        const cur = data.titlePos || { x: 8, y: 72 };
+        const nextIdx = presets.findIndex(
+          (p) => Math.abs(p.x - cur.x) < 10 && Math.abs(p.y - cur.y) < 12
+        );
+        data.titlePos = presets[(nextIdx + 1) % presets.length];
+        applyTitlePositionStyle();
+      };
+      overlayEl.appendChild(posBtn);
+    }
 
     const slides = coverWrap.querySelectorAll(".cover-slide-item");
     slides.forEach((slide, idx) => {
       const slidePhotoBtn = document.createElement("button");
       slidePhotoBtn.type = "button";
       slidePhotoBtn.className = "owner-inline-edit-btn";
-      slidePhotoBtn.textContent = `✎ Photo ${idx + 1}`;
+      slidePhotoBtn.textContent = `Update ${idx + 1}`;
       slidePhotoBtn.style.cssText =
-        `position:absolute;top:10px;right:48px;z-index:20;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
+        `position:absolute;top:10px;right:48px;z-index:20;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
       slidePhotoBtn.onclick = (e) => {
         e.stopPropagation();
         pendingOwnerEditSlot = { type: "cover", slotIdx: idx };
@@ -712,7 +972,7 @@ function attachOwnerStoreEditHandlers() {
       slideDeleteBtn.type = "button";
       slideDeleteBtn.className = "owner-inline-edit-btn";
       slideDeleteBtn.textContent = "✕";
-      slideDeleteBtn.title = "Remove Cover";
+      slideDeleteBtn.title = "Delete Cover";
       slideDeleteBtn.style.cssText =
         "position:absolute;top:10px;right:10px;z-index:20;width:30px;height:28px;border:none;border-radius:8px;background:#fee2e2;color:#dc2626;font-size:0.85rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);";
       slideDeleteBtn.onclick = (e) => {
@@ -894,6 +1154,19 @@ function attachOwnerStoreEditHandlers() {
 }
 
 /* ==================== STORE PAGE (index.html) ==================== */
+function applyTitlePositionStyle() {
+  const data = getWorkingStoreData();
+  const overlayEl = document.querySelector(".cover-overlay");
+  if (!overlayEl) return;
+  const pos = data.titlePos || { x: 8, y: 72 };
+  overlayEl.style.position = "absolute";
+  overlayEl.style.left = `${pos.x}%`;
+  overlayEl.style.top = `${pos.y}%`;
+  overlayEl.style.right = "auto";
+  overlayEl.style.bottom = "auto";
+  overlayEl.style.zIndex = "15";
+}
+
 function renderHeader() {
   const data = getWorkingStoreData();
   if (data.themeColor) {
@@ -907,6 +1180,10 @@ function renderHeader() {
 
   const coverWrap = document.querySelector(".cover-wrapper");
   if (!coverWrap) return;
+
+  coverWrap.style.position = "relative";
+  coverWrap.style.overflow = "hidden";
+  applyTitlePositionStyle();
 
   const slots = Array.isArray(data.coverSlots) && data.coverSlots.length > 0 ? data.coverSlots : [""];
   const visibleSlots = OWNER_EDIT_MODE ? slots : slots.filter(Boolean);
@@ -1602,7 +1879,7 @@ function renderPhotoManagerPreview() {
 function buildCartoonAvatarsGrid() {
   const grid = document.getElementById("cartoonAvatarsGrid");
   grid.innerHTML = "";
-  CARTOON_AVATARS.forEach((url, idx) => {
+  CARTOON_AVATARS.forEach((url) => {
     const img = document.createElement("img");
     img.src = url;
     img.alt = "Avatar";
@@ -1619,11 +1896,14 @@ function buildCartoonAvatarsGrid() {
 async function handleUserPhotoUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
-  const imgData = await readImageAsDataURL(file, 400);
-  if (imgData) {
-    tempManagerPhoto = imgData;
-    renderPhotoManagerPreview();
-    buildCartoonAvatarsGrid();
+  const rawData = await readImageAsDataURL(file, 600);
+  if (rawData) {
+    const adjusted = await openPhotoPositionEditor(rawData, 1, 400);
+    if (adjusted) {
+      tempManagerPhoto = adjusted;
+      renderPhotoManagerPreview();
+      buildCartoonAvatarsGrid();
+    }
   }
   event.target.value = "";
 }
