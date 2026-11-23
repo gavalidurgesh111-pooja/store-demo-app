@@ -237,22 +237,43 @@ function imgMarkup(src, altText, isMini = false) {
   return `<div style="width:100%;height:${h};background:#e5e7eb;"></div>`;
 }
 
-function startCoverAutoScroll(track, slideCount, onSlideChange) {
+function startCoverAutoScroll(track, slideCount) {
   clearInterval(coverAutoScrollTimer);
-  if (OWNER_EDIT_MODE || !track || slideCount <= 1) return;
+  if (OWNER_EDIT_MODE || !track || slideCount <= 1) {
+    if (track) track.scrollLeft = 0;
+    return;
+  }
 
   let currentSlide = 0;
+  let resetTimer = null;
+
   coverAutoScrollTimer = setInterval(() => {
     if (!document.body.contains(track)) {
       clearInterval(coverAutoScrollTimer);
+      clearTimeout(resetTimer);
       return;
     }
-    currentSlide = (currentSlide + 1) % slideCount;
+
+    const slideWidth = track.clientWidth;
+    if (!slideWidth) return;
+
+    currentSlide += 1;
     track.scrollTo({
-      left: currentSlide * track.clientWidth,
+      left: currentSlide * slideWidth,
       behavior: "smooth"
     });
-    if (typeof onSlideChange === "function") onSlideChange(currentSlide);
+
+    if (currentSlide >= slideCount) {
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(() => {
+        if (!document.body.contains(track)) return;
+        track.scrollTo({
+          left: 0,
+          behavior: "instant"
+        });
+        currentSlide = 0;
+      }, 550);
+    }
   }, 3000);
 }
 
@@ -333,6 +354,7 @@ function renderHeader() {
   }
 
   track.innerHTML = "";
+  track.scrollLeft = 0;
 
   if (visibleSlots.length === 0) {
     clearInterval(coverAutoScrollTimer);
@@ -341,10 +363,15 @@ function renderHeader() {
   }
 
   track.style.display = "flex";
-  visibleSlots.forEach((src, idx) => {
+
+  const slidesToRender = (!OWNER_EDIT_MODE && visibleSlots.length > 1)
+    ? [...visibleSlots, visibleSlots[0]]
+    : visibleSlots;
+
+  slidesToRender.forEach((src, idx) => {
     const slide = document.createElement("div");
     slide.className = "cover-slide-item";
-    slide.dataset.slotIdx = String(idx);
+    slide.dataset.slotIdx = String(idx % visibleSlots.length);
     slide.style.cssText =
       "position:relative;flex:0 0 100%;width:100%;height:100%;min-height:150px;scroll-snap-align:start;background:#e2e8f0;display:flex;align-items:center;justify-content:center;overflow:hidden;";
 
