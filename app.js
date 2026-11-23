@@ -19,29 +19,35 @@ const CARTOON_AVATARS = [
 ];
 
 const DEFAULT_SECTION_TITLES = [
-  "1. Trending Deals",
-  "2. Fresh Fruits & Vegetables",
-  "3. Dairy & Bakery",
-  "4. Snacks & Namkeen",
-  "5. Cold Drinks & Juices",
-  "6. Atta, Rice & Dal",
-  "7. Cooking Oil & Ghee",
-  "8. Spices & Masala",
-  "9. Tea, Coffee & Health Drinks",
-  "10. Biscuits & Chocolates",
-  "11. Personal Care",
-  "12. Household & Cleaning",
-  "13. Baby Care Essentials",
-  "14. Dry Fruits & Nuts",
-  "15. Combo Value Packs"
+  "Trending Deals",
+  "Fresh Fruits & Vegetables",
+  "Dairy & Bakery",
+  "Snacks & Namkeen",
+  "Cold Drinks & Juices",
+  "Atta, Rice & Dal",
+  "Cooking Oil & Ghee",
+  "Spices & Masala",
+  "Tea, Coffee & Health Drinks",
+  "Biscuits & Chocolates",
+  "Personal Care",
+  "Household & Cleaning",
+  "Baby Care Essentials",
+  "Dry Fruits & Nuts",
+  "Combo Value Packs"
 ];
+
+function cleanDisplayName(text, fallback = "Item") {
+  const raw = String(text || "").trim();
+  const stripped = raw.replace(/^\d+[\.\)\-\:\s]+/, "").trim();
+  return stripped || fallback;
+}
 
 function buildInitialData() {
   const sections = DEFAULT_SECTION_TITLES.map((title, idx) => {
     const count = idx === 0 ? 4 : 5;
     const items = [];
     for (let i = 1; i <= count; i++) {
-      items.push({ id: `${idx}-${i}`, name: `Item ${i}`, price: 0, img: "" });
+      items.push({ id: `${idx}-${i}`, name: "Item", price: 0, img: "" });
     }
     return { title, items };
   });
@@ -493,7 +499,7 @@ function addBoxToSection(sIdx) {
   const nextNum = sec.items.length + 1;
   sec.items.push({
     id: `${sIdx}-${Date.now()}-${nextNum}`,
-    name: `Item ${nextNum}`,
+    name: "Item",
     price: 0,
     img: ""
   });
@@ -525,10 +531,10 @@ function addBottomStoreRow() {
   const rowNum = storeData.sections.length + 1;
   const items = [];
   for (let i = 1; i <= 5; i++) {
-    items.push({ id: `${rowNum}-${Date.now()}-${i}`, name: `Item ${i}`, price: 0, img: "" });
+    items.push({ id: `${rowNum}-${Date.now()}-${i}`, name: "Item", price: 0, img: "" });
   }
   storeData.sections.push({
-    title: `${rowNum}. New Row`,
+    title: "New Row",
     items
   });
 
@@ -666,9 +672,9 @@ function attachOwnerStoreEditHandlers() {
         "margin-left:8px;padding:3px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
       secEditBtn.onclick = (e) => {
         e.stopPropagation();
-        const next = prompt("Edit Name:", sec.title || "");
+        const next = prompt("Edit Name:", cleanDisplayName(sec.title || "", "Section"));
         if (next !== null) {
-          sec.title = next.trim();
+          sec.title = cleanDisplayName(next, "Section");
           saveData();
           renderSections();
           attachOwnerStoreEditHandlers();
@@ -712,9 +718,9 @@ function attachOwnerStoreEditHandlers() {
         nameBtn.onclick = (e) => {
           e.preventDefault();
           e.stopPropagation();
-          const next = prompt("Edit Name:", item.name || "");
+          const next = prompt("Edit Name:", cleanDisplayName(item.name || "", "Item"));
           if (next !== null) {
-            item.name = next.trim();
+            item.name = cleanDisplayName(next, "Item");
             saveData();
             renderSections();
             attachOwnerStoreEditHandlers();
@@ -792,9 +798,9 @@ function renderHeader() {
   }
   const titleEl = document.getElementById("storeTitle");
   if (!titleEl) return;
-  titleEl.textContent = storeData.storeTitle || "Store";
+  titleEl.textContent = cleanDisplayName(storeData.storeTitle || "Store", "Store");
   const subEl = document.getElementById("storeSubtitle");
-  if (subEl) subEl.textContent = storeData.storeSubtitle || "";
+  if (subEl) subEl.textContent = cleanDisplayName(storeData.storeSubtitle || "", "");
 
   const firstCover = storeData.coverSlots.find(Boolean) || storeData.coverImg || "";
   const coverImgEl = document.getElementById("coverImage");
@@ -820,11 +826,13 @@ function renderSections() {
     const sectionEl = document.createElement("section");
     sectionEl.className = "row-section";
 
+    const cleanTitle = cleanDisplayName(sec.title || "", "Section");
+
     const stripEl = document.createElement("div");
     stripEl.className = "strip-bar";
     stripEl.innerHTML = `
-      <span class="strip-title">${sec.title}</span>
-      <span class="strip-tag">${sIdx === 0 ? "5 Boxes" : "Swipe →"}</span>
+      <span class="strip-title">${cleanTitle}</span>
+      <span class="strip-tag">${sIdx === 0 ? "Boxes" : "Swipe →"}</span>
     `;
     sectionEl.appendChild(stripEl);
 
@@ -833,6 +841,7 @@ function renderSections() {
       fiveRow.className = "five-boxes-row";
 
       sec.items.slice(0, Math.min(4, maxBoxes)).forEach((item) => {
+        const cleanItemName = cleanDisplayName(item.name || "", "Item");
         const box = document.createElement("div");
         box.className = "mini-box";
         box.onclick = () => {
@@ -840,9 +849,9 @@ function renderSections() {
           openOrderModal(0, item.id);
         };
         box.innerHTML = `
-          ${imgMarkup(item.img, item.name, true)}
+          ${imgMarkup(item.img, cleanItemName, true)}
           <div class="mini-box-body">
-            <div class="mini-box-name">${item.name}</div>
+            <div class="mini-box-name">${cleanItemName}</div>
             <div class="mini-box-price">₹${item.price}</div>
           </div>
         `;
@@ -866,12 +875,13 @@ function renderSections() {
       scrollEl.className = "scroll-row";
 
       sec.items.slice(0, maxBoxes).forEach((item) => {
+        const cleanItemName = cleanDisplayName(item.name || "", "Item");
         const box = document.createElement("div");
         box.className = "item-box";
         box.innerHTML = `
-          ${imgMarkup(item.img, item.name, false)}
+          ${imgMarkup(item.img, cleanItemName, false)}
           <div class="item-info">
-            <div class="item-name" title="${item.name}">${item.name}</div>
+            <div class="item-name" title="${cleanItemName}">${cleanItemName}</div>
             <div class="item-price">₹${item.price}</div>
             <button type="button" class="buy-btn" onclick="if(!OWNER_EDIT_MODE)openOrderModal(${sIdx}, '${item.id}')">Order</button>
           </div>
@@ -890,7 +900,7 @@ function openOrderModal(sectionIdx, itemId) {
   const item = storeData.sections[sectionIdx]?.items.find((i) => i.id === itemId);
   if (!item) return;
   activeOrderItem = item;
-  document.getElementById("modalItemTitle").textContent = item.name;
+  document.getElementById("modalItemTitle").textContent = cleanDisplayName(item.name || "", "Item");
   document.getElementById("modalItemPrice").textContent = `Price: ₹${item.price}`;
 
   const up = storeData.userProfile || {};
@@ -912,13 +922,14 @@ function confirmOrder() {
   const customer = document.getElementById("orderCustomer").value.trim() || defaultName;
   const qty = Math.max(1, parseInt(document.getElementById("orderQty").value, 10) || 1);
   const amount = activeOrderItem.price * qty;
+  const cleanItemName = cleanDisplayName(activeOrderItem.name || "", "Item");
 
   storeData.orders.push({
     customer,
     customerPhone: up.phone || "",
     customerPhoto: up.photo || "",
     itemId: activeOrderItem.id,
-    itemName: activeOrderItem.name,
+    itemName: cleanItemName,
     itemPrice: activeOrderItem.price,
     itemImg: activeOrderItem.img || "",
     qty,
@@ -927,7 +938,7 @@ function confirmOrder() {
 
   saveData();
   closeOrderModal();
-  alert(`Order Placed: ${activeOrderItem.name} x${qty} (₹${amount})`);
+  alert(`Order Placed: ${cleanItemName} x${qty} (₹${amount})`);
 }
 
 function openPinModal() {
@@ -1135,7 +1146,6 @@ function renderPaginatedUsers() {
       ? `<img class="row-thumb round" src="${u.photo}" alt="${fullName}" />`
       : `<div class="row-thumb round">${fullName.charAt(0).toUpperCase()}</div>`;
 
-    // Show phone number only on owner page; show only name (and provider if present) on user side
     const subText = isOwnerPage
       ? (u.phone || u.provider || "Active")
       : (u.provider || "");
@@ -1220,7 +1230,7 @@ function addOwnerBuyerBox() {
     alert(`Box limit reached (Max ${storeData.ownerBoxLimit}).`);
     return;
   }
-  storeData.ownerBuyerBoxes.push({ name: `Buyer Box ${storeData.ownerBuyerBoxes.length + 1}` });
+  storeData.ownerBuyerBoxes.push({ name: "Buyer Box" });
   saveData();
   renderBuyersTab();
 }
@@ -1327,7 +1337,7 @@ function addCustomFolderEntry() {
     return;
   }
   const input = document.getElementById("customEntryInput");
-  const val = input.value.trim() || `Item ${(folder.entries || []).length + 1}`;
+  const val = input.value.trim() || "Item";
   folder.entries.unshift(val);
   saveData();
   input.value = "";
@@ -1438,7 +1448,7 @@ function buildCartoonAvatarsGrid() {
   CARTOON_AVATARS.forEach((url, idx) => {
     const img = document.createElement("img");
     img.src = url;
-    img.alt = `Avatar ${idx + 1}`;
+    img.alt = "Avatar";
     img.className = "avatar-choice" + (tempManagerPhoto === url ? " selected" : "");
     img.onclick = () => {
       tempManagerPhoto = url;
