@@ -72,7 +72,7 @@ function hideDigitsOnUserPage() {
   const textNodes = [];
   let node;
   while ((node = walker.nextNode())) {
-    if (node.parentElement && node.parentElement.closest("#ownerLiveSaveBar, #ownerCustomColorPickerModal, #ownerPhotoPositionModal")) {
+    if (node.parentElement && node.parentElement.closest("#ownerLiveSaveBar, #ownerCustomColorPickerModal, #ownerPhotoPositionModal, #ownerStoreNameModal")) {
       continue;
     }
     if (/\d/.test(node.nodeValue)) {
@@ -446,6 +446,8 @@ function removeOwnerStoreEditUI() {
   if (bar) bar.remove();
   const bottomBar = document.getElementById("ownerBottomRowControls");
   if (bottomBar) bottomBar.remove();
+  const nameModal = document.getElementById("ownerStoreNameModal");
+  if (nameModal) nameModal.remove();
   removeCustomPickerIfExists();
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
 }
@@ -685,6 +687,165 @@ function openCustomColourPickerModal() {
   syncColorUI();
 }
 
+function openStoreNameEditorPopup() {
+  const existing = document.getElementById("ownerStoreNameModal");
+  if (existing) existing.remove();
+
+  const data = getWorkingStoreData();
+  let tempName = data.storeTitle || "";
+  let tempFont = data.titleFont || STORE_FONT_OPTIONS[0].value;
+  let tempColor = data.titleColor || STORE_NAME_COLORS[0];
+
+  const modal = document.createElement("div");
+  modal.id = "ownerStoreNameModal";
+  modal.style.cssText =
+    "position:fixed;inset:0;z-index:125;background:rgba(15,23,42,0.6);display:flex;align-items:center;justify-content:center;padding:14px;";
+
+  const card = document.createElement("div");
+  card.style.cssText =
+    "width:100%;max-width:380px;background:#ffffff;border-radius:12px;padding:14px;box-shadow:0 12px 30px rgba(0,0,0,0.3);display:flex;flex-direction:column;gap:12px;";
+
+  const title = document.createElement("div");
+  title.textContent = "Store Name";
+  title.style.cssText = "font-size:1rem;font-weight:700;color:#111827;";
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.value = tempName;
+  input.placeholder = "Enter store name";
+  input.style.cssText =
+    "width:100%;padding:9px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.95rem;color:#111827;box-sizing:border-box;";
+
+  const previewBox = document.createElement("div");
+  previewBox.style.cssText =
+    "padding:10px;border-radius:8px;background:#1e293b;min-height:38px;display:flex;align-items:center;overflow-wrap:anywhere;word-break:break-word;";
+
+  const previewText = document.createElement("span");
+  previewBox.appendChild(previewText);
+
+  function syncPreview() {
+    previewText.textContent = input.value || "Store Name";
+    previewText.style.fontFamily = tempFont;
+    previewText.style.color = tempColor;
+    previewText.style.fontWeight = "700";
+    previewText.style.fontSize = "1.05rem";
+  }
+
+  input.oninput = syncPreview;
+
+  const fontWrap = document.createElement("div");
+  fontWrap.style.cssText = "display:flex;flex-direction:column;gap:6px;";
+
+  const fontLbl = document.createElement("span");
+  fontLbl.textContent = "Font";
+  fontLbl.style.cssText = "font-size:0.82rem;font-weight:700;color:#334155;";
+
+  const fontList = document.createElement("div");
+  fontList.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;";
+
+  STORE_FONT_OPTIONS.forEach((opt) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = opt.label;
+    btn.style.cssText =
+      `padding:5px 10px;border-radius:6px;border:1px solid #cbd5e1;font-family:${opt.value};font-size:0.82rem;font-weight:700;cursor:pointer;`;
+    btn.onclick = () => {
+      tempFont = opt.value;
+      renderFontButtons();
+      syncPreview();
+    };
+    fontList.appendChild(btn);
+  });
+
+  function renderFontButtons() {
+    const btns = fontList.querySelectorAll("button");
+    btns.forEach((b, i) => {
+      const active = STORE_FONT_OPTIONS[i].value === tempFont;
+      b.style.background = active ? "#0f766e" : "#f8fafc";
+      b.style.color = active ? "#ffffff" : "#111827";
+      b.style.borderColor = active ? "#0f766e" : "#cbd5e1";
+    });
+  }
+
+  fontWrap.appendChild(fontLbl);
+  fontWrap.appendChild(fontList);
+
+  const colorWrap = document.createElement("div");
+  colorWrap.style.cssText = "display:flex;flex-direction:column;gap:6px;";
+
+  const colorLbl = document.createElement("span");
+  colorLbl.textContent = "Colour";
+  colorLbl.style.cssText = "font-size:0.82rem;font-weight:700;color:#334155;";
+
+  const colorList = document.createElement("div");
+  colorList.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;align-items:center;";
+
+  STORE_NAME_COLORS.forEach((hex) => {
+    const swatch = document.createElement("button");
+    swatch.type = "button";
+    swatch.style.cssText =
+      `width:26px;height:26px;border-radius:50%;background:${hex};border:2px solid #cbd5e1;cursor:pointer;padding:0;`;
+    swatch.onclick = () => {
+      tempColor = hex;
+      renderColorButtons();
+      syncPreview();
+    };
+    colorList.appendChild(swatch);
+  });
+
+  function renderColorButtons() {
+    const btns = colorList.querySelectorAll("button");
+    btns.forEach((b, i) => {
+      const selected = STORE_NAME_COLORS[i] === tempColor;
+      b.style.outline = selected ? "2px solid #0f172a" : "none";
+      b.style.outlineOffset = selected ? "2px" : "0px";
+    });
+  }
+
+  colorWrap.appendChild(colorLbl);
+  colorWrap.appendChild(colorList);
+
+  const footer = document.createElement("div");
+  footer.style.cssText = "display:flex;justify-content:flex-end;gap:8px;margin-top:4px;";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.style.cssText =
+    "padding:7px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:#334155;font-weight:600;cursor:pointer;";
+  cancelBtn.onclick = () => modal.remove();
+
+  const applyBtn = document.createElement("button");
+  applyBtn.type = "button";
+  applyBtn.textContent = "Apply";
+  applyBtn.style.cssText =
+    "padding:7px 16px;border:none;border-radius:8px;background:#0f766e;color:#ffffff;font-weight:700;cursor:pointer;";
+  applyBtn.onclick = () => {
+    data.storeTitle = input.value.trim() || "Store";
+    data.titleFont = tempFont;
+    data.titleColor = tempColor;
+    modal.remove();
+    renderHeader();
+    attachOwnerStoreEditHandlers();
+  };
+
+  footer.appendChild(cancelBtn);
+  footer.appendChild(applyBtn);
+
+  card.appendChild(title);
+  card.appendChild(input);
+  card.appendChild(previewBox);
+  card.appendChild(fontWrap);
+  card.appendChild(colorWrap);
+  card.appendChild(footer);
+  modal.appendChild(card);
+  document.body.appendChild(modal);
+
+  renderFontButtons();
+  renderColorButtons();
+  syncPreview();
+}
+
 function ensureOwnerInlineFileInput() {
   let input = document.getElementById("ownerLivePhotoInput");
   if (!input) {
@@ -873,11 +1034,11 @@ function enableStoreNameDragOnCover(coverWrap, overlayEl) {
     const nx = Math.min(maxX, Math.max(0, e.clientX - startX));
     const ny = Math.min(maxY, Math.max(0, e.clientY - startY));
 
-    data.titlePos = {
-      x: Math.round(nx),
-      y: Math.round(ny)
-    };
-    applyTitlePositionStyle();
+    const rx = Math.round(nx);
+    const ry = Math.round(ny);
+    data.titlePos = { x: rx, y: ry };
+    overlayEl.style.left = `${rx}px`;
+    overlayEl.style.top = `${ry}px`;
   };
 
   overlayEl.onpointerup = () => {
@@ -967,48 +1128,10 @@ function attachOwnerStoreEditHandlers() {
         "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:25;padding:1px 5px;margin:0;border:1px solid #0f172a;border-radius:4px;background:rgba(255,255,255,0.92);color:#0f172a;font-size:0.75rem;font-weight:700;line-height:1;cursor:pointer;";
       pencilBtn.onclick = (e) => {
         e.stopPropagation();
-        const currentName = data.storeTitle || "";
-        const next = prompt("Enter Store Name:", currentName);
-        if (next !== null) {
-          data.storeTitle = next.trim() || "Store";
-          renderHeader();
-          attachOwnerStoreEditHandlers();
-        }
-      };
-
-      const fontBtn = document.createElement("button");
-      fontBtn.type = "button";
-      fontBtn.className = "owner-inline-edit-btn";
-      fontBtn.textContent = "Font";
-      fontBtn.title = "Change Font";
-      fontBtn.style.cssText =
-        "position:absolute;left:0;top:100%;z-index:25;padding:2px 6px;margin:0;border:1px solid #cbd5e1;border-radius:0px;background:#ffffff;color:#0f172a;font-size:0.7rem;font-weight:700;line-height:1.2;cursor:pointer;";
-      fontBtn.onclick = (e) => {
-        e.stopPropagation();
-        const curIdx = STORE_FONT_OPTIONS.findIndex((f) => f.value === data.titleFont);
-        const nextFont = STORE_FONT_OPTIONS[(curIdx + 1) % STORE_FONT_OPTIONS.length];
-        data.titleFont = nextFont.value;
-        applyTitlePositionStyle();
-      };
-
-      const nameColorBtn = document.createElement("button");
-      nameColorBtn.type = "button";
-      nameColorBtn.className = "owner-inline-edit-btn";
-      nameColorBtn.textContent = "🎨";
-      nameColorBtn.title = "Change Name Color";
-      nameColorBtn.style.cssText =
-        "position:absolute;left:42px;top:100%;z-index:25;padding:2px 6px;margin:0;border:1px solid #cbd5e1;border-radius:0px;background:#ffffff;color:#0f172a;font-size:0.7rem;font-weight:700;line-height:1.2;cursor:pointer;";
-      nameColorBtn.onclick = (e) => {
-        e.stopPropagation();
-        const curIdx = STORE_NAME_COLORS.indexOf(data.titleColor);
-        const nextColor = STORE_NAME_COLORS[(curIdx + 1) % STORE_NAME_COLORS.length];
-        data.titleColor = nextColor;
-        applyTitlePositionStyle();
+        openStoreNameEditorPopup();
       };
 
       overlayEl.appendChild(pencilBtn);
-      overlayEl.appendChild(fontBtn);
-      overlayEl.appendChild(nameColorBtn);
     }
 
     const slides = coverWrap.querySelectorAll(".cover-slide-item");
