@@ -1,3 +1,5 @@
+console.log("OWNER_EDIT_POPUP_ACTIVE_V1");
+
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
 }
