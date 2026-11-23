@@ -915,6 +915,7 @@ function confirmOrder() {
 
   storeData.orders.push({
     customer,
+    customerPhone: up.phone || "",
     customerPhoto: up.photo || "",
     itemId: activeOrderItem.id,
     itemName: activeOrderItem.name,
@@ -1125,12 +1126,19 @@ function renderPaginatedUsers() {
   if (!list) return;
   list.innerHTML = "";
 
+  const isOwnerPage = document.body.getAttribute("data-page") === "owner";
+
   const slice = users.slice(0, usersVisibleLimit);
   slice.forEach((u) => {
     const fullName = [u.firstName, u.surname].filter(Boolean).join(" ") || "User";
     const thumbHtml = u.photo
       ? `<img class="row-thumb round" src="${u.photo}" alt="${fullName}" />`
       : `<div class="row-thumb round">${fullName.charAt(0).toUpperCase()}</div>`;
+
+    // Show phone number only on owner page; show only name (and provider if present) on user side
+    const subText = isOwnerPage
+      ? (u.phone || u.provider || "Active")
+      : (u.provider || "");
 
     const row = document.createElement("div");
     row.className = "list-row-card";
@@ -1139,7 +1147,7 @@ function renderPaginatedUsers() {
         ${thumbHtml}
         <div>
           <div class="row-main-text">${fullName}</div>
-          <div class="row-sub-text">${u.phone || u.provider || "Active"}</div>
+          ${subText ? `<div class="row-sub-text">${subText}</div>` : ""}
         </div>
       </div>
     `;
@@ -1229,10 +1237,14 @@ function renderBuyersTab() {
   if (!list) return;
   list.innerHTML = "";
 
+  const savedPhone = storeData.userProfile?.phone || "";
+
   storeData.orders.slice().reverse().forEach((o) => {
     const thumbHtml = o.customerPhoto
       ? `<img class="row-thumb round" src="${o.customerPhoto}" alt="${o.customer}" />`
       : `<div class="row-thumb round">${(o.customer || "C").charAt(0).toUpperCase()}</div>`;
+
+    const phoneLine = o.customerPhone || savedPhone;
 
     const row = document.createElement("div");
     row.className = "list-row-card";
@@ -1241,7 +1253,7 @@ function renderBuyersTab() {
         ${thumbHtml}
         <div>
           <div class="row-main-text">${o.customer}</div>
-          <div class="row-sub-text">${o.itemName} × ${o.qty}</div>
+          <div class="row-sub-text">${o.itemName} × ${o.qty}${phoneLine ? ` • ${phoneLine}` : ""}</div>
         </div>
       </div>
       <div class="row-actions">
