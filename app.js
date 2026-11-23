@@ -134,6 +134,7 @@ let activeOrderItem = null;
 let draftPhoto = storeData.userProfile?.photo || "";
 let tempManagerPhoto = "";
 let otpCountdownInterval = null;
+let coverAutoScrollTimer = null;
 
 let activeFolderIdx = 0;
 let usersVisibleLimit = 10;
@@ -210,6 +211,24 @@ function hideDigitsOnUserPage() {
   textNodes.forEach((tn) => {
     tn.nodeValue = tn.nodeValue.replace(/\d+/g, "").replace(/\s{2,}/g, " ");
   });
+}
+
+function startCoverAutoScroll(track, slideCount) {
+  clearInterval(coverAutoScrollTimer);
+  if (OWNER_EDIT_MODE || !track || slideCount <= 1) return;
+
+  let currentSlide = 0;
+  coverAutoScrollTimer = setInterval(() => {
+    if (!document.body.contains(track)) {
+      clearInterval(coverAutoScrollTimer);
+      return;
+    }
+    currentSlide = (currentSlide + 1) % slideCount;
+    track.scrollTo({
+      left: currentSlide * track.clientWidth,
+      behavior: "smooth"
+    });
+  }, 3000);
 }
 
 /* ==================== OWNER STORE LIVE EDIT (index.html?ownerEdit=1) ==================== */
@@ -891,6 +910,7 @@ function renderHeader() {
   track.innerHTML = "";
 
   if (visibleSlots.length === 0) {
+    clearInterval(coverAutoScrollTimer);
     track.style.display = "none";
     return;
   }
@@ -918,6 +938,8 @@ function renderHeader() {
 
     track.appendChild(slide);
   });
+
+  startCoverAutoScroll(track, visibleSlots.length);
 }
 
 function renderSections() {
@@ -1004,6 +1026,10 @@ function renderSections() {
 
     container.appendChild(sectionEl);
   });
+
+  if (!OWNER_EDIT_MODE) {
+    hideDigitsOnUserPage();
+  }
 }
 
 function openOrderModal(sectionIdx, itemId) {
