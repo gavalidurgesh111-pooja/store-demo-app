@@ -140,7 +140,22 @@ let usersVisibleLimit = 10;
 let activeCoverTargetIdx = 0;
 
 const OWNER_EDIT_MODE = new URLSearchParams(window.location.search).get("ownerEdit") === "1";
+let draftStoreData = null;
 let pendingOwnerEditSlot = null;
+
+function getWorkingStoreData() {
+  return OWNER_EDIT_MODE && draftStoreData ? draftStoreData : storeData;
+}
+
+function initDraftStoreData() {
+  draftStoreData = JSON.parse(JSON.stringify(storeData));
+}
+
+function commitDraftStoreData() {
+  if (!draftStoreData) return;
+  storeData = JSON.parse(JSON.stringify(draftStoreData));
+  saveData();
+}
 
 function saveData() {
   try {
@@ -179,24 +194,6 @@ function imgMarkup(src, altText, isMini = false) {
   return `<div style="width:100%;height:${h};background:#e5e7eb;"></div>`;
 }
 
-function hideDigitsOnUserPage() {
-  if (document.body.getAttribute("data-page") !== "store" || OWNER_EDIT_MODE) return;
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
-  const textNodes = [];
-  let node;
-  while ((node = walker.nextNode())) {
-    if (node.parentElement && node.parentElement.closest("#ownerLiveSaveBar, #ownerCustomColorPickerModal")) {
-      continue;
-    }
-    if (/\d/.test(node.nodeValue)) {
-      textNodes.push(node);
-    }
-  }
-  textNodes.forEach((tn) => {
-    tn.nodeValue = tn.nodeValue.replace(/\d+/g, "").replace(/\s{2,}/g, " ");
-  });
-}
-
 /* ==================== OWNER STORE LIVE EDIT (index.html?ownerEdit=1) ==================== */
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -216,15 +213,15 @@ function removeOwnerStoreEditUI() {
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
 }
 
-function applyStoreThemeColor(hexColor) {
+function applyDraftThemeColor(hexColor) {
+  const data = getWorkingStoreData();
   if (!hexColor) return;
-  storeData.themeColor = hexColor;
+  data.themeColor = hexColor;
   document.documentElement.style.setProperty("--primary", hexColor);
   const bar = document.getElementById("ownerLiveSaveBar");
   if (bar) bar.style.background = hexColor;
   const saveBtn = document.getElementById("ownerLiveSaveBtn");
   if (saveBtn) saveBtn.style.color = hexColor;
-  saveData();
 }
 
 function hsvToHex(h, s, v) {
@@ -258,7 +255,8 @@ function getColorNameFromHsv(h, s, v) {
 
 function openCustomColourPickerModal() {
   removeCustomPickerIfExists();
-  const initialColor = storeData.themeColor || "#0f766e";
+  const data = getWorkingStoreData();
+  const initialColor = data.themeColor || "#0f766e";
   let hue = 0;
   let sat = 0.85;
   let val = 0.85;
@@ -390,7 +388,7 @@ function openCustomColourPickerModal() {
     sat = rect.width ? x / rect.width : 0.85;
     val = rect.height ? 1 - y / rect.height : 0.85;
     const hex = syncColorUI();
-    applyStoreThemeColor(hex);
+    applyDraftThemeColor(hex);
   }
 
   function updateHueFromPointer(clientX) {
@@ -398,7 +396,7 @@ function openCustomColourPickerModal() {
     const x = Math.min(Math.max(0, clientX - rect.left), rect.width);
     hue = rect.width ? (x / rect.width) * 360 : 0;
     const hex = syncColorUI();
-    applyStoreThemeColor(hex);
+    applyDraftThemeColor(hex);
   }
 
   let draggingShade = false;
@@ -429,7 +427,7 @@ function openCustomColourPickerModal() {
 
   applyBtn.onclick = () => {
     const finalHex = syncColorUI();
-    applyStoreThemeColor(finalHex);
+    applyDraftThemeColor(finalHex);
     modal.remove();
     attachOwnerStoreEditHandlers();
   };
@@ -465,19 +463,19 @@ function ensureOwnerInlineFileInput() {
       const dataUrl = await readImageAsDataURL(file, 700);
       if (!dataUrl) return;
 
+      const data = getWorkingStoreData();
       if (pendingOwnerEditSlot.type === "cover") {
         const slotIdx = Number.isInteger(pendingOwnerEditSlot.slotIdx) ? pendingOwnerEditSlot.slotIdx : 0;
-        storeData.coverSlots[slotIdx] = dataUrl;
-        storeData.coverImg = storeData.coverSlots[0] || dataUrl;
+        data.coverSlots[slotIdx] = dataUrl;
+        data.coverImg = data.coverSlots[0] || dataUrl;
       } else if (pendingOwnerEditSlot.type === "item") {
         const { sIdx, itemId } = pendingOwnerEditSlot;
-        const item = storeData.sections[sIdx]?.items?.find((i) => i.id === itemId);
+        const item = data.sections[sIdx]?.items?.find((i) => i.id === itemId);
         if (item) {
           item.img = dataUrl;
         }
       }
 
-      saveData();
       pendingOwnerEditSlot = null;
       renderHeader();
       renderSections();
@@ -489,31 +487,32 @@ function ensureOwnerInlineFileInput() {
 }
 
 function addCoverInEditMode() {
-  const maxAllowed = Math.min(MAX_COVER_SLOTS, Math.max(1, Number(storeData.coverSlotsLimit ?? 1)));
-  if (!Array.isArray(storeData.coverSlots)) storeData.coverSlots = [""];
-  if (storeData.coverSlots.length >= maxAllowed) {
+  const data = getWorkingStoreData();
+  const maxAllowed = Math.min(MAX_COVER_SLOTS, Math.max(1, Number(data.coverSlotsLimit ?? 1)));
+  if (!Array.isArray(data.coverSlots)) data.coverSlots = [""];
+  if (data.coverSlots.length >= maxAllowed) {
     alert(`Cover limit reached (${maxAllowed} max).`);
     return;
   }
-  storeData.coverSlots.push("");
-  saveData();
+  data.coverSlots.push("");
   renderHeader();
   attachOwnerStoreEditHandlers();
 }
 
 function removeCoverInEditMode() {
-  if (!Array.isArray(storeData.coverSlots) || storeData.coverSlots.length <= 1) return;
-  storeData.coverSlots.pop();
-  storeData.coverImg = storeData.coverSlots[0] || "";
-  saveData();
+  const data = getWorkingStoreData();
+  if (!Array.isArray(data.coverSlots) || data.coverSlots.length <= 1) return;
+  data.coverSlots.pop();
+  data.coverImg = data.coverSlots[0] || "";
   renderHeader();
   attachOwnerStoreEditHandlers();
 }
 
 function addBoxToSection(sIdx) {
-  const sec = storeData.sections[sIdx];
+  const data = getWorkingStoreData();
+  const sec = data.sections[sIdx];
   if (!sec) return;
-  const maxBoxes = Math.min(MAX_INDEX_BOXES, Math.max(0, Number(storeData.indexBoxLimit ?? MAX_INDEX_BOXES)));
+  const maxBoxes = Math.min(MAX_INDEX_BOXES, Math.max(0, Number(data.indexBoxLimit ?? MAX_INDEX_BOXES)));
   const currentCount = sIdx === 0 ? Math.min(4, sec.items.length) : sec.items.length;
 
   if (currentCount >= maxBoxes) {
@@ -528,49 +527,48 @@ function addBoxToSection(sIdx) {
     img: ""
   });
 
-  saveData();
   renderSections();
   attachOwnerStoreEditHandlers();
 }
 
 function removeBoxFromSection(sIdx) {
-  const sec = storeData.sections[sIdx];
+  const data = getWorkingStoreData();
+  const sec = data.sections[sIdx];
   if (!sec) return;
   const minBoxes = sIdx === 0 ? 1 : 0;
   if (sec.items.length <= minBoxes) return;
 
   sec.items.pop();
-  saveData();
   renderSections();
   attachOwnerStoreEditHandlers();
 }
 
 function addBottomStoreRow() {
-  const maxRows = Math.min(MAX_INDEX_BOXES, Math.max(1, Number(storeData.indexBoxLimit ?? MAX_INDEX_BOXES)));
-  if (storeData.sections.length >= maxRows) {
+  const data = getWorkingStoreData();
+  const maxRows = Math.min(MAX_INDEX_BOXES, Math.max(1, Number(data.indexBoxLimit ?? MAX_INDEX_BOXES)));
+  if (data.sections.length >= maxRows) {
     alert(`Row limit reached (${maxRows} max).`);
     return;
   }
 
-  const rowNum = storeData.sections.length + 1;
+  const rowNum = data.sections.length + 1;
   const items = [];
   for (let i = 1; i <= 5; i++) {
     items.push({ id: `${rowNum}-${Date.now()}-${i}`, name: "Item", price: 0, img: "" });
   }
-  storeData.sections.push({
+  data.sections.push({
     title: "New Row",
     items
   });
 
-  saveData();
   renderSections();
   attachOwnerStoreEditHandlers();
 }
 
 function removeBottomStoreRow() {
-  if (storeData.sections.length <= 1) return;
-  storeData.sections.pop();
-  saveData();
+  const data = getWorkingStoreData();
+  if (data.sections.length <= 1) return;
+  data.sections.pop();
   renderSections();
   attachOwnerStoreEditHandlers();
 }
@@ -578,10 +576,11 @@ function removeBottomStoreRow() {
 function attachOwnerStoreEditHandlers() {
   if (!OWNER_EDIT_MODE || document.body.getAttribute("data-page") === "owner") return;
 
+  const data = getWorkingStoreData();
   const fileInput = ensureOwnerInlineFileInput();
   removeOwnerStoreEditUI();
 
-  const activeColor = storeData.themeColor || "#0f766e";
+  const activeColor = data.themeColor || "#0f766e";
   document.documentElement.style.setProperty("--primary", activeColor);
 
   const bar = document.createElement("div");
@@ -590,7 +589,7 @@ function attachOwnerStoreEditHandlers() {
     `position:sticky;top:0;z-index:80;background:${activeColor};color:#ffffff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;`;
 
   const info = document.createElement("span");
-  info.textContent = "Edit photo, name, price, color, boxes or rows";
+  info.textContent = "Draft mode: Tap Save to update store";
   info.style.cssText = "font-size:0.8rem;font-weight:600;";
 
   const actions = document.createElement("div");
@@ -613,7 +612,7 @@ function attachOwnerStoreEditHandlers() {
   saveBtn.style.cssText =
     `padding:7px 14px;border:none;border-radius:8px;background:#ffffff;color:${activeColor};font-weight:700;cursor:pointer;`;
   saveBtn.onclick = () => {
-    saveData();
+    commitDraftStoreData();
     removeOwnerStoreEditUI();
     window.location.href = "index.html";
   };
@@ -624,6 +623,7 @@ function attachOwnerStoreEditHandlers() {
   backBtn.style.cssText =
     "padding:7px 10px;border:1px solid rgba(255,255,255,0.55);border-radius:8px;background:transparent;color:#ffffff;font-weight:600;cursor:pointer;";
   backBtn.onclick = () => {
+    draftStoreData = null;
     removeOwnerStoreEditUI();
     window.location.href = "index.html";
   };
@@ -644,7 +644,7 @@ function attachOwnerStoreEditHandlers() {
     coverBtn.className = "owner-inline-edit-btn";
     coverBtn.textContent = "✎ Photo";
     coverBtn.style.cssText =
-      `position:absolute;top:10px;right:10px;z-index:5;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${storeData.themeColor || "#0f766e"};font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);`;
+      `position:absolute;top:10px;right:10px;z-index:5;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);`;
     coverBtn.onclick = (e) => {
       e.stopPropagation();
       pendingOwnerEditSlot = { type: "cover", slotIdx: 0 };
@@ -657,7 +657,7 @@ function attachOwnerStoreEditHandlers() {
     addCoverBtn.className = "owner-inline-edit-btn";
     addCoverBtn.textContent = "+ Cover";
     addCoverBtn.style.cssText =
-      `position:absolute;bottom:10px;right:10px;z-index:5;padding:4px 9px;border:none;border-radius:8px;background:#ffffff;color:${storeData.themeColor || "#0f766e"};font-size:0.74rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);`;
+      `position:absolute;bottom:10px;right:10px;z-index:5;padding:4px 9px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.74rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);`;
     addCoverBtn.onclick = (e) => {
       e.stopPropagation();
       addCoverInEditMode();
@@ -681,7 +681,7 @@ function attachOwnerStoreEditHandlers() {
 
   const sectionEls = document.querySelectorAll("#sectionsContainer .row-section");
   sectionEls.forEach((secEl, sIdx) => {
-    const sec = storeData.sections[sIdx];
+    const sec = data.sections[sIdx];
     if (!sec) return;
 
     const stripEl = secEl.querySelector(".strip-bar");
@@ -699,7 +699,6 @@ function attachOwnerStoreEditHandlers() {
         const next = prompt("Edit Name:", stripAllDigits(sec.title || "", "Section"));
         if (next !== null) {
           sec.title = stripAllDigits(next, "Section");
-          saveData();
           renderSections();
           attachOwnerStoreEditHandlers();
         }
@@ -720,7 +719,7 @@ function attachOwnerStoreEditHandlers() {
       photoBtn.textContent = "✎";
       photoBtn.title = "Edit Photo";
       photoBtn.style.cssText =
-        `position:absolute;top:6px;right:6px;z-index:4;width:24px;height:24px;border:none;border-radius:6px;background:${storeData.themeColor || "#0f766e"};color:#ffffff;font-size:0.75rem;font-weight:700;cursor:pointer;`;
+        `position:absolute;top:6px;right:6px;z-index:4;width:24px;height:24px;border:none;border-radius:6px;background:${data.themeColor || "#0f766e"};color:#ffffff;font-size:0.75rem;font-weight:700;cursor:pointer;`;
       photoBtn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -745,7 +744,6 @@ function attachOwnerStoreEditHandlers() {
           const next = prompt("Edit Name:", stripAllDigits(item.name || "", "Item"));
           if (next !== null) {
             item.name = stripAllDigits(next, "Item");
-            saveData();
             renderSections();
             attachOwnerStoreEditHandlers();
           }
@@ -757,18 +755,17 @@ function attachOwnerStoreEditHandlers() {
       priceBtn.type = "button";
       priceBtn.className = "owner-inline-edit-btn";
       priceBtn.textContent = "₹";
-      priceBtn.title = "Edit Price";
+      priceBtn.title = "Set Amount";
       priceBtn.style.cssText =
         "margin-left:4px;padding:1px 6px;border:1px solid #cbd5e1;border-radius:5px;background:#fefce8;color:#854d0e;font-size:0.72rem;font-weight:700;cursor:pointer;";
       priceBtn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
         const currentPrice = Number(item.price || 0);
-        const next = prompt("Enter Price (₹):", String(currentPrice));
+        const next = prompt("Set Amount (₹):", String(currentPrice));
         if (next !== null) {
           const parsed = Number(next.replace(/[^\d.]/g, ""));
           item.price = Number.isNaN(parsed) ? 0 : parsed;
-          saveData();
           renderSections();
           attachOwnerStoreEditHandlers();
         }
@@ -784,7 +781,7 @@ function attachOwnerStoreEditHandlers() {
         addBoxBtn.className = "owner-inline-edit-btn";
         addBoxBtn.textContent = "+ Box";
         addBoxBtn.style.cssText =
-          `flex:0 0 auto;align-self:center;padding:10px 14px;border:1px dashed ${storeData.themeColor || "#0f766e"};border-radius:14px;background:#f0fdfa;color:${storeData.themeColor || "#0f766e"};font-size:0.82rem;font-weight:700;cursor:pointer;`;
+          `flex:0 0 auto;align-self:center;padding:10px 14px;border:1px dashed ${data.themeColor || "#0f766e"};border-radius:14px;background:#f0fdfa;color:${data.themeColor || "#0f766e"};font-size:0.82rem;font-weight:700;cursor:pointer;`;
         addBoxBtn.onclick = (e) => {
           e.stopPropagation();
           addBoxToSection(sIdx);
@@ -820,7 +817,7 @@ function attachOwnerStoreEditHandlers() {
     addRowBtn.className = "owner-inline-edit-btn";
     addRowBtn.textContent = "+ Row";
     addRowBtn.style.cssText =
-      `flex:1;padding:10px 14px;border:1px solid ${storeData.themeColor || "#0f766e"};border-radius:12px;background:#f0fdfa;color:${storeData.themeColor || "#0f766e"};font-size:0.88rem;font-weight:700;cursor:pointer;`;
+      `flex:1;padding:10px 14px;border:1px solid ${data.themeColor || "#0f766e"};border-radius:12px;background:#f0fdfa;color:${data.themeColor || "#0f766e"};font-size:0.88rem;font-weight:700;cursor:pointer;`;
     addRowBtn.onclick = () => addBottomStoreRow();
 
     const remRowBtn = document.createElement("button");
@@ -839,16 +836,17 @@ function attachOwnerStoreEditHandlers() {
 
 /* ==================== STORE PAGE (index.html) ==================== */
 function renderHeader() {
-  if (storeData.themeColor) {
-    document.documentElement.style.setProperty("--primary", storeData.themeColor);
+  const data = getWorkingStoreData();
+  if (data.themeColor) {
+    document.documentElement.style.setProperty("--primary", data.themeColor);
   }
   const titleEl = document.getElementById("storeTitle");
   if (!titleEl) return;
-  titleEl.textContent = stripAllDigits(storeData.storeTitle || "Store", "Store");
+  titleEl.textContent = stripAllDigits(data.storeTitle || "Store", "Store");
   const subEl = document.getElementById("storeSubtitle");
-  if (subEl) subEl.textContent = stripAllDigits(storeData.storeSubtitle || "", "");
+  if (subEl) subEl.textContent = stripAllDigits(data.storeSubtitle || "", "");
 
-  const firstCover = storeData.coverSlots.find(Boolean) || storeData.coverImg || "";
+  const firstCover = (data.coverSlots || []).find(Boolean) || data.coverImg || "";
   const coverImgEl = document.getElementById("coverImage");
   if (coverImgEl) {
     if (firstCover) {
@@ -862,13 +860,14 @@ function renderHeader() {
 }
 
 function renderSections() {
+  const data = getWorkingStoreData();
   const container = document.getElementById("sectionsContainer");
   if (!container) return;
   container.innerHTML = "";
-  const savedPhoto = storeData.userProfile?.photo || "";
-  const maxBoxes = Math.min(MAX_INDEX_BOXES, Math.max(0, Number(storeData.indexBoxLimit ?? MAX_INDEX_BOXES)));
+  const savedPhoto = data.userProfile?.photo || "";
+  const maxBoxes = Math.min(MAX_INDEX_BOXES, Math.max(0, Number(data.indexBoxLimit ?? MAX_INDEX_BOXES)));
 
-  storeData.sections.forEach((sec, sIdx) => {
+  data.sections.forEach((sec, sIdx) => {
     const sectionEl = document.createElement("section");
     sectionEl.className = "row-section";
 
@@ -888,7 +887,8 @@ function renderSections() {
 
       sec.items.slice(0, Math.min(4, maxBoxes)).forEach((item) => {
         const cleanItemName = stripAllDigits(item.name || "", "Item");
-        const priceDisplay = OWNER_EDIT_MODE ? `₹${item.price || 0}` : "₹";
+        const amountVal = Number(item.price || 0);
+        const priceDisplay = `₹${amountVal}`;
         const box = document.createElement("div");
         box.className = "mini-box";
         box.onclick = () => {
@@ -923,7 +923,8 @@ function renderSections() {
 
       sec.items.slice(0, maxBoxes).forEach((item) => {
         const cleanItemName = stripAllDigits(item.name || "", "Item");
-        const priceDisplay = OWNER_EDIT_MODE ? `₹${item.price || 0}` : "₹";
+        const amountVal = Number(item.price || 0);
+        const priceDisplay = `₹${amountVal}`;
         const box = document.createElement("div");
         box.className = "item-box";
         box.innerHTML = `
@@ -942,18 +943,15 @@ function renderSections() {
 
     container.appendChild(sectionEl);
   });
-
-  if (!OWNER_EDIT_MODE) {
-    hideDigitsOnUserPage();
-  }
 }
 
 function openOrderModal(sectionIdx, itemId) {
   const item = storeData.sections[sectionIdx]?.items.find((i) => i.id === itemId);
   if (!item) return;
   activeOrderItem = item;
+  const amountVal = Number(item.price || 0);
   document.getElementById("modalItemTitle").textContent = stripAllDigits(item.name || "", "Item");
-  document.getElementById("modalItemPrice").textContent = "Price: ₹";
+  document.getElementById("modalItemPrice").textContent = `Price: ₹${amountVal}`;
 
   const up = storeData.userProfile || {};
   const fullName = [up.firstName, up.surname].filter(Boolean).join(" ");
@@ -973,7 +971,8 @@ function confirmOrder() {
   const defaultName = [up.firstName, up.surname].filter(Boolean).join(" ") || "Customer";
   const customer = document.getElementById("orderCustomer").value.trim() || defaultName;
   const qty = Math.max(1, parseInt(document.getElementById("orderQty").value, 10) || 1);
-  const amount = (activeOrderItem.price || 0) * qty;
+  const unitPrice = Number(activeOrderItem.price || 0);
+  const amount = unitPrice * qty;
   const cleanItemName = stripAllDigits(activeOrderItem.name || "", "Item");
 
   storeData.orders.push({
@@ -982,7 +981,7 @@ function confirmOrder() {
     customerPhoto: up.photo || "",
     itemId: activeOrderItem.id,
     itemName: cleanItemName,
-    itemPrice: activeOrderItem.price || 0,
+    itemPrice: unitPrice,
     itemImg: activeOrderItem.img || "",
     qty,
     amount
@@ -990,7 +989,7 @@ function confirmOrder() {
 
   saveData();
   closeOrderModal();
-  alert(`Order Placed: ${cleanItemName}`);
+  alert(`Order Placed: ${cleanItemName} (₹${amount})`);
 }
 
 function openPinModal() {
@@ -1623,11 +1622,13 @@ window.addEventListener("storage", () => {
   } catch (err) {}
   renderHeader();
   renderSections();
+  if (OWNER_EDIT_MODE && !draftStoreData) initDraftStoreData();
   if (OWNER_EDIT_MODE) attachOwnerStoreEditHandlers();
 });
 
 const currentPage = document.body.getAttribute("data-page");
 if (currentPage === "store") {
+  if (OWNER_EDIT_MODE) initDraftStoreData();
   renderHeader();
   renderSections();
   if (OWNER_EDIT_MODE) attachOwnerStoreEditHandlers();
