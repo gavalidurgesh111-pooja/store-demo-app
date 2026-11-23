@@ -414,7 +414,6 @@ function openStoreNameEditorPopup() {
   syncPreview();
 }
 
-// Compact pop-up editor for cover photos (drag + zoom in a modal)
 function openCoverPhotoPopup(file, onDone) {
   if (!file || typeof onDone !== "function") return;
 
