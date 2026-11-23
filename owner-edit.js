@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_FULL_FIXED_V5");
+console.log("OWNER_EDIT_COVER_RATIO_POPUP_V6");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -416,7 +416,7 @@ function openStoreNameEditorPopup() {
   syncPreview();
 }
 
-// ==================== FIXED INSTAGRAM FEED SIZE POP-UP PHOTO EDITOR ====================
+// ==================== COVER SIZE CROP POP-UP EDITOR (#screenPhotoEditor) ====================
 let rawImageObj = null;
 let posX = 0, posY = 0, imgScale = 1, minScale = 1, maxScale = 2.5;
 let baseLeft = 0, baseTop = 0;
@@ -434,12 +434,12 @@ function ensureCoverEditorDOM() {
       "display:none;position:fixed;inset:0;background:rgba(15,23,42,0.72);z-index:99999;align-items:center;justify-content:center;padding:12px;";
 
     screen.innerHTML = `
-      <div class="editor-popup-card" style="width:100%;max-width:320px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 12px 28px rgba(0,0,0,0.4);display:flex;flex-direction:column;">
-        <div class="editor-canvas-area" id="editorCanvasArea" style="width:100%;height:290px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:none;background:#1e293b;">
+      <div class="editor-popup-card" style="width:100%;max-width:344px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,0.4);display:flex;flex-direction:column;">
+        <div class="editor-canvas-area" id="editorCanvasArea" style="width:100%;height:230px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:none;background:#1e293b;">
           <img id="editorImagePreview" src="" alt="Preview" style="position:absolute;cursor:grab;user-select:none;z-index:5;display:block;max-width:none;max-height:none;will-change:transform;transform:translate3d(0px, 0px, 0px);" />
-          <div class="crop-frame-box" id="cropFrameBox" style="width:260px;height:260px;border:2px solid #ffffff;box-shadow:0 0 0 9999px rgba(0, 0, 0, 0.5);position:relative;pointer-events:none;z-index:10;"></div>
+          <div class="crop-frame-box" id="cropFrameBox" style="width:290px;height:140px;border:2px solid #ffffff;box-shadow:0 0 0 9999px rgba(0, 0, 0, 0.52);position:relative;pointer-events:none;z-index:10;"></div>
         </div>
-        <div class="editor-bottom-bar" style="width:100%;height:46px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:0 20px;z-index:25;border-top:1px solid #e2e8f0;">
+        <div class="editor-bottom-bar" style="width:100%;height:48px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:0 22px;z-index:25;border-top:1px solid #e2e8f0;">
           <button type="button" class="editor-bottom-btn" onclick="cancelEditor()" title="Cancel" style="background:none;border:none;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#334155;font-weight:700;">✕</button>
           <button type="button" class="editor-bottom-btn" onclick="confirmEditor()" title="Save" style="background:none;border:none;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#0f766e;font-weight:700;">✓</button>
         </div>
@@ -633,8 +633,8 @@ function confirmEditor() {
   if (!rawImageObj || !preview || !box) return;
 
   const canvas = document.createElement("canvas");
-  canvas.width = 900;
-  canvas.height = Math.round(900 / (box.width / box.height));
+  canvas.width = 1080;
+  canvas.height = Math.round(1080 / (box.width / box.height));
   const ctx = canvas.getContext("2d");
 
   const previewRect = preview.getBoundingClientRect();
@@ -647,7 +647,7 @@ function confirmEditor() {
   const sH = (box.height / renderedHeight) * rawImageObj.height;
 
   ctx.drawImage(rawImageObj, sX, sY, sW, sH, 0, 0, canvas.width, canvas.height);
-  const croppedUrl = canvas.toDataURL("image/jpeg", 0.85);
+  const croppedUrl = canvas.toDataURL("image/jpeg", 0.88);
 
   if (preview) preview.src = "";
   const screen = document.getElementById("screenPhotoEditor");
