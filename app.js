@@ -195,24 +195,6 @@ function imgMarkup(src, altText, isMini = false) {
   return `<div style="width:100%;height:${h};background:#e5e7eb;"></div>`;
 }
 
-function hideDigitsOnUserPage() {
-  if (document.body.getAttribute("data-page") !== "store" || OWNER_EDIT_MODE) return;
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
-  const textNodes = [];
-  let node;
-  while ((node = walker.nextNode())) {
-    if (node.parentElement && node.parentElement.closest("#ownerLiveSaveBar, #ownerCustomColorPickerModal")) {
-      continue;
-    }
-    if (/\d/.test(node.nodeValue)) {
-      textNodes.push(node);
-    }
-  }
-  textNodes.forEach((tn) => {
-    tn.nodeValue = tn.nodeValue.replace(/\d+/g, "").replace(/\s{2,}/g, " ");
-  });
-}
-
 function startCoverAutoScroll(track, slideCount) {
   clearInterval(coverAutoScrollTimer);
   if (OWNER_EDIT_MODE || !track || slideCount <= 1) return;
@@ -687,7 +669,7 @@ function attachOwnerStoreEditHandlers() {
       slidePhotoBtn.className = "owner-inline-edit-btn";
       slidePhotoBtn.textContent = `✎ Photo ${idx + 1}`;
       slidePhotoBtn.style.cssText =
-        `position:absolute;top:10px;right:10px;z-index:5;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);`;
+        `position:absolute;top:10px;right:10px;z-index:20;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
       slidePhotoBtn.onclick = (e) => {
         e.stopPropagation();
         pendingOwnerEditSlot = { type: "cover", slotIdx: idx };
@@ -702,7 +684,7 @@ function attachOwnerStoreEditHandlers() {
     addCoverBtn.className = "owner-inline-edit-btn";
     addCoverBtn.textContent = "+ Cover";
     addCoverBtn.style.cssText =
-      `position:absolute;bottom:10px;right:10px;z-index:5;padding:4px 9px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.74rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);`;
+      `position:absolute;bottom:10px;right:10px;z-index:20;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
     addCoverBtn.onclick = (e) => {
       e.stopPropagation();
       addCoverInEditMode();
@@ -713,7 +695,7 @@ function attachOwnerStoreEditHandlers() {
     remCoverBtn.className = "owner-inline-edit-btn";
     remCoverBtn.textContent = "− Cover";
     remCoverBtn.style.cssText =
-      "position:absolute;bottom:10px;right:78px;z-index:5;padding:4px 8px;border:none;border-radius:8px;background:#fee2e2;color:#dc2626;font-size:0.74rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);";
+      "position:absolute;bottom:10px;right:86px;z-index:20;padding:5px 9px;border:none;border-radius:8px;background:#fee2e2;color:#dc2626;font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);";
     remCoverBtn.onclick = (e) => {
       e.stopPropagation();
       removeCoverInEditMode();
@@ -1026,10 +1008,6 @@ function renderSections() {
 
     container.appendChild(sectionEl);
   });
-
-  if (!OWNER_EDIT_MODE) {
-    hideDigitsOnUserPage();
-  }
 }
 
 function openOrderModal(sectionIdx, itemId) {
