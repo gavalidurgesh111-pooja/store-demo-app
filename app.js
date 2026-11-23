@@ -543,11 +543,21 @@ function addCoverInEditMode() {
   }
 }
 
-function removeCoverInEditMode() {
+function removeCoverSlotAt(slotIdx) {
   const data = getWorkingStoreData();
-  if (!Array.isArray(data.coverSlots) || data.coverSlots.length <= 1) return;
-  data.coverSlots.pop();
-  data.coverImg = data.coverSlots[0] || "";
+  if (!Array.isArray(data.coverSlots) || data.coverSlots.length === 0) {
+    data.coverSlots = [""];
+  }
+
+  if (data.coverSlots.length <= 1) {
+    data.coverSlots[0] = "";
+    data.coverImg = "";
+  } else {
+    const safeIdx = Math.max(0, Math.min(data.coverSlots.length - 1, slotIdx));
+    data.coverSlots.splice(safeIdx, 1);
+    data.coverImg = data.coverSlots.find(Boolean) || "";
+  }
+
   renderHeader();
   attachOwnerStoreEditHandlers();
 }
@@ -690,14 +700,28 @@ function attachOwnerStoreEditHandlers() {
       slidePhotoBtn.className = "owner-inline-edit-btn";
       slidePhotoBtn.textContent = `✎ Photo ${idx + 1}`;
       slidePhotoBtn.style.cssText =
-        `position:absolute;top:10px;right:10px;z-index:20;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
+        `position:absolute;top:10px;right:48px;z-index:20;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
       slidePhotoBtn.onclick = (e) => {
         e.stopPropagation();
         pendingOwnerEditSlot = { type: "cover", slotIdx: idx };
         fileInput.value = "";
         fileInput.click();
       };
+
+      const slideDeleteBtn = document.createElement("button");
+      slideDeleteBtn.type = "button";
+      slideDeleteBtn.className = "owner-inline-edit-btn";
+      slideDeleteBtn.textContent = "✕";
+      slideDeleteBtn.title = "Remove Cover";
+      slideDeleteBtn.style.cssText =
+        "position:absolute;top:10px;right:10px;z-index:20;width:30px;height:28px;border:none;border-radius:8px;background:#fee2e2;color:#dc2626;font-size:0.85rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);";
+      slideDeleteBtn.onclick = (e) => {
+        e.stopPropagation();
+        removeCoverSlotAt(idx);
+      };
+
       slide.appendChild(slidePhotoBtn);
+      slide.appendChild(slideDeleteBtn);
     });
 
     const addCoverBtn = document.createElement("button");
@@ -711,19 +735,7 @@ function attachOwnerStoreEditHandlers() {
       addCoverInEditMode();
     };
 
-    const remCoverBtn = document.createElement("button");
-    remCoverBtn.type = "button";
-    remCoverBtn.className = "owner-inline-edit-btn";
-    remCoverBtn.textContent = "− Cover";
-    remCoverBtn.style.cssText =
-      "position:absolute;bottom:10px;right:86px;z-index:20;padding:5px 9px;border:none;border-radius:8px;background:#fee2e2;color:#dc2626;font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);";
-    remCoverBtn.onclick = (e) => {
-      e.stopPropagation();
-      removeCoverInEditMode();
-    };
-
     coverWrap.appendChild(addCoverBtn);
-    coverWrap.appendChild(remCoverBtn);
   }
 
   const sectionEls = document.querySelectorAll("#sectionsContainer .row-section");
