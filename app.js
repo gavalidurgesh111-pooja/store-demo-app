@@ -5,6 +5,23 @@ const MAX_OWNER_BOXES = 50;
 const MAX_INDEX_BOXES = 50;
 const MAX_COVER_SLOTS = 10;
 
+const STORE_FONT_OPTIONS = [
+  { label: "Sans", value: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" },
+  { label: "Rounded", value: "'Trebuchet MS', 'Segoe UI', sans-serif" },
+  { label: "Serif", value: "Georgia, 'Times New Roman', serif" },
+  { label: "Mono", value: "'Courier New', monospace" }
+];
+
+const STORE_NAME_COLORS = [
+  "#ffffff",
+  "#fde047",
+  "#67e8f9",
+  "#86efac",
+  "#fda4af",
+  "#fdba74",
+  "#111827"
+];
+
 const CARTOON_AVATARS = [
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='60' fill='%23dbeafe'/><circle cx='60' cy='46' r='22' fill='%23f59e0b'/><path d='M36 44c0-15 11-26 24-26s24 11 24 26c-6-6-14-9-24-9s-18 3-24 9z' fill='%231e293b'/><circle cx='52' cy='46' r='3' fill='%23111827'/><circle cx='68' cy='46' r='3' fill='%23111827'/><path d='M52 56q8 7 16 0' stroke='%23111827' stroke-width='3' fill='none' stroke-linecap='round'/><path d='M26 110c4-22 18-32 34-32s30 10 34 32' fill='%230f766e'/></svg>",
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='60' fill='%23fce7f3'/><circle cx='60' cy='48' r='21' fill='%23fed7aa'/><path d='M34 52c0-20 12-32 26-32s26 12 26 32c-4-12-12-18-26-18s-22 6-26 18z' fill='%237c2d12'/><circle cx='52' cy='48' r='3' fill='%23111827'/><circle cx='68' cy='48' r='3' fill='%23111827'/><path d='M53 57q7 6 14 0' stroke='%23be123c' stroke-width='3' fill='none' stroke-linecap='round'/><path d='M28 110c4-21 17-31 32-31s28 10 32 31' fill='%23db2777'/></svg>",
@@ -99,6 +116,8 @@ function buildInitialData() {
     storeTitle: "Store Name",
     storeSubtitle: "",
     titlePos: { x: 0, y: 0 },
+    titleFont: STORE_FONT_OPTIONS[0].value,
+    titleColor: STORE_NAME_COLORS[0],
     themeColor: "#0f766e",
     coverImg: "",
     coverSlots: [""],
@@ -142,6 +161,8 @@ if (!storeData.themeColor) storeData.themeColor = "#0f766e";
 if (!storeData.titlePos || typeof storeData.titlePos.x !== "number" || typeof storeData.titlePos.y !== "number") {
   storeData.titlePos = { x: 0, y: 0 };
 }
+if (!storeData.titleFont) storeData.titleFont = STORE_FONT_OPTIONS[0].value;
+if (!storeData.titleColor) storeData.titleColor = STORE_NAME_COLORS[0];
 if (!Array.isArray(storeData.coverSlots) || storeData.coverSlots.length === 0) {
   storeData.coverSlots = [storeData.coverImg || ""];
 }
@@ -954,7 +975,40 @@ function attachOwnerStoreEditHandlers() {
           attachOwnerStoreEditHandlers();
         }
       };
+
+      const fontBtn = document.createElement("button");
+      fontBtn.type = "button";
+      fontBtn.className = "owner-inline-edit-btn";
+      fontBtn.textContent = "Font";
+      fontBtn.title = "Change Font";
+      fontBtn.style.cssText =
+        "position:absolute;left:0;top:100%;z-index:25;padding:2px 6px;margin:0;border:1px solid #cbd5e1;border-radius:0px;background:#ffffff;color:#0f172a;font-size:0.7rem;font-weight:700;line-height:1.2;cursor:pointer;";
+      fontBtn.onclick = (e) => {
+        e.stopPropagation();
+        const curIdx = STORE_FONT_OPTIONS.findIndex((f) => f.value === data.titleFont);
+        const nextFont = STORE_FONT_OPTIONS[(curIdx + 1) % STORE_FONT_OPTIONS.length];
+        data.titleFont = nextFont.value;
+        applyTitlePositionStyle();
+      };
+
+      const nameColorBtn = document.createElement("button");
+      nameColorBtn.type = "button";
+      nameColorBtn.className = "owner-inline-edit-btn";
+      nameColorBtn.textContent = "🎨";
+      nameColorBtn.title = "Change Name Color";
+      nameColorBtn.style.cssText =
+        "position:absolute;left:42px;top:100%;z-index:25;padding:2px 6px;margin:0;border:1px solid #cbd5e1;border-radius:0px;background:#ffffff;color:#0f172a;font-size:0.7rem;font-weight:700;line-height:1.2;cursor:pointer;";
+      nameColorBtn.onclick = (e) => {
+        e.stopPropagation();
+        const curIdx = STORE_NAME_COLORS.indexOf(data.titleColor);
+        const nextColor = STORE_NAME_COLORS[(curIdx + 1) % STORE_NAME_COLORS.length];
+        data.titleColor = nextColor;
+        applyTitlePositionStyle();
+      };
+
       overlayEl.appendChild(pencilBtn);
+      overlayEl.appendChild(fontBtn);
+      overlayEl.appendChild(nameColorBtn);
     }
 
     const slides = coverWrap.querySelectorAll(".cover-slide-item");
@@ -1187,6 +1241,8 @@ function applyTitlePositionStyle() {
     titleEl.style.whiteSpace = "normal";
     titleEl.style.overflowWrap = "anywhere";
     titleEl.style.wordBreak = "break-word";
+    titleEl.style.fontFamily = data.titleFont || STORE_FONT_OPTIONS[0].value;
+    titleEl.style.color = data.titleColor || STORE_NAME_COLORS[0];
   }
 
   if (OWNER_EDIT_MODE) {
