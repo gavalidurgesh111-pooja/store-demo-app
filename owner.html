@@ -34,16 +34,69 @@
 
     <!-- Top Two Boxes with Center '+' Sign Only -->
     <div class="owner-top-two-bars">
-      <button type="button" class="owner-bar-btn bar-user" onclick="window.location.href='index.html?ownerEdit=1'">
+      <button type="button" class="owner-bar-btn bar-user" onclick="window.location.href='index.html?ownerEdit=1'" title="Store Edit">
         <span class="bar-plus-center">+</span>
       </button>
-      <button type="button" class="owner-bar-btn bar-expand" onclick="openExpandLimitsModal()">
+      <button type="button" class="owner-bar-btn bar-expand" onclick="openExpandLimitsModal()" title="Limits">
         <span class="bar-plus-center">+</span>
       </button>
     </div>
 
     <!-- Clean Boxes Grid -->
     <div class="clean-boxes-grid" id="ownerFoldersGrid"></div>
+
+    <!-- Selected Folder Details -->
+    <section class="folder-details-wrap" id="ownerFolderDetailsWrap" style="margin-top:14px;">
+      <h4 id="activeFolderHeading" style="margin-bottom:10px;"></h4>
+
+      <!-- Active Users Tab -->
+      <div class="folder-tab-pane" id="tabActiveUsers" style="display:none;">
+        <div class="stat-box">
+          <div class="stat-num" id="activeUsersCount">0</div>
+          <div class="stat-label">Active Users</div>
+        </div>
+        <div style="margin-top:8px;">
+          <button type="button" class="btn-secondary btn-compact" id="toggleUsersBtn" onclick="toggleUsersList()">View List</button>
+        </div>
+        <div id="activeUsersListWrap" style="display:none;margin-top:10px;">
+          <div id="activeUsersList"></div>
+          <button type="button" class="btn-secondary btn-compact" id="loadMoreUsersBtn" onclick="loadMoreUsers()" style="display:none;margin-top:8px;">Load More</button>
+        </div>
+      </div>
+
+      <!-- Sold Items Tab -->
+      <div class="folder-tab-pane" id="tabSoldItems" style="display:none;">
+        <div style="display:flex;gap:10px;margin-bottom:10px;">
+          <div class="stat-box" style="flex:1;">
+            <div class="stat-num" id="statSold">0</div>
+            <div class="stat-label">Sold Units</div>
+          </div>
+          <div class="stat-box" style="flex:1;">
+            <div class="stat-num" id="statRevenue">₹0</div>
+            <div class="stat-label">Total Sales</div>
+          </div>
+        </div>
+        <div id="soldItemsList"></div>
+      </div>
+
+      <!-- Buyers / Orders Tab -->
+      <div class="folder-tab-pane" id="tabBuyers" style="display:none;">
+        <div class="stat-box" style="margin-bottom:10px;">
+          <div class="stat-num" id="statOrders">0</div>
+          <div class="stat-label">Total Orders</div>
+        </div>
+        <div id="buyersList"></div>
+      </div>
+
+      <!-- Custom Folder Tab -->
+      <div class="folder-tab-pane" id="tabCustomFolder" style="display:none;">
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <input type="text" id="customEntryInput" placeholder="Add entry..." style="flex:1;" />
+          <button type="button" class="btn-primary btn-compact" onclick="addCustomFolderEntry()">Add</button>
+        </div>
+        <div id="customFolderEntriesList"></div>
+      </div>
+    </section>
 
   </main>
 
