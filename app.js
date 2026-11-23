@@ -98,7 +98,7 @@ function buildInitialData() {
   return {
     storeTitle: "Store Name",
     storeSubtitle: "",
-    titlePos: { x: 8, y: 72 },
+    titlePos: { x: 0, y: 0 },
     themeColor: "#0f766e",
     coverImg: "",
     coverSlots: [""],
@@ -140,7 +140,7 @@ if (!storeData.ownerFolders || storeData.ownerFolders.length < 14) {
 if (!storeData.activeUsers) storeData.activeUsers = [];
 if (!storeData.themeColor) storeData.themeColor = "#0f766e";
 if (!storeData.titlePos || typeof storeData.titlePos.x !== "number" || typeof storeData.titlePos.y !== "number") {
-  storeData.titlePos = { x: 8, y: 72 };
+  storeData.titlePos = { x: 0, y: 0 };
 }
 if (!Array.isArray(storeData.coverSlots) || storeData.coverSlots.length === 0) {
   storeData.coverSlots = [storeData.coverImg || ""];
@@ -823,7 +823,7 @@ function removeBottomStoreRow() {
 
 function enableStoreNameDragOnCover(coverWrap, overlayEl) {
   const data = getWorkingStoreData();
-  if (!data.titlePos) data.titlePos = { x: 8, y: 72 };
+  if (!data.titlePos) data.titlePos = { x: 0, y: 0 };
   overlayEl.style.cursor = "move";
   overlayEl.style.touchAction = "none";
 
@@ -836,21 +836,26 @@ function enableStoreNameDragOnCover(coverWrap, overlayEl) {
     e.stopPropagation();
     dragging = true;
     overlayEl.setPointerCapture(e.pointerId);
-    const wrapRect = coverWrap.getBoundingClientRect();
-    const curLeftPx = (data.titlePos.x / 100) * wrapRect.width;
-    const curTopPx = (data.titlePos.y / 100) * wrapRect.height;
-    startX = e.clientX - curLeftPx;
-    startY = e.clientY - curTopPx;
+    startX = e.clientX - (Number(data.titlePos.x) || 0);
+    startY = e.clientY - (Number(data.titlePos.y) || 0);
   };
 
   overlayEl.onpointermove = (e) => {
     if (!dragging) return;
     const wrapRect = coverWrap.getBoundingClientRect();
-    const maxX = Math.max(2, 92 - (overlayEl.offsetWidth / Math.max(1, wrapRect.width)) * 100);
-    const maxY = Math.max(4, 88 - (overlayEl.offsetHeight / Math.max(1, wrapRect.height)) * 100);
-    const nx = Math.min(maxX, Math.max(2, ((e.clientX - startX) / wrapRect.width) * 100));
-    const ny = Math.min(maxY, Math.max(4, ((e.clientY - startY) / wrapRect.height) * 100));
-    data.titlePos = { x: Math.round(nx), y: Math.round(ny) };
+    const boxW = overlayEl.offsetWidth || 0;
+    const boxH = overlayEl.offsetHeight || 0;
+
+    const maxX = Math.max(0, wrapRect.width - boxW);
+    const maxY = Math.max(0, wrapRect.height - boxH);
+
+    const nx = Math.min(maxX, Math.max(0, e.clientX - startX));
+    const ny = Math.min(maxY, Math.max(0, e.clientY - startY));
+
+    data.titlePos = {
+      x: Math.round(nx),
+      y: Math.round(ny)
+    };
     applyTitlePositionStyle();
   };
 
@@ -930,9 +935,6 @@ function attachOwnerStoreEditHandlers() {
     const titleEl = document.getElementById("storeTitle");
     if (overlayEl && titleEl) {
       overlayEl.style.zIndex = "22";
-      overlayEl.style.display = "inline-flex";
-      overlayEl.style.alignItems = "center";
-      overlayEl.style.gap = "8px";
       enableStoreNameDragOnCover(coverWrap, overlayEl);
 
       const pencilBtn = document.createElement("button");
@@ -941,7 +943,7 @@ function attachOwnerStoreEditHandlers() {
       pencilBtn.textContent = "✎";
       pencilBtn.title = "Edit Store Name";
       pencilBtn.style.cssText =
-        "flex:0 0 auto;padding:2px 7px;border:none;border-radius:6px;background:#ffffff;color:#0f172a;font-size:0.82rem;font-weight:700;cursor:pointer;";
+        "flex:0 0 auto;padding:1px 5px;margin:0;border:none;border-radius:0px;background:#ffffff;color:#0f172a;font-size:0.78rem;font-weight:700;line-height:1.1;cursor:pointer;";
       pencilBtn.onclick = (e) => {
         e.stopPropagation();
         const currentName = data.storeTitle || "";
@@ -1162,30 +1164,40 @@ function applyTitlePositionStyle() {
   const titleEl = document.getElementById("storeTitle");
   if (!overlayEl) return;
 
-  const pos = data.titlePos || { x: 8, y: 72 };
+  const pos = data.titlePos || { x: 0, y: 0 };
   overlayEl.style.position = "absolute";
-  overlayEl.style.left = `${pos.x}%`;
-  overlayEl.style.top = `${pos.y}%`;
+  overlayEl.style.left = `${pos.x}px`;
+  overlayEl.style.top = `${pos.y}px`;
   overlayEl.style.right = "auto";
   overlayEl.style.bottom = "auto";
-  overlayEl.style.maxWidth = "88%";
+  overlayEl.style.width = "fit-content";
+  overlayEl.style.height = "fit-content";
+  overlayEl.style.maxWidth = "100%";
+  overlayEl.style.margin = "0";
   overlayEl.style.zIndex = "15";
 
   if (titleEl) {
+    titleEl.style.margin = "0";
+    titleEl.style.lineHeight = "1.15";
     titleEl.style.whiteSpace = "normal";
     titleEl.style.overflowWrap = "anywhere";
     titleEl.style.wordBreak = "break-word";
   }
 
   if (OWNER_EDIT_MODE) {
-    overlayEl.style.border = "1.5px solid #ffffff";
-    overlayEl.style.borderRadius = "8px";
-    overlayEl.style.padding = "6px 10px";
-    overlayEl.style.background = "rgba(15, 23, 42, 0.45)";
+    overlayEl.style.display = "inline-flex";
+    overlayEl.style.alignItems = "center";
+    overlayEl.style.gap = "4px";
+    overlayEl.style.padding = "2px 6px";
+    overlayEl.style.border = "1px solid #ffffff";
+    overlayEl.style.borderRadius = "0px";
+    overlayEl.style.background = "rgba(15, 23, 42, 0.55)";
+    overlayEl.style.boxSizing = "border-box";
   } else {
+    overlayEl.style.display = "inline-block";
+    overlayEl.style.padding = "0px";
     overlayEl.style.border = "none";
-    overlayEl.style.borderRadius = "0";
-    overlayEl.style.padding = "0";
+    overlayEl.style.borderRadius = "0px";
     overlayEl.style.background = "transparent";
   }
 }
