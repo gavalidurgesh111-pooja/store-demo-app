@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V7");
+console.log("OWNER_EDIT_COMPLETE_V8");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -817,8 +817,9 @@ function addBoxToSection(sIdx) {
   const data = getWorkingStoreData();
   const sec = data.sections[sIdx];
   if (!sec) return;
-  const maxBoxes = Math.min(MAX_INDEX_BOXES, Math.max(0, Number(data.indexBoxLimit ?? MAX_INDEX_BOXES)));
-  const currentCount = sIdx === 0 ? Math.min(4, sec.items.length) : sec.items.length;
+  const rowCap = sIdx === 0 ? MAX_TOP_ROW_BOXES : MAX_INDEX_BOXES;
+  const maxBoxes = Math.min(rowCap, Math.max(0, Number(data.indexBoxLimit ?? rowCap)));
+  const currentCount = sec.items.length;
 
   if (currentCount >= maxBoxes) {
     alert(`Box limit reached (${maxBoxes} max).`);
@@ -840,7 +841,7 @@ function removeBoxFromSection(sIdx) {
   const data = getWorkingStoreData();
   const sec = data.sections[sIdx];
   if (!sec) return;
-  const minBoxes = sIdx === 0 ? 1 : 0;
+  const minBoxes = 1;
   if (sec.items.length <= minBoxes) return;
 
   sec.items.pop();
@@ -1081,9 +1082,10 @@ function attachOwnerStoreEditHandlers() {
       stripTitle.insertAdjacentElement("afterend", secEditBtn);
     }
 
+    const topRowLimit = Math.min(MAX_TOP_ROW_BOXES, Math.max(0, Number(data.indexBoxLimit ?? MAX_TOP_ROW_BOXES)));
     const cards = secEl.querySelectorAll(".mini-box:not(.user-photo-only-box), .item-box");
     cards.forEach((card, idx) => {
-      const item = sIdx === 0 ? sec.items.slice(0, 4)[idx] : sec.items[idx];
+      const item = sIdx === 0 ? sec.items.slice(0, topRowLimit)[idx] : sec.items[idx];
       if (!item) return;
 
       card.style.position = "relative";
@@ -1148,35 +1150,33 @@ function attachOwnerStoreEditHandlers() {
       card.appendChild(priceBtn);
     });
 
-    if (sIdx > 0) {
-      const scrollEl = secEl.querySelector(".scroll-row");
-      if (scrollEl) {
-        const addBoxBtn = document.createElement("button");
-        addBoxBtn.type = "button";
-        addBoxBtn.className = "owner-inline-edit-btn";
-        addBoxBtn.textContent = "+ Box";
-        addBoxBtn.style.cssText =
-          `flex:0 0 auto;align-self:center;padding:10px 14px;border:1px dashed ${data.themeColor || "#0f766e"};border-radius:14px;background:#f0fdfa;color:${data.themeColor || "#0f766e"};font-size:0.82rem;font-weight:700;cursor:pointer;`;
-        addBoxBtn.onclick = (e) => {
-          e.stopPropagation();
-          addBoxToSection(sIdx);
-        };
+    const boxContainerEl = sIdx === 0 ? secEl.querySelector(".five-boxes-row") : secEl.querySelector(".scroll-row");
+    if (boxContainerEl) {
+      const addBoxBtn = document.createElement("button");
+      addBoxBtn.type = "button";
+      addBoxBtn.className = "owner-inline-edit-btn";
+      addBoxBtn.textContent = "+ Box";
+      addBoxBtn.style.cssText =
+        `flex:0 0 auto;align-self:center;padding:10px 14px;border:1px dashed ${data.themeColor || "#0f766e"};border-radius:14px;background:#f0fdfa;color:${data.themeColor || "#0f766e"};font-size:0.82rem;font-weight:700;cursor:pointer;`;
+      addBoxBtn.onclick = (e) => {
+        e.stopPropagation();
+        addBoxToSection(sIdx);
+      };
 
-        const remBoxBtn = document.createElement("button");
-        remBoxBtn.type = "button";
-        remBoxBtn.className = "owner-inline-edit-btn";
-        remBoxBtn.textContent = "−";
-        remBoxBtn.title = "Remove Last Box";
-        remBoxBtn.style.cssText =
-          "flex:0 0 auto;align-self:center;padding:10px 12px;border:1px solid #fecaca;border-radius:14px;background:#fee2e2;color:#dc2626;font-size:0.9rem;font-weight:700;cursor:pointer;";
-        remBoxBtn.onclick = (e) => {
-          e.stopPropagation();
-          removeBoxFromSection(sIdx);
-        };
+      const remBoxBtn = document.createElement("button");
+      remBoxBtn.type = "button";
+      remBoxBtn.className = "owner-inline-edit-btn";
+      remBoxBtn.textContent = "−";
+      remBoxBtn.title = "Remove Last Box";
+      remBoxBtn.style.cssText =
+        "flex:0 0 auto;align-self:center;padding:10px 12px;border:1px solid #fecaca;border-radius:14px;background:#fee2e2;color:#dc2626;font-size:0.9rem;font-weight:700;cursor:pointer;";
+      remBoxBtn.onclick = (e) => {
+        e.stopPropagation();
+        removeBoxFromSection(sIdx);
+      };
 
-        scrollEl.appendChild(addBoxBtn);
-        scrollEl.appendChild(remBoxBtn);
-      }
+      boxContainerEl.appendChild(addBoxBtn);
+      boxContainerEl.appendChild(remBoxBtn);
     }
   });
 
