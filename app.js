@@ -507,11 +507,14 @@ function ensureOwnerInlineFileInput() {
 
 function addCoverInEditMode() {
   const data = getWorkingStoreData();
-  const maxAllowed = Math.min(MAX_COVER_SLOTS, Math.max(1, Number(data.coverSlotsLimit ?? 1)));
+  const maxAllowed = MAX_COVER_SLOTS;
   if (!Array.isArray(data.coverSlots)) data.coverSlots = [""];
   if (data.coverSlots.length >= maxAllowed) {
     alert(`Cover limit reached (${maxAllowed} max).`);
     return;
+  }
+  if ((data.coverSlotsLimit || 1) < data.coverSlots.length + 1) {
+    data.coverSlotsLimit = data.coverSlots.length + 1;
   }
   data.coverSlots.push("");
   renderHeader();
