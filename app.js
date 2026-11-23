@@ -846,8 +846,10 @@ function enableStoreNameDragOnCover(coverWrap, overlayEl) {
   overlayEl.onpointermove = (e) => {
     if (!dragging) return;
     const wrapRect = coverWrap.getBoundingClientRect();
-    const nx = Math.min(75, Math.max(2, ((e.clientX - startX) / wrapRect.width) * 100));
-    const ny = Math.min(82, Math.max(4, ((e.clientY - startY) / wrapRect.height) * 100));
+    const maxX = Math.max(2, 92 - (overlayEl.offsetWidth / Math.max(1, wrapRect.width)) * 100);
+    const maxY = Math.max(4, 88 - (overlayEl.offsetHeight / Math.max(1, wrapRect.height)) * 100);
+    const nx = Math.min(maxX, Math.max(2, ((e.clientX - startX) / wrapRect.width) * 100));
+    const ny = Math.min(maxY, Math.max(4, ((e.clientY - startY) / wrapRect.height) * 100));
     data.titlePos = { x: Math.round(nx), y: Math.round(ny) };
     applyTitlePositionStyle();
   };
@@ -925,32 +927,32 @@ function attachOwnerStoreEditHandlers() {
     coverWrap.style.overflow = "hidden";
 
     const overlayEl = coverWrap.querySelector(".cover-overlay");
-    if (overlayEl) {
+    const titleEl = document.getElementById("storeTitle");
+    if (overlayEl && titleEl) {
       overlayEl.style.zIndex = "22";
+      overlayEl.style.display = "inline-flex";
+      overlayEl.style.alignItems = "center";
+      overlayEl.style.gap = "8px";
       enableStoreNameDragOnCover(coverWrap, overlayEl);
 
-      const posBtn = document.createElement("button");
-      posBtn.type = "button";
-      posBtn.className = "owner-inline-edit-btn";
-      posBtn.textContent = "✥ Name";
-      posBtn.title = "Move Store Name";
-      posBtn.style.cssText =
-        "margin-top:6px;padding:3px 9px;border:none;border-radius:6px;background:rgba(255,255,255,0.92);color:#0f172a;font-size:0.72rem;font-weight:700;cursor:pointer;";
-      posBtn.onclick = (e) => {
+      const pencilBtn = document.createElement("button");
+      pencilBtn.type = "button";
+      pencilBtn.className = "owner-inline-edit-btn";
+      pencilBtn.textContent = "✎";
+      pencilBtn.title = "Edit Store Name";
+      pencilBtn.style.cssText =
+        "flex:0 0 auto;padding:2px 7px;border:none;border-radius:6px;background:#ffffff;color:#0f172a;font-size:0.82rem;font-weight:700;cursor:pointer;";
+      pencilBtn.onclick = (e) => {
         e.stopPropagation();
-        const presets = [
-          { x: 6, y: 12 },
-          { x: 28, y: 42 },
-          { x: 8, y: 72 }
-        ];
-        const cur = data.titlePos || { x: 8, y: 72 };
-        const nextIdx = presets.findIndex(
-          (p) => Math.abs(p.x - cur.x) < 10 && Math.abs(p.y - cur.y) < 12
-        );
-        data.titlePos = presets[(nextIdx + 1) % presets.length];
-        applyTitlePositionStyle();
+        const currentName = data.storeTitle || "";
+        const next = prompt("Enter Store Name:", currentName);
+        if (next !== null) {
+          data.storeTitle = next.trim() || "Store";
+          renderHeader();
+          attachOwnerStoreEditHandlers();
+        }
       };
-      overlayEl.appendChild(posBtn);
+      titleEl.insertAdjacentElement("afterend", pencilBtn);
     }
 
     const slides = coverWrap.querySelectorAll(".cover-slide-item");
@@ -1157,14 +1159,35 @@ function attachOwnerStoreEditHandlers() {
 function applyTitlePositionStyle() {
   const data = getWorkingStoreData();
   const overlayEl = document.querySelector(".cover-overlay");
+  const titleEl = document.getElementById("storeTitle");
   if (!overlayEl) return;
+
   const pos = data.titlePos || { x: 8, y: 72 };
   overlayEl.style.position = "absolute";
   overlayEl.style.left = `${pos.x}%`;
   overlayEl.style.top = `${pos.y}%`;
   overlayEl.style.right = "auto";
   overlayEl.style.bottom = "auto";
+  overlayEl.style.maxWidth = "88%";
   overlayEl.style.zIndex = "15";
+
+  if (titleEl) {
+    titleEl.style.whiteSpace = "normal";
+    titleEl.style.overflowWrap = "anywhere";
+    titleEl.style.wordBreak = "break-word";
+  }
+
+  if (OWNER_EDIT_MODE) {
+    overlayEl.style.border = "1.5px solid #ffffff";
+    overlayEl.style.borderRadius = "8px";
+    overlayEl.style.padding = "6px 10px";
+    overlayEl.style.background = "rgba(15, 23, 42, 0.45)";
+  } else {
+    overlayEl.style.border = "none";
+    overlayEl.style.borderRadius = "0";
+    overlayEl.style.padding = "0";
+    overlayEl.style.background = "transparent";
+  }
 }
 
 function renderHeader() {
@@ -1174,9 +1197,9 @@ function renderHeader() {
   }
   const titleEl = document.getElementById("storeTitle");
   if (!titleEl) return;
-  titleEl.textContent = stripAllDigits(data.storeTitle || "Store", "Store");
+  titleEl.textContent = data.storeTitle || "Store";
   const subEl = document.getElementById("storeSubtitle");
-  if (subEl) subEl.textContent = stripAllDigits(data.storeSubtitle || "", "");
+  if (subEl) subEl.textContent = data.storeSubtitle || "";
 
   const coverWrap = document.querySelector(".cover-wrapper");
   if (!coverWrap) return;
