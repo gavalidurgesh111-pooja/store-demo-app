@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COVER_RATIO_POPUP_V6");
+console.log("OWNER_EDIT_COMPLETE_V7");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -436,7 +436,7 @@ function ensureCoverEditorDOM() {
     screen.innerHTML = `
       <div class="editor-popup-card" style="width:100%;max-width:344px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,0.4);display:flex;flex-direction:column;">
         <div class="editor-canvas-area" id="editorCanvasArea" style="width:100%;height:230px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:none;background:#1e293b;">
-          <img id="editorImagePreview" src="" alt="Preview" style="position:absolute;cursor:grab;user-select:none;z-index:5;display:block;max-width:none;max-height:none;will-change:transform;transform:translate3d(0px, 0px, 0px);" />
+          <img id="editorImagePreview" src="" alt="Preview" style="position:absolute;transform-origin:0 0;cursor:grab;user-select:none;z-index:5;display:block;max-width:none;max-height:none;will-change:transform;transform:translate3d(0px, 0px, 0px);" />
           <div class="crop-frame-box" id="cropFrameBox" style="width:290px;height:140px;border:2px solid #ffffff;box-shadow:0 0 0 9999px rgba(0, 0, 0, 0.52);position:relative;pointer-events:none;z-index:10;"></div>
         </div>
         <div class="editor-bottom-bar" style="width:100%;height:48px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:0 22px;z-index:25;border-top:1px solid #e2e8f0;">
@@ -634,7 +634,7 @@ function confirmEditor() {
 
   const canvas = document.createElement("canvas");
   canvas.width = 1080;
-  canvas.height = Math.round(1080 / (box.width / box.height));
+  canvas.height = 520;
   const ctx = canvas.getContext("2d");
 
   const previewRect = preview.getBoundingClientRect();
