@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_POPUP_ACTIVE_V1");
+console.log("OWNER_EDIT_POPUP_ACTIVE_V2");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -416,7 +416,7 @@ function openStoreNameEditorPopup() {
   syncPreview();
 }
 
-// ==================== SMALL POP-UP PHOTO EDITOR (#screenPhotoEditor) FOR COVER ====================
+// ==================== MEDIUM POP-UP PHOTO EDITOR (#screenPhotoEditor) FOR COVER ====================
 let rawImageObj = null;
 let posX = 0, posY = 0, imgScale = 1, minScale = 1, maxScale = 2.5;
 let baseLeft = 0, baseTop = 0;
@@ -431,17 +431,17 @@ function ensureCoverEditorDOM() {
     screen = document.createElement("div");
     screen.id = "screenPhotoEditor";
     screen.style.cssText =
-      "display:none;position:fixed;inset:0;background:rgba(15,23,42,0.68);z-index:99999;align-items:center;justify-content:center;padding:14px;";
+      "display:none;position:fixed;inset:0;background:rgba(15,23,42,0.72);z-index:99999;align-items:center;justify-content:center;padding:16px;";
 
     screen.innerHTML = `
-      <div class="editor-popup-card" style="width:100%;max-width:340px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,0.35);display:flex;flex-direction:column;">
-        <div class="editor-canvas-area" id="editorCanvasArea" style="width:100%;height:200px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:none;background:#1e293b;">
+      <div class="editor-popup-card" style="width:100%;max-width:390px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 14px 34px rgba(0,0,0,0.4);display:flex;flex-direction:column;">
+        <div class="editor-canvas-area" id="editorCanvasArea" style="width:100%;height:250px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:none;background:#1e293b;">
           <img id="editorImagePreview" src="" alt="Preview" style="position:absolute;cursor:grab;user-select:none;z-index:5;display:block;max-width:none;max-height:none;will-change:transform;transform:translate3d(0, 0, 0);" />
-          <div class="crop-frame-box" id="cropFrameBox" style="width:260px;height:125px;border:2px solid #ffffff;box-shadow:0 0 0 9999px rgba(0, 0, 0, 0.48);position:relative;pointer-events:none;z-index:10;"></div>
+          <div class="crop-frame-box" id="cropFrameBox" style="width:310px;height:150px;border:2px solid #ffffff;box-shadow:0 0 0 9999px rgba(0, 0, 0, 0.5);position:relative;pointer-events:none;z-index:10;"></div>
         </div>
-        <div class="editor-bottom-bar" style="width:100%;height:48px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:0 22px;z-index:25;border-top:1px solid #e2e8f0;">
-          <button type="button" class="editor-bottom-btn" onclick="cancelEditor()" title="Cancel" style="background:none;border:none;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#334155;font-weight:700;">✕</button>
-          <button type="button" class="editor-bottom-btn" onclick="confirmEditor()" title="Save" style="background:none;border:none;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#0f766e;font-weight:700;">✓</button>
+        <div class="editor-bottom-bar" style="width:100%;height:54px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:0 28px;z-index:25;border-top:1px solid #e2e8f0;">
+          <button type="button" class="editor-bottom-btn" onclick="cancelEditor()" title="Cancel" style="background:none;border:none;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;color:#334155;font-weight:700;">✕</button>
+          <button type="button" class="editor-bottom-btn" onclick="confirmEditor()" title="Save" style="background:none;border:none;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;color:#0f766e;font-weight:700;">✓</button>
         </div>
       </div>
     `;
@@ -642,8 +642,9 @@ function openCoverPhotoEditor(file, onDone) {
 
     rawImageObj.onload = function () {
       requestAnimationFrame(() => {
-        const box = document.getElementById("cropFrameBox").getBoundingClientRect();
-        minScale = Math.max(box.width / rawImageObj.width, box.height / rawImageObj.height);
+        const areaRect = document.getElementById("editorCanvasArea").getBoundingClientRect();
+        const boxRect = document.getElementById("cropFrameBox").getBoundingClientRect();
+        minScale = Math.max(boxRect.width / rawImageObj.width, boxRect.height / rawImageObj.height);
         maxScale = minScale * 2.5;
         imgScale = minScale;
 
@@ -652,8 +653,11 @@ function openCoverPhotoEditor(file, onDone) {
         preview.style.width = renderW + "px";
         preview.style.height = renderH + "px";
 
-        baseLeft = box.left + (box.width - renderW) / 2;
-        baseTop = box.top + (box.height - renderH) / 2;
+        const centerX = (boxRect.left + boxRect.right) / 2 - areaRect.left;
+        const centerY = (boxRect.top + boxRect.bottom) / 2 - areaRect.top;
+
+        baseLeft = centerX - renderW / 2;
+        baseTop = centerY - renderH / 2;
 
         preview.style.left = baseLeft + "px";
         preview.style.top = baseTop + "px";
