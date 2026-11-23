@@ -14,6 +14,8 @@ function removeOwnerStoreEditUI() {
   if (bottomBar) bottomBar.remove();
   const nameModal = document.getElementById("ownerStoreNameModal");
   if (nameModal) nameModal.remove();
+  const coverPopup = document.getElementById("coverEditorPopup");
+  if (coverPopup) coverPopup.remove();
   removeCustomPickerIfExists();
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
 }
@@ -412,165 +414,132 @@ function openStoreNameEditorPopup() {
   syncPreview();
 }
 
-function openPhotoPositionEditor(rawDataUrl, aspectRatio = 16 / 9, outWidth = 720) {
-  return new Promise((resolve) => {
-    const existing = document.getElementById("ownerPhotoPositionModal");
-    if (existing) existing.remove();
+// Compact pop-up editor for cover photos (drag + zoom in a modal)
+function openCoverPhotoPopup(file, onDone) {
+  if (!file || typeof onDone !== "function") return;
 
-    const modal = document.createElement("div");
-    modal.id = "ownerPhotoPositionModal";
-    modal.style.cssText =
-      "position:fixed;inset:0;z-index:130;background:rgba(15,23,42,0.72);display:flex;align-items:center;justify-content:center;padding:14px;";
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const oldPopup = document.getElementById("coverEditorPopup");
+    if (oldPopup) oldPopup.remove();
 
-    const card = document.createElement("div");
-    card.style.cssText =
-      "width:100%;max-width:440px;background:#ffffff;border-radius:14px;padding:14px;box-shadow:0 12px 32px rgba(0,0,0,0.35);display:flex;flex-direction:column;gap:12px;";
+    const popup = document.createElement("div");
+    popup.id = "coverEditorPopup";
+    popup.style.cssText =
+      "position:fixed;inset:0;z-index:130;background:rgba(15,23,42,0.72);display:flex;align-items:center;justify-content:center;padding:12px;";
 
-    const heading = document.createElement("div");
-    heading.textContent = "Adjust Photo Position";
-    heading.style.cssText = "font-size:1rem;font-weight:700;color:#111827;";
+    const box = document.createElement("div");
+    box.style.cssText =
+      "width:100%;max-width:420px;background:#ffffff;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 28px rgba(0,0,0,0.35);";
 
-    const hint = document.createElement("div");
-    hint.textContent = "Drag photo to position & use slider to zoom";
-    hint.style.cssText = "font-size:0.78rem;color:#475569;";
-
-    const stage = document.createElement("div");
-    const outHeight = Math.round(outWidth / aspectRatio);
-    stage.style.cssText =
-      `position:relative;width:100%;aspect-ratio:${aspectRatio};max-height:240px;background:#0f172a;border-radius:10px;overflow:hidden;touch-action:none;cursor:grab;`;
+    const frame = document.createElement("div");
+    frame.style.cssText =
+      "position:relative;width:100%;height:170px;background:#0f172a;border-radius:8px;overflow:hidden;touch-action:none;cursor:grab;";
 
     const img = document.createElement("img");
-    img.src = rawDataUrl;
-    img.alt = "Edit Photo";
+    img.src = e.target.result;
+    img.alt = "Cover Preview";
     img.draggable = false;
     img.style.cssText =
       "position:absolute;left:50%;top:50%;max-width:none;user-select:none;pointer-events:none;transform-origin:center center;";
 
-    stage.appendChild(img);
+    frame.appendChild(img);
 
-    let zoom = 1;
-    let offsetX = 0;
-    let offsetY = 0;
-    let baseW = 300;
-    let baseH = 180;
+    let zoom = 1, dx = 0, dy = 0, baseW = 300, baseH = 170;
 
-    function fitImageToStage() {
-      const rect = stage.getBoundingClientRect();
-      const sw = rect.width || 360;
-      const sh = rect.height || 180;
-      const natW = img.naturalWidth || 1;
-      const natH = img.naturalHeight || 1;
-      const coverScale = Math.max(sw / natW, sh / natH);
-      baseW = natW * coverScale;
-      baseH = natH * coverScale;
+    function updateImg() {
+      img.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(${zoom})`;
+    }
+
+    img.onload = () => {
+      const fw = frame.clientWidth || 360;
+      const fh = frame.clientHeight || 170;
+      const scale = Math.max(fw / img.naturalWidth, fh / img.naturalHeight);
+      baseW = img.naturalWidth * scale;
+      baseH = img.naturalHeight * scale;
       img.style.width = `${baseW}px`;
       img.style.height = `${baseH}px`;
-      applyTransform();
-    }
-
-    function applyTransform() {
-      img.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${zoom})`;
-    }
-
-    img.onload = fitImageToStage;
-    if (img.complete) fitImageToStage();
-
-    let dragging = false;
-    let startX = 0;
-    let startY = 0;
-
-    stage.addEventListener("pointerdown", (e) => {
-      dragging = true;
-      stage.style.cursor = "grabbing";
-      startX = e.clientX - offsetX;
-      startY = e.clientY - offsetY;
-      stage.setPointerCapture(e.pointerId);
-    });
-    stage.addEventListener("pointermove", (e) => {
-      if (!dragging) return;
-      offsetX = e.clientX - startX;
-      offsetY = e.clientY - startY;
-      applyTransform();
-    });
-    stage.addEventListener("pointerup", () => {
-      dragging = false;
-      stage.style.cursor = "grab";
-    });
-
-    const zoomRow = document.createElement("div");
-    zoomRow.style.cssText = "display:flex;align-items:center;gap:10px;";
-
-    const zoomLbl = document.createElement("span");
-    zoomLbl.textContent = "Zoom";
-    zoomLbl.style.cssText = "font-size:0.82rem;font-weight:700;color:#334155;";
-
-    const zoomSlider = document.createElement("input");
-    zoomSlider.type = "range";
-    zoomSlider.min = "1";
-    zoomSlider.max = "2.5";
-    zoomSlider.step = "0.02";
-    zoomSlider.value = "1";
-    zoomSlider.style.cssText = "flex:1;";
-    zoomSlider.oninput = () => {
-      zoom = parseFloat(zoomSlider.value) || 1;
-      applyTransform();
+      updateImg();
     };
 
-    zoomRow.appendChild(zoomLbl);
-    zoomRow.appendChild(zoomSlider);
+    let dragging = false, sx = 0, sy = 0;
+    frame.onpointerdown = (ev) => {
+      dragging = true;
+      frame.style.cursor = "grabbing";
+      frame.setPointerCapture(ev.pointerId);
+      sx = ev.clientX - dx;
+      sy = ev.clientY - dy;
+    };
+    frame.onpointermove = (ev) => {
+      if (!dragging) return;
+      dx = ev.clientX - sx;
+      dy = ev.clientY - sy;
+      updateImg();
+    };
+    frame.onpointerup = () => {
+      dragging = false;
+      frame.style.cursor = "grab";
+    };
+
+    const slider = document.createElement("input");
+    slider.type = "range";
+    slider.min = "1";
+    slider.max = "2.5";
+    slider.step = "0.02";
+    slider.value = "1";
+    slider.oninput = () => {
+      zoom = parseFloat(slider.value) || 1;
+      updateImg();
+    };
 
     const actions = document.createElement("div");
-    actions.style.cssText = "display:flex;justify-content:flex-end;gap:8px;margin-top:4px;";
+    actions.style.cssText = "display:flex;justify-content:flex-end;gap:8px;";
 
     const cancelBtn = document.createElement("button");
     cancelBtn.type = "button";
-    cancelBtn.textContent = "Cancel";
+    cancelBtn.textContent = "✕";
     cancelBtn.style.cssText =
-      "padding:8px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:#334155;font-weight:600;cursor:pointer;";
-    cancelBtn.onclick = () => {
-      modal.remove();
-      resolve(null);
-    };
+      "padding:6px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#334155;font-weight:700;cursor:pointer;";
+    cancelBtn.onclick = () => popup.remove();
 
-    const doneBtn = document.createElement("button");
-    doneBtn.type = "button";
-    doneBtn.textContent = "Use Photo";
-    doneBtn.style.cssText =
-      "padding:8px 16px;border:none;border-radius:8px;background:#0f766e;color:#ffffff;font-weight:700;cursor:pointer;";
-    doneBtn.onclick = () => {
-      const rect = stage.getBoundingClientRect();
-      const sw = rect.width || 360;
-      const sh = rect.height || 180;
-      const scaleToOutX = outWidth / sw;
-      const scaleToOutY = outHeight / sh;
+    const useBtn = document.createElement("button");
+    useBtn.type = "button";
+    useBtn.textContent = "Use";
+    useBtn.style.cssText =
+      "padding:6px 16px;border:none;border-radius:8px;background:#0f766e;color:#fff;font-weight:700;cursor:pointer;";
+    useBtn.onclick = () => {
+      const fw = frame.clientWidth || 360;
+      const fh = frame.clientHeight || 170;
+      const outW = 720;
+      const outH = Math.round(outW * (fh / fw));
 
       const canvas = document.createElement("canvas");
-      canvas.width = outWidth;
-      canvas.height = outHeight;
+      canvas.width = outW;
+      canvas.height = outH;
       const ctx = canvas.getContext("2d");
 
-      const drawW = baseW * zoom * scaleToOutX;
-      const drawH = baseH * zoom * scaleToOutY;
-      const drawX = (sw / 2 + offsetX) * scaleToOutX - drawW / 2;
-      const drawY = (sh / 2 + offsetY) * scaleToOutY - drawH / 2;
+      const rx = outW / fw;
+      const ry = outH / fh;
+      const drawW = baseW * zoom * rx;
+      const drawH = baseH * zoom * ry;
+      const drawX = (fw / 2 + dx) * rx - drawW / 2;
+      const drawY = (fh / 2 + dy) * ry - drawH / 2;
 
       ctx.drawImage(img, drawX, drawY, drawW, drawH);
-      const finalUrl = canvas.toDataURL("image/jpeg", 0.8);
-      modal.remove();
-      resolve(finalUrl);
+      const resultUrl = canvas.toDataURL("image/jpeg", 0.8);
+      popup.remove();
+      onDone(resultUrl);
     };
 
     actions.appendChild(cancelBtn);
-    actions.appendChild(doneBtn);
-
-    card.appendChild(heading);
-    card.appendChild(hint);
-    card.appendChild(stage);
-    card.appendChild(zoomRow);
-    card.appendChild(actions);
-    modal.appendChild(card);
-    document.body.appendChild(modal);
-  });
+    actions.appendChild(useBtn);
+    box.appendChild(frame);
+    box.appendChild(slider);
+    box.appendChild(actions);
+    popup.appendChild(box);
+    document.body.appendChild(popup);
+  };
+  reader.readAsDataURL(file);
 }
 
 function peekNextCoverHint() {
@@ -599,36 +568,30 @@ function ensureOwnerInlineFileInput() {
       const file = e.target.files && e.target.files[0];
       if (!file || !pendingOwnerEditSlot) return;
 
-      const rawUrl = await readImageAsDataURL(file, 900);
-      if (!rawUrl) return;
-
       const slotInfo = pendingOwnerEditSlot;
       pendingOwnerEditSlot = null;
 
-      const isCover = slotInfo.type === "cover";
-      const adjustedUrl = await openPhotoPositionEditor(
-        rawUrl,
-        isCover ? 16 / 9 : 1,
-        isCover ? 720 : 500
-      );
-      if (!adjustedUrl) return;
-
-      const data = getWorkingStoreData();
-      if (isCover) {
-        const slotIdx = Number.isInteger(slotInfo.slotIdx) ? slotInfo.slotIdx : 0;
-        const wasFirstEmpty = slotIdx === 0 && !data.coverSlots[0];
-        data.coverSlots[slotIdx] = adjustedUrl;
-        data.coverImg = data.coverSlots[0] || adjustedUrl;
-        renderHeader();
-        attachOwnerStoreEditHandlers();
-        if (wasFirstEmpty) {
-          peekNextCoverHint();
-        }
+      if (slotInfo.type === "cover") {
+        openCoverPhotoPopup(file, (adjustedUrl) => {
+          const data = getWorkingStoreData();
+          const slotIdx = Number.isInteger(slotInfo.slotIdx) ? slotInfo.slotIdx : 0;
+          const wasFirstEmpty = slotIdx === 0 && !data.coverSlots[0];
+          data.coverSlots[slotIdx] = adjustedUrl;
+          data.coverImg = data.coverSlots[0] || adjustedUrl;
+          renderHeader();
+          attachOwnerStoreEditHandlers();
+          if (wasFirstEmpty) {
+            peekNextCoverHint();
+          }
+        });
       } else if (slotInfo.type === "item") {
+        const resizedUrl = await readImageAsDataURL(file, 500);
+        if (!resizedUrl) return;
+        const data = getWorkingStoreData();
         const { sIdx, itemId } = slotInfo;
         const item = data.sections[sIdx]?.items?.find((i) => i.id === itemId);
         if (item) {
-          item.img = adjustedUrl;
+          item.img = resizedUrl;
         }
         renderHeader();
         renderSections();
