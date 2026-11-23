@@ -194,6 +194,24 @@ function imgMarkup(src, altText, isMini = false) {
   return `<div style="width:100%;height:${h};background:#e5e7eb;"></div>`;
 }
 
+function hideDigitsOnUserPage() {
+  if (document.body.getAttribute("data-page") !== "store" || OWNER_EDIT_MODE) return;
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+  const textNodes = [];
+  let node;
+  while ((node = walker.nextNode())) {
+    if (node.parentElement && node.parentElement.closest("#ownerLiveSaveBar, #ownerCustomColorPickerModal")) {
+      continue;
+    }
+    if (/\d/.test(node.nodeValue)) {
+      textNodes.push(node);
+    }
+  }
+  textNodes.forEach((tn) => {
+    tn.nodeValue = tn.nodeValue.replace(/\d+/g, "").replace(/\s{2,}/g, " ");
+  });
+}
+
 /* ==================== OWNER STORE LIVE EDIT (index.html?ownerEdit=1) ==================== */
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -497,6 +515,10 @@ function addCoverInEditMode() {
   data.coverSlots.push("");
   renderHeader();
   attachOwnerStoreEditHandlers();
+  const track = document.getElementById("coverSliderTrack");
+  if (track) {
+    track.scrollTo({ left: track.scrollWidth, behavior: "smooth" });
+  }
 }
 
 function removeCoverInEditMode() {
@@ -639,18 +661,22 @@ function attachOwnerStoreEditHandlers() {
   if (coverWrap) {
     coverWrap.style.position = "relative";
 
-    const coverBtn = document.createElement("button");
-    coverBtn.type = "button";
-    coverBtn.className = "owner-inline-edit-btn";
-    coverBtn.textContent = "✎ Photo";
-    coverBtn.style.cssText =
-      `position:absolute;top:10px;right:10px;z-index:5;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);`;
-    coverBtn.onclick = (e) => {
-      e.stopPropagation();
-      pendingOwnerEditSlot = { type: "cover", slotIdx: 0 };
-      fileInput.value = "";
-      fileInput.click();
-    };
+    const slides = coverWrap.querySelectorAll(".cover-slide-item");
+    slides.forEach((slide, idx) => {
+      const slidePhotoBtn = document.createElement("button");
+      slidePhotoBtn.type = "button";
+      slidePhotoBtn.className = "owner-inline-edit-btn";
+      slidePhotoBtn.textContent = `✎ Photo ${idx + 1}`;
+      slidePhotoBtn.style.cssText =
+        `position:absolute;top:10px;right:10px;z-index:5;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);`;
+      slidePhotoBtn.onclick = (e) => {
+        e.stopPropagation();
+        pendingOwnerEditSlot = { type: "cover", slotIdx: idx };
+        fileInput.value = "";
+        fileInput.click();
+      };
+      slide.appendChild(slidePhotoBtn);
+    });
 
     const addCoverBtn = document.createElement("button");
     addCoverBtn.type = "button";
@@ -674,7 +700,6 @@ function attachOwnerStoreEditHandlers() {
       removeCoverInEditMode();
     };
 
-    coverWrap.appendChild(coverBtn);
     coverWrap.appendChild(addCoverBtn);
     coverWrap.appendChild(remCoverBtn);
   }
@@ -846,17 +871,53 @@ function renderHeader() {
   const subEl = document.getElementById("storeSubtitle");
   if (subEl) subEl.textContent = stripAllDigits(data.storeSubtitle || "", "");
 
-  const firstCover = (data.coverSlots || []).find(Boolean) || data.coverImg || "";
-  const coverImgEl = document.getElementById("coverImage");
-  if (coverImgEl) {
-    if (firstCover) {
-      coverImgEl.src = firstCover;
-      coverImgEl.style.display = "block";
-    } else {
-      coverImgEl.removeAttribute("src");
-      coverImgEl.style.display = "none";
-    }
+  const coverWrap = document.querySelector(".cover-wrapper");
+  if (!coverWrap) return;
+
+  const slots = Array.isArray(data.coverSlots) && data.coverSlots.length > 0 ? data.coverSlots : [""];
+  const visibleSlots = OWNER_EDIT_MODE ? slots : slots.filter(Boolean);
+
+  let track = document.getElementById("coverSliderTrack");
+  if (!track) {
+    track = document.createElement("div");
+    track.id = "coverSliderTrack";
+    track.style.cssText =
+      "display:flex;width:100%;height:100%;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none;";
+    const oldImg = document.getElementById("coverImage");
+    if (oldImg) oldImg.style.display = "none";
+    coverWrap.prepend(track);
   }
+
+  track.innerHTML = "";
+
+  if (visibleSlots.length === 0) {
+    track.style.display = "none";
+    return;
+  }
+
+  track.style.display = "flex";
+  visibleSlots.forEach((src, idx) => {
+    const slide = document.createElement("div");
+    slide.className = "cover-slide-item";
+    slide.dataset.slotIdx = String(idx);
+    slide.style.cssText =
+      "position:relative;flex:0 0 100%;width:100%;height:100%;min-height:150px;scroll-snap-align:start;background:#e2e8f0;display:flex;align-items:center;justify-content:center;overflow:hidden;";
+
+    if (src) {
+      const img = document.createElement("img");
+      img.src = src;
+      img.alt = "Cover";
+      img.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
+      slide.appendChild(img);
+    } else if (OWNER_EDIT_MODE) {
+      const emptyTxt = document.createElement("span");
+      emptyTxt.textContent = `Cover ${idx + 1}`;
+      emptyTxt.style.cssText = "font-size:0.85rem;font-weight:700;color:#64748b;";
+      slide.appendChild(emptyTxt);
+    }
+
+    track.appendChild(slide);
+  });
 }
 
 function renderSections() {
