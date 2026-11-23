@@ -590,7 +590,7 @@ function attachOwnerStoreEditHandlers() {
     `position:sticky;top:0;z-index:80;background:${activeColor};color:#ffffff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;`;
 
   const info = document.createElement("span");
-  info.textContent = "Edit photo, name, color, boxes or rows";
+  info.textContent = "Edit photo, name, price, color, boxes or rows";
   info.style.cssText = "font-size:0.8rem;font-weight:600;";
 
   const actions = document.createElement("div");
@@ -752,6 +752,28 @@ function attachOwnerStoreEditHandlers() {
         };
         nameEl.insertAdjacentElement("afterend", nameBtn);
       }
+
+      const priceBtn = document.createElement("button");
+      priceBtn.type = "button";
+      priceBtn.className = "owner-inline-edit-btn";
+      priceBtn.textContent = "₹";
+      priceBtn.title = "Edit Price";
+      priceBtn.style.cssText =
+        "margin-left:4px;padding:1px 6px;border:1px solid #cbd5e1;border-radius:5px;background:#fefce8;color:#854d0e;font-size:0.72rem;font-weight:700;cursor:pointer;";
+      priceBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const currentPrice = Number(item.price || 0);
+        const next = prompt("Enter Price (₹):", String(currentPrice));
+        if (next !== null) {
+          const parsed = Number(next.replace(/[^\d.]/g, ""));
+          item.price = Number.isNaN(parsed) ? 0 : parsed;
+          saveData();
+          renderSections();
+          attachOwnerStoreEditHandlers();
+        }
+      };
+      card.appendChild(priceBtn);
     });
 
     if (sIdx > 0) {
@@ -866,6 +888,7 @@ function renderSections() {
 
       sec.items.slice(0, Math.min(4, maxBoxes)).forEach((item) => {
         const cleanItemName = stripAllDigits(item.name || "", "Item");
+        const priceDisplay = OWNER_EDIT_MODE ? `₹${item.price || 0}` : "₹";
         const box = document.createElement("div");
         box.className = "mini-box";
         box.onclick = () => {
@@ -876,7 +899,7 @@ function renderSections() {
           ${imgMarkup(item.img, cleanItemName, true)}
           <div class="mini-box-body">
             <div class="mini-box-name">${cleanItemName}</div>
-            <div class="mini-box-price">₹</div>
+            <div class="mini-box-price">${priceDisplay}</div>
           </div>
         `;
         fiveRow.appendChild(box);
@@ -900,13 +923,14 @@ function renderSections() {
 
       sec.items.slice(0, maxBoxes).forEach((item) => {
         const cleanItemName = stripAllDigits(item.name || "", "Item");
+        const priceDisplay = OWNER_EDIT_MODE ? `₹${item.price || 0}` : "₹";
         const box = document.createElement("div");
         box.className = "item-box";
         box.innerHTML = `
           ${imgMarkup(item.img, cleanItemName, false)}
           <div class="item-info">
             <div class="item-name" title="${cleanItemName}">${cleanItemName}</div>
-            <div class="item-price">₹</div>
+            <div class="item-price">${priceDisplay}</div>
             <button type="button" class="buy-btn" onclick="if(!OWNER_EDIT_MODE)openOrderModal(${sIdx}, '${item.id}')">Order</button>
           </div>
         `;
@@ -949,7 +973,7 @@ function confirmOrder() {
   const defaultName = [up.firstName, up.surname].filter(Boolean).join(" ") || "Customer";
   const customer = document.getElementById("orderCustomer").value.trim() || defaultName;
   const qty = Math.max(1, parseInt(document.getElementById("orderQty").value, 10) || 1);
-  const amount = activeOrderItem.price * qty;
+  const amount = (activeOrderItem.price || 0) * qty;
   const cleanItemName = stripAllDigits(activeOrderItem.name || "", "Item");
 
   storeData.orders.push({
@@ -958,7 +982,7 @@ function confirmOrder() {
     customerPhoto: up.photo || "",
     itemId: activeOrderItem.id,
     itemName: cleanItemName,
-    itemPrice: activeOrderItem.price,
+    itemPrice: activeOrderItem.price || 0,
     itemImg: activeOrderItem.img || "",
     qty,
     amount
