@@ -943,7 +943,7 @@ function attachOwnerStoreEditHandlers() {
       pencilBtn.textContent = "✎";
       pencilBtn.title = "Edit Store Name";
       pencilBtn.style.cssText =
-        "flex:0 0 auto;padding:1px 5px;margin:0;border:none;border-radius:0px;background:#ffffff;color:#0f172a;font-size:0.78rem;font-weight:700;line-height:1.1;cursor:pointer;";
+        "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:25;padding:1px 5px;margin:0;border:1px solid #0f172a;border-radius:4px;background:rgba(255,255,255,0.92);color:#0f172a;font-size:0.75rem;font-weight:700;line-height:1;cursor:pointer;";
       pencilBtn.onclick = (e) => {
         e.stopPropagation();
         const currentName = data.storeTitle || "";
@@ -954,7 +954,7 @@ function attachOwnerStoreEditHandlers() {
           attachOwnerStoreEditHandlers();
         }
       };
-      titleEl.insertAdjacentElement("afterend", pencilBtn);
+      overlayEl.appendChild(pencilBtn);
     }
 
     const slides = coverWrap.querySelectorAll(".cover-slide-item");
@@ -1174,28 +1174,26 @@ function applyTitlePositionStyle() {
   overlayEl.style.height = "fit-content";
   overlayEl.style.maxWidth = "100%";
   overlayEl.style.margin = "0";
+  overlayEl.style.padding = "0";
+  overlayEl.style.display = "inline-block";
+  overlayEl.style.boxSizing = "border-box";
   overlayEl.style.zIndex = "15";
 
   if (titleEl) {
+    titleEl.style.display = "block";
     titleEl.style.margin = "0";
-    titleEl.style.lineHeight = "1.15";
+    titleEl.style.padding = "0";
+    titleEl.style.lineHeight = "1.05";
     titleEl.style.whiteSpace = "normal";
     titleEl.style.overflowWrap = "anywhere";
     titleEl.style.wordBreak = "break-word";
   }
 
   if (OWNER_EDIT_MODE) {
-    overlayEl.style.display = "inline-flex";
-    overlayEl.style.alignItems = "center";
-    overlayEl.style.gap = "4px";
-    overlayEl.style.padding = "2px 6px";
     overlayEl.style.border = "1px solid #ffffff";
     overlayEl.style.borderRadius = "0px";
-    overlayEl.style.background = "rgba(15, 23, 42, 0.55)";
-    overlayEl.style.boxSizing = "border-box";
+    overlayEl.style.background = "rgba(15, 23, 42, 0.45)";
   } else {
-    overlayEl.style.display = "inline-block";
-    overlayEl.style.padding = "0px";
     overlayEl.style.border = "none";
     overlayEl.style.borderRadius = "0px";
     overlayEl.style.background = "transparent";
