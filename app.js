@@ -49,6 +49,24 @@ function getSectionTitleForView(rawTitle, index) {
   return cleanName;
 }
 
+function hideDigitsOnUserPage() {
+  if (document.body.getAttribute("data-page") !== "store" || OWNER_EDIT_MODE) return;
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+  const textNodes = [];
+  let node;
+  while ((node = walker.nextNode())) {
+    if (node.parentElement && node.parentElement.closest("#ownerLiveSaveBar, #ownerCustomColorPickerModal")) {
+      continue;
+    }
+    if (/\d/.test(node.nodeValue)) {
+      textNodes.push(node);
+    }
+  }
+  textNodes.forEach((tn) => {
+    tn.nodeValue = tn.nodeValue.replace(/\d+/g, "").replace(/\s{2,}/g, " ");
+  });
+}
+
 function buildInitialData() {
   const sections = DEFAULT_SECTION_TITLES.map((title, idx) => {
     const count = idx === 0 ? 4 : 5;
@@ -925,6 +943,9 @@ function renderHeader() {
   });
 
   startCoverAutoScroll(track, visibleSlots.length);
+  if (!OWNER_EDIT_MODE) {
+    hideDigitsOnUserPage();
+  }
 }
 
 function renderSections() {
@@ -1011,6 +1032,10 @@ function renderSections() {
 
     container.appendChild(sectionEl);
   });
+
+  if (!OWNER_EDIT_MODE) {
+    hideDigitsOnUserPage();
+  }
 }
 
 function openOrderModal(sectionIdx, itemId) {
