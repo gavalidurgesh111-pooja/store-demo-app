@@ -36,11 +36,17 @@ const DEFAULT_SECTION_TITLES = [
   "Combo Value Packs"
 ];
 
-function cleanDisplayName(text, fallback = "Item") {
-  let raw = String(text || "").trim();
-  raw = raw.replace(/^\d+[\.\)\-\:\s]+/, "").trim();
-  raw = raw.replace(/^Item[\s\-:#]*\d+$/i, "Item").trim();
-  return raw || fallback;
+function stripAllDigits(text, fallback = "") {
+  const cleaned = String(text || "").replace(/\d+/g, "").replace(/\s{2,}/g, " ").trim();
+  return cleaned || fallback;
+}
+
+function getSectionTitleForView(rawTitle, index) {
+  const cleanName = stripAllDigits(rawTitle || "", "Section");
+  if (OWNER_EDIT_MODE) {
+    return `${index + 1}. ${cleanName}`;
+  }
+  return cleanName;
 }
 
 function buildInitialData() {
@@ -171,6 +177,24 @@ function imgMarkup(src, altText, isMini = false) {
   }
   const h = isMini ? "74px" : "125px";
   return `<div style="width:100%;height:${h};background:#e5e7eb;"></div>`;
+}
+
+function hideDigitsOnUserPage() {
+  if (document.body.getAttribute("data-page") !== "store" || OWNER_EDIT_MODE) return;
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+  const textNodes = [];
+  let node;
+  while ((node = walker.nextNode())) {
+    if (node.parentElement && node.parentElement.closest("#ownerLiveSaveBar, #ownerCustomColorPickerModal")) {
+      continue;
+    }
+    if (/\d/.test(node.nodeValue)) {
+      textNodes.push(node);
+    }
+  }
+  textNodes.forEach((tn) => {
+    tn.nodeValue = tn.nodeValue.replace(/\d+/g, "").replace(/\s{2,}/g, " ");
+  });
 }
 
 /* ==================== OWNER STORE LIVE EDIT (index.html?ownerEdit=1) ==================== */
@@ -672,9 +696,9 @@ function attachOwnerStoreEditHandlers() {
         "margin-left:8px;padding:3px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
       secEditBtn.onclick = (e) => {
         e.stopPropagation();
-        const next = prompt("Edit Name:", cleanDisplayName(sec.title || "", "Section"));
+        const next = prompt("Edit Name:", stripAllDigits(sec.title || "", "Section"));
         if (next !== null) {
-          sec.title = cleanDisplayName(next, "Section");
+          sec.title = stripAllDigits(next, "Section");
           saveData();
           renderSections();
           attachOwnerStoreEditHandlers();
@@ -718,9 +742,9 @@ function attachOwnerStoreEditHandlers() {
         nameBtn.onclick = (e) => {
           e.preventDefault();
           e.stopPropagation();
-          const next = prompt("Edit Name:", cleanDisplayName(item.name || "", "Item"));
+          const next = prompt("Edit Name:", stripAllDigits(item.name || "", "Item"));
           if (next !== null) {
-            item.name = cleanDisplayName(next, "Item");
+            item.name = stripAllDigits(next, "Item");
             saveData();
             renderSections();
             attachOwnerStoreEditHandlers();
@@ -798,9 +822,9 @@ function renderHeader() {
   }
   const titleEl = document.getElementById("storeTitle");
   if (!titleEl) return;
-  titleEl.textContent = cleanDisplayName(storeData.storeTitle || "Store", "Store");
+  titleEl.textContent = stripAllDigits(storeData.storeTitle || "Store", "Store");
   const subEl = document.getElementById("storeSubtitle");
-  if (subEl) subEl.textContent = cleanDisplayName(storeData.storeSubtitle || "", "");
+  if (subEl) subEl.textContent = stripAllDigits(storeData.storeSubtitle || "", "");
 
   const firstCover = storeData.coverSlots.find(Boolean) || storeData.coverImg || "";
   const coverImgEl = document.getElementById("coverImage");
@@ -826,13 +850,13 @@ function renderSections() {
     const sectionEl = document.createElement("section");
     sectionEl.className = "row-section";
 
-    const cleanTitle = cleanDisplayName(sec.title || "", "Section");
+    const displayTitle = getSectionTitleForView(sec.title || "", sIdx);
 
     const stripEl = document.createElement("div");
     stripEl.className = "strip-bar";
     stripEl.innerHTML = `
-      <span class="strip-title">${cleanTitle}</span>
-      <span class="strip-tag">${sIdx === 0 ? "Boxes" : "Swipe →"}</span>
+      <span class="strip-title">${displayTitle}</span>
+      <span class="strip-tag">Swipe →</span>
     `;
     sectionEl.appendChild(stripEl);
 
@@ -841,7 +865,7 @@ function renderSections() {
       fiveRow.className = "five-boxes-row";
 
       sec.items.slice(0, Math.min(4, maxBoxes)).forEach((item) => {
-        const cleanItemName = cleanDisplayName(item.name || "", "Item");
+        const cleanItemName = stripAllDigits(item.name || "", "Item");
         const box = document.createElement("div");
         box.className = "mini-box";
         box.onclick = () => {
@@ -852,7 +876,7 @@ function renderSections() {
           ${imgMarkup(item.img, cleanItemName, true)}
           <div class="mini-box-body">
             <div class="mini-box-name">${cleanItemName}</div>
-            <div class="mini-box-price">₹${item.price}</div>
+            <div class="mini-box-price">₹</div>
           </div>
         `;
         fiveRow.appendChild(box);
@@ -875,14 +899,14 @@ function renderSections() {
       scrollEl.className = "scroll-row";
 
       sec.items.slice(0, maxBoxes).forEach((item) => {
-        const cleanItemName = cleanDisplayName(item.name || "", "Item");
+        const cleanItemName = stripAllDigits(item.name || "", "Item");
         const box = document.createElement("div");
         box.className = "item-box";
         box.innerHTML = `
           ${imgMarkup(item.img, cleanItemName, false)}
           <div class="item-info">
             <div class="item-name" title="${cleanItemName}">${cleanItemName}</div>
-            <div class="item-price">₹${item.price}</div>
+            <div class="item-price">₹</div>
             <button type="button" class="buy-btn" onclick="if(!OWNER_EDIT_MODE)openOrderModal(${sIdx}, '${item.id}')">Order</button>
           </div>
         `;
@@ -894,14 +918,18 @@ function renderSections() {
 
     container.appendChild(sectionEl);
   });
+
+  if (!OWNER_EDIT_MODE) {
+    hideDigitsOnUserPage();
+  }
 }
 
 function openOrderModal(sectionIdx, itemId) {
   const item = storeData.sections[sectionIdx]?.items.find((i) => i.id === itemId);
   if (!item) return;
   activeOrderItem = item;
-  document.getElementById("modalItemTitle").textContent = cleanDisplayName(item.name || "", "Item");
-  document.getElementById("modalItemPrice").textContent = `Price: ₹${item.price}`;
+  document.getElementById("modalItemTitle").textContent = stripAllDigits(item.name || "", "Item");
+  document.getElementById("modalItemPrice").textContent = "Price: ₹";
 
   const up = storeData.userProfile || {};
   const fullName = [up.firstName, up.surname].filter(Boolean).join(" ");
@@ -922,7 +950,7 @@ function confirmOrder() {
   const customer = document.getElementById("orderCustomer").value.trim() || defaultName;
   const qty = Math.max(1, parseInt(document.getElementById("orderQty").value, 10) || 1);
   const amount = activeOrderItem.price * qty;
-  const cleanItemName = cleanDisplayName(activeOrderItem.name || "", "Item");
+  const cleanItemName = stripAllDigits(activeOrderItem.name || "", "Item");
 
   storeData.orders.push({
     customer,
@@ -938,7 +966,7 @@ function confirmOrder() {
 
   saveData();
   closeOrderModal();
-  alert(`Order Placed: ${cleanItemName} x${qty} (₹${amount})`);
+  alert(`Order Placed: ${cleanItemName}`);
 }
 
 function openPinModal() {
@@ -1187,7 +1215,7 @@ function renderSoldItemsTab() {
 
   const grouped = {};
   storeData.orders.forEach((o) => {
-    const key = cleanDisplayName(o.itemName || "", "Item");
+    const key = stripAllDigits(o.itemName || "", "Item");
     if (!grouped[key]) {
       grouped[key] = {
         name: key,
@@ -1255,7 +1283,7 @@ function renderBuyersTab() {
       : `<div class="row-thumb round">${(o.customer || "C").charAt(0).toUpperCase()}</div>`;
 
     const phoneLine = o.customerPhone || savedPhone;
-    const cleanItem = cleanDisplayName(o.itemName || "", "Item");
+    const cleanItem = stripAllDigits(o.itemName || "", "Item");
 
     const row = document.createElement("div");
     row.className = "list-row-card";
