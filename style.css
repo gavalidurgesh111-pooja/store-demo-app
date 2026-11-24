@@ -940,3 +940,15 @@ footer {
   gap: 6px;
   flex-shrink: 0;
 }
+
+/* Users Screen Full-Width Fix */
+#tabActiveUsers,
+#tabActiveUsers .stat-box,
+#tabActiveUsers #activeUsersListWrap,
+#tabActiveUsers #activeUsersList,
+#tabActiveUsers .list-row-card {
+  width: 100%;
+  max-width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+}
