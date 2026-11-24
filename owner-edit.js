@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V8");
+console.log("OWNER_EDIT_COMPLETE_V9");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
