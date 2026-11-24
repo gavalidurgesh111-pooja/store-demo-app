@@ -65,7 +65,7 @@ function getColorNameFromHsv(h, s, v) {
 function openCustomColourPickerModal() {
   removeCustomPickerIfExists();
   const data = getWorkingStoreData();
-  const initialColor = data.themeColor || "#0f766e";
+  const previousColor = data.themeColor || "#0f766e";
   let hue = 0;
   let sat = 0.85;
   let val = 0.85;
@@ -98,12 +98,17 @@ function openCustomColourPickerModal() {
   leftHead.appendChild(title);
   leftHead.appendChild(colorNameBadge);
 
+  const closeModalAndRestore = () => {
+    applyDraftThemeColor(previousColor);
+    modal.remove();
+  };
+
   const closeBtn = document.createElement("button");
   closeBtn.type = "button";
   closeBtn.textContent = "✕";
   closeBtn.style.cssText =
     "border:none;background:transparent;font-size:1.1rem;font-weight:700;color:#475569;cursor:pointer;padding:2px 6px;";
-  closeBtn.onclick = () => modal.remove();
+  closeBtn.onclick = closeModalAndRestore;
 
   header.appendChild(leftHead);
   header.appendChild(closeBtn);
@@ -112,7 +117,7 @@ function openCustomColourPickerModal() {
   body.style.cssText = "display:flex;height:190px;width:100%;";
 
   const leftSwatch = document.createElement("div");
-  leftSwatch.style.cssText = `flex:0 0 36%;background:${initialColor};`;
+  leftSwatch.style.cssText = `flex:0 0 36%;background:${previousColor};`;
 
   const shadeArea = document.createElement("div");
   shadeArea.style.cssText =
@@ -165,7 +170,7 @@ function openCustomColourPickerModal() {
   cancelBtn.textContent = "Cancel";
   cancelBtn.style.cssText =
     "padding:7px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:#334155;font-weight:600;cursor:pointer;";
-  cancelBtn.onclick = () => modal.remove();
+  cancelBtn.onclick = closeModalAndRestore;
 
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
@@ -391,7 +396,7 @@ function openStoreNameEditorPopup() {
   applyBtn.style.cssText =
     "padding:7px 16px;border:none;border-radius:8px;background:#0f766e;color:#ffffff;font-weight:700;cursor:pointer;";
   applyBtn.onclick = () => {
-    data.storeTitle = input.value.trim() || "Store";
+    data.storeTitle = input.value.trim() || "Store Name";
     data.titleFont = tempFont;
     data.titleColor = tempColor;
     modal.remove();
@@ -557,19 +562,15 @@ function bindCoverEditorEvents() {
     }
   });
 
-  window.addEventListener("wheel", (e) => {
+  editorArea.addEventListener("wheel", (e) => {
     if (!rawImageObj) return;
-    const screen = document.getElementById("screenPhotoEditor");
-    if (!screen || screen.style.display === "none") return;
     e.preventDefault();
     const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
     setEditorZoomAroundCenter(imgScale * zoomFactor);
   }, { passive: false });
 
-  window.addEventListener("touchstart", (e) => {
+  editorArea.addEventListener("touchstart", (e) => {
     if (!rawImageObj) return;
-    const screen = document.getElementById("screenPhotoEditor");
-    if (!screen || screen.style.display === "none") return;
     if (e.touches.length === 1) {
       isDraggingImg = true;
       startMouseX = e.touches[0].clientX;
@@ -583,12 +584,10 @@ function bindCoverEditorEvents() {
         e.touches[0].clientY - e.touches[1].clientY
       );
     }
-  });
+  }, { passive: true });
 
-  window.addEventListener("touchmove", (e) => {
+  editorArea.addEventListener("touchmove", (e) => {
     if (!rawImageObj) return;
-    const screen = document.getElementById("screenPhotoEditor");
-    if (!screen || screen.style.display === "none") return;
     if (e.touches.length === 1 && isDraggingImg) {
       posX += (e.touches[0].clientX - startMouseX) * 1.25;
       posY += (e.touches[0].clientY - startMouseY) * 1.25;
@@ -608,7 +607,7 @@ function bindCoverEditorEvents() {
     }
   }, { passive: false });
 
-  window.addEventListener("touchend", (e) => {
+  editorArea.addEventListener("touchend", (e) => {
     if (!rawImageObj) return;
     if (e.touches.length < 2) initialPinchDistance = null;
     if (e.touches.length === 0 && isDraggingImg) {
@@ -863,7 +862,7 @@ function addBottomStoreRow() {
     items.push({ id: `${rowNum}-${Date.now()}-${i}`, name: "Item", price: 0, img: "" });
   }
   data.sections.push({
-    title: "New Row",
+    title: "Name",
     items
   });
 
@@ -962,8 +961,11 @@ function attachOwnerStoreEditHandlers() {
     `padding:7px 14px;border:none;border-radius:8px;background:#ffffff;color:${activeColor};font-weight:700;cursor:pointer;`;
   saveBtn.onclick = () => {
     commitDraftStoreData();
-    removeOwnerStoreEditUI();
-    window.location.href = "index.html";
+    draftStoreData = JSON.parse(JSON.stringify(storeData));
+    renderHeader();
+    renderSections();
+    attachOwnerStoreEditHandlers();
+    alert("Saved!");
   };
 
   const backBtn = document.createElement("button");
@@ -1072,9 +1074,9 @@ function attachOwnerStoreEditHandlers() {
         "margin-left:8px;padding:3px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
       secEditBtn.onclick = (e) => {
         e.stopPropagation();
-        const next = prompt("Edit Name:", stripAllDigits(sec.title || "", "Section"));
+        const next = prompt("Edit Name:", sec.title || "Name");
         if (next !== null) {
-          sec.title = stripAllDigits(next, "Section");
+          sec.title = next.trim() || "Name";
           renderSections();
           attachOwnerStoreEditHandlers();
         }
@@ -1118,9 +1120,9 @@ function attachOwnerStoreEditHandlers() {
         nameBtn.onclick = (e) => {
           e.preventDefault();
           e.stopPropagation();
-          const next = prompt("Edit Name:", stripAllDigits(item.name || "", "Item"));
+          const next = prompt("Edit Name:", item.name || "Item");
           if (next !== null) {
-            item.name = stripAllDigits(next, "Item");
+            item.name = next.trim() || "Item";
             renderSections();
             attachOwnerStoreEditHandlers();
           }
