@@ -2498,24 +2498,12 @@ if (currentPage === "store") {
     return text === "manage" || aria === "manage" || title === "manage";
   }
 
-  function isOnUsersContext(el) {
-    const usersTab = document.getElementById("tabActiveUsers");
-    const usersVisible = usersTab && getComputedStyle(usersTab).display !== "none";
-    const inUsersContainer = Boolean(
-      el.closest("#tabActiveUsers, [data-section='users'], [data-tab='users'], .users-section, #usersSection")
-    );
-    const onUsersPage =
-      document.body.getAttribute("data-page") === "users" ||
-      window.location.pathname.toLowerCase().includes("users");
-    return Boolean(usersVisible || inUsersContainer || onUsersPage);
-  }
-
   document.addEventListener(
     "click",
     (e) => {
-      const trigger = e.target.closest("button, a, [role='button'], .manage-btn");
+      const trigger = e.target.closest("button, a, span, [role='button'], .manage-btn, .owner-trigger");
       if (!trigger || trigger.closest(`#${POPUP_ID}`)) return;
-      if (!isManageControl(trigger) || !isOnUsersContext(trigger)) return;
+      if (!isManageControl(trigger)) return;
 
       const href = trigger.getAttribute("href");
       const onclickAttr = trigger.getAttribute("onclick") || "";
@@ -2524,6 +2512,10 @@ if (currentPage === "store") {
       if (!nextUrl) {
         const match = onclickAttr.match(/location\.href\s*=\s*['"]([^'"]+)['"]/i);
         if (match && match[1]) nextUrl = match[1];
+      }
+
+      if (!nextUrl && onclickAttr.includes("openPinModal")) {
+        nextUrl = "owner.html";
       }
 
       e.preventDefault();
