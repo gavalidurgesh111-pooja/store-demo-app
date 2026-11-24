@@ -2611,11 +2611,28 @@ if (currentPage === "store") {
     const usersTab = document.getElementById("tabActiveUsers");
     if (!usersTab) return;
 
-    usersTab.style.width = "100%";
-    usersTab.style.maxWidth = "100%";
-    usersTab.style.marginLeft = "0";
-    usersTab.style.marginRight = "0";
-    usersTab.style.boxSizing = "border-box";
+    const targets = [
+      usersTab,
+      document.getElementById("ownerFolderDetailsWrap"),
+      document.getElementById("ownerPanel")
+    ];
+
+    targets.forEach((el) => {
+      if (!el) return;
+      el.style.setProperty("width", "100%", "important");
+      el.style.setProperty("max-width", "100%", "important");
+      el.style.setProperty("margin-left", "0", "important");
+      el.style.setProperty("margin-right", "0", "important");
+      el.style.setProperty("box-sizing", "border-box", "important");
+    });
+
+    if (getComputedStyle(usersTab).display !== "none") {
+      const panel = document.getElementById("ownerPanel");
+      if (panel) {
+        panel.style.setProperty("padding-left", "0", "important");
+        panel.style.setProperty("padding-right", "0", "important");
+      }
+    }
   }
 
   document.addEventListener("DOMContentLoaded", applyFullWidthToUsersScreen);
