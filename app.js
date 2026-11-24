@@ -10,6 +10,10 @@ const STORE_FONT_OPTIONS = [
   { label: "Sans", value: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" },
   { label: "Rounded", value: "'Trebuchet MS', 'Segoe UI', sans-serif" },
   { label: "Serif", value: "Georgia, 'Times New Roman', serif" },
+  { label: "Slab", value: "'Rockwell', 'Courier New', Georgia, serif" },
+  { label: "Condensed", value: "'Arial Narrow', 'Impact', sans-serif" },
+  { label: "Italic", value: "'Segoe UI', Roboto, sans-serif", italic: true },
+  { label: "Script", value: "'Brush Script MT', 'Segoe Script', cursive" },
   { label: "Mono", value: "'Courier New', monospace" }
 ];
 
@@ -87,6 +91,8 @@ function buildInitialData() {
     storeSubtitle: "",
     titlePos: { x: 0, y: 0 },
     titleFont: STORE_FONT_OPTIONS[0].value,
+    titleFontStyle: "normal",
+    titleSize: 30,
     titleColor: STORE_NAME_COLORS[0],
     themeColor: "#0f766e",
     coverImg: "",
@@ -136,6 +142,8 @@ function normalizeStoreData(raw) {
     data.titlePos = { x: 0, y: 0 };
   }
   if (!data.titleFont) data.titleFont = STORE_FONT_OPTIONS[0].value;
+  if (!data.titleFontStyle) data.titleFontStyle = "normal";
+  if (!data.titleSize || Number.isNaN(Number(data.titleSize))) data.titleSize = 30;
   if (!data.titleColor) data.titleColor = STORE_NAME_COLORS[0];
   if (!Array.isArray(data.coverSlots) || data.coverSlots.length === 0) {
     data.coverSlots = [data.coverImg || ""];
@@ -285,11 +293,13 @@ function applyTitlePositionStyle() {
     titleEl.style.display = "block";
     titleEl.style.margin = "0";
     titleEl.style.padding = "0";
-    titleEl.style.lineHeight = "1.05";
+    titleEl.style.lineHeight = "1.08";
     titleEl.style.whiteSpace = "normal";
     titleEl.style.overflowWrap = "anywhere";
     titleEl.style.wordBreak = "break-word";
     titleEl.style.fontFamily = data.titleFont || STORE_FONT_OPTIONS[0].value;
+    titleEl.style.fontStyle = data.titleFontStyle || "normal";
+    titleEl.style.fontSize = `${Number(data.titleSize) || 30}px`;
     titleEl.style.color = data.titleColor || STORE_NAME_COLORS[0];
   }
 
@@ -1414,7 +1424,11 @@ function openStoreNameEditorPopup() {
   const data = getWorkingStoreData();
   const tempName = data.storeTitle || "";
   let tempFont = data.titleFont || STORE_FONT_OPTIONS[0].value;
-  let tempColor = data.titleColor || STORE_NAME_COLORS[0];
+  let tempFontStyle = data.titleFontStyle || "normal";
+  let tempSize = Number(data.titleSize) || 30;
+  const coverMatchHex = data.themeColor || "#0f766e";
+  const colorPalette = Array.from(new Set([coverMatchHex, ...STORE_NAME_COLORS]));
+  let tempColor = data.titleColor || coverMatchHex;
 
   const modal = document.createElement("div");
   modal.id = "ownerStoreNameModal";
@@ -1423,7 +1437,7 @@ function openStoreNameEditorPopup() {
 
   const card = document.createElement("div");
   card.style.cssText =
-    "width:100%;max-width:380px;background:#ffffff;border-radius:12px;padding:14px;box-shadow:0 12px 30px rgba(0,0,0,0.3);display:flex;flex-direction:column;gap:12px;";
+    "width:100%;max-width:390px;background:#ffffff;border-radius:12px;padding:14px;box-shadow:0 12px 30px rgba(0,0,0,0.3);display:flex;flex-direction:column;gap:12px;";
 
   const title = document.createElement("div");
   title.textContent = "Store Name";
@@ -1438,7 +1452,7 @@ function openStoreNameEditorPopup() {
 
   const previewBox = document.createElement("div");
   previewBox.style.cssText =
-    "padding:10px;border-radius:8px;background:#1e293b;min-height:38px;display:flex;align-items:center;overflow-wrap:anywhere;word-break:break-word;";
+    "padding:12px;border-radius:8px;background:#1e293b;min-height:48px;display:flex;align-items:center;overflow-wrap:anywhere;word-break:break-word;";
 
   const previewText = document.createElement("span");
   previewBox.appendChild(previewText);
@@ -1446,12 +1460,45 @@ function openStoreNameEditorPopup() {
   function syncPreview() {
     previewText.textContent = input.value || "Store Name";
     previewText.style.fontFamily = tempFont;
+    previewText.style.fontStyle = tempFontStyle;
+    previewText.style.fontSize = `${tempSize}px`;
     previewText.style.color = tempColor;
     previewText.style.fontWeight = "700";
-    previewText.style.fontSize = "1.05rem";
+    previewText.style.lineHeight = "1.1";
   }
 
   input.oninput = syncPreview;
+
+  const sizeWrap = document.createElement("div");
+  sizeWrap.style.cssText = "display:flex;flex-direction:column;gap:6px;";
+
+  const sizeHeader = document.createElement("div");
+  sizeHeader.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
+
+  const sizeLbl = document.createElement("span");
+  sizeLbl.textContent = "Size";
+  sizeLbl.style.cssText = "font-size:0.82rem;font-weight:700;color:#334155;";
+
+  const sizeValText = document.createElement("span");
+  sizeValText.textContent = `${tempSize}px`;
+  sizeValText.style.cssText = "font-size:0.82rem;font-weight:700;color:#0f766e;";
+
+  const sizeSlider = document.createElement("input");
+  sizeSlider.type = "range";
+  sizeSlider.min = "20";
+  sizeSlider.max = "52";
+  sizeSlider.value = String(tempSize);
+  sizeSlider.style.cssText = "width:100%;cursor:pointer;";
+  sizeSlider.oninput = () => {
+    tempSize = Number(sizeSlider.value) || 30;
+    sizeValText.textContent = `${tempSize}px`;
+    syncPreview();
+  };
+
+  sizeHeader.appendChild(sizeLbl);
+  sizeHeader.appendChild(sizeValText);
+  sizeWrap.appendChild(sizeHeader);
+  sizeWrap.appendChild(sizeSlider);
 
   const fontWrap = document.createElement("div");
   fontWrap.style.cssText = "display:flex;flex-direction:column;gap:6px;";
@@ -1468,9 +1515,10 @@ function openStoreNameEditorPopup() {
     btn.type = "button";
     btn.textContent = opt.label;
     btn.style.cssText =
-      `padding:5px 10px;border-radius:6px;border:1px solid #cbd5e1;font-family:${opt.value};font-size:0.82rem;font-weight:700;cursor:pointer;`;
+      `padding:6px 11px;border-radius:6px;border:1px solid #cbd5e1;font-family:${opt.value};font-style:${opt.italic ? "italic" : "normal"};font-size:0.86rem;font-weight:700;cursor:pointer;`;
     btn.onclick = () => {
       tempFont = opt.value;
+      tempFontStyle = opt.italic ? "italic" : "normal";
       renderFontButtons();
       syncPreview();
     };
@@ -1480,10 +1528,11 @@ function openStoreNameEditorPopup() {
   function renderFontButtons() {
     const btns = fontList.querySelectorAll("button");
     btns.forEach((b, i) => {
-      const active = STORE_FONT_OPTIONS[i].value === tempFont;
-      b.style.background = active ? "#0f766e" : "#f8fafc";
+      const opt = STORE_FONT_OPTIONS[i];
+      const active = opt.value === tempFont && (opt.italic ? "italic" : "normal") === tempFontStyle;
+      b.style.background = active ? coverMatchHex : "#f8fafc";
       b.style.color = active ? "#ffffff" : "#111827";
-      b.style.borderColor = active ? "#0f766e" : "#cbd5e1";
+      b.style.borderColor = active ? coverMatchHex : "#cbd5e1";
     });
   }
 
@@ -1494,17 +1543,18 @@ function openStoreNameEditorPopup() {
   colorWrap.style.cssText = "display:flex;flex-direction:column;gap:6px;";
 
   const colorLbl = document.createElement("span");
-  colorLbl.textContent = "Colour";
+  colorLbl.textContent = "Colour (Cover Match)";
   colorLbl.style.cssText = "font-size:0.82rem;font-weight:700;color:#334155;";
 
   const colorList = document.createElement("div");
   colorList.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;align-items:center;";
 
-  STORE_NAME_COLORS.forEach((hex) => {
+  colorPalette.forEach((hex, idx) => {
     const swatch = document.createElement("button");
     swatch.type = "button";
+    swatch.title = idx === 0 ? "Cover Theme Match" : hex;
     swatch.style.cssText =
-      `width:26px;height:26px;border-radius:50%;background:${hex};border:2px solid #cbd5e1;cursor:pointer;padding:0;`;
+      `width:28px;height:28px;border-radius:50%;background:${hex};border:2px solid #cbd5e1;cursor:pointer;padding:0;`;
     swatch.onclick = () => {
       tempColor = hex;
       renderColorButtons();
@@ -1516,7 +1566,7 @@ function openStoreNameEditorPopup() {
   function renderColorButtons() {
     const btns = colorList.querySelectorAll("button");
     btns.forEach((b, i) => {
-      const selected = STORE_NAME_COLORS[i] === tempColor;
+      const selected = colorPalette[i] === tempColor;
       b.style.outline = selected ? "2px solid #0f172a" : "none";
       b.style.outlineOffset = selected ? "2px" : "0px";
     });
@@ -1539,10 +1589,12 @@ function openStoreNameEditorPopup() {
   applyBtn.type = "button";
   applyBtn.textContent = "Apply";
   applyBtn.style.cssText =
-    "padding:7px 16px;border:none;border-radius:8px;background:#0f766e;color:#ffffff;font-weight:700;cursor:pointer;";
+    `padding:7px 16px;border:none;border-radius:8px;background:${coverMatchHex};color:#ffffff;font-weight:700;cursor:pointer;`;
   applyBtn.onclick = () => {
     data.storeTitle = input.value.trim() || "Store Name";
     data.titleFont = tempFont;
+    data.titleFontStyle = tempFontStyle;
+    data.titleSize = tempSize;
     data.titleColor = tempColor;
     modal.remove();
     renderHeader();
@@ -1555,6 +1607,7 @@ function openStoreNameEditorPopup() {
   card.appendChild(title);
   card.appendChild(input);
   card.appendChild(previewBox);
+  card.appendChild(sizeWrap);
   card.appendChild(fontWrap);
   card.appendChild(colorWrap);
   card.appendChild(footer);
