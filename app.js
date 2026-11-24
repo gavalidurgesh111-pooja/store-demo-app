@@ -1159,7 +1159,10 @@ function removeOwnerStoreEditUI() {
   const nameModal = document.getElementById("ownerStoreNameModal");
   if (nameModal) nameModal.remove();
   const editorScreen = document.getElementById("screenPhotoEditor");
-  if (editorScreen) editorScreen.remove();
+  if (editorScreen) {
+    editorScreen.remove();
+    coverEditorEventsBound = false;
+  }
   removeCustomPickerIfExists();
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
 }
@@ -1574,6 +1577,7 @@ let coverEditorEventsBound = false;
 function ensureCoverEditorDOM() {
   let screen = document.getElementById("screenPhotoEditor");
   if (!screen) {
+    coverEditorEventsBound = false;
     screen = document.createElement("div");
     screen.id = "screenPhotoEditor";
     screen.style.cssText =
