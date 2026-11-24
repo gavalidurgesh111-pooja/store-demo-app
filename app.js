@@ -393,9 +393,7 @@ function renderSections() {
 
     const stripEl = document.createElement("div");
     stripEl.className = "strip-bar";
-    stripEl.innerHTML = `
-      <span class="strip-title">${displayTitle}</span>
-    `;
+    stripEl.innerHTML = `<span class="strip-title">${displayTitle}</span>`;
     sectionEl.appendChild(stripEl);
 
     if (sIdx === 0) {
