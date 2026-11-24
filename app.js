@@ -1611,8 +1611,10 @@ function setEditorZoomAroundCenter(nextScale) {
   const boxCenterX = (boxRect.left + boxRect.right) / 2 - areaRect.left;
   const boxCenterY = (boxRect.top + boxRect.bottom) / 2 - areaRect.top;
 
-  const oldW = rawImageObj.width * imgScale;
-  const oldH = rawImageObj.height * imgScale;
+  const natW = rawImageObj.naturalWidth || rawImageObj.width || 1;
+  const natH = rawImageObj.naturalHeight || rawImageObj.height || 1;
+  const oldW = natW * imgScale;
+  const oldH = natH * imgScale;
   const oldLeft = baseLeft + posX;
   const oldTop = baseTop + posY;
 
@@ -1620,8 +1622,8 @@ function setEditorZoomAroundCenter(nextScale) {
   const ratioY = oldH ? (boxCenterY - oldTop) / oldH : 0.5;
 
   imgScale = clampedScale;
-  const newW = rawImageObj.width * imgScale;
-  const newH = rawImageObj.height * imgScale;
+  const newW = natW * imgScale;
+  const newH = natH * imgScale;
 
   preview.style.width = newW + "px";
   preview.style.height = newH + "px";
@@ -1646,27 +1648,32 @@ function applySmartBoundaryAndSnap() {
   const boxRightRel = boxRect.right - areaRect.left;
   const boxBottomRel = boxRect.bottom - areaRect.top;
 
-  const renderW = rawImageObj.width * imgScale;
-  const renderH = rawImageObj.height * imgScale;
+  const natW = rawImageObj.naturalWidth || rawImageObj.width || 1;
+  const natH = rawImageObj.naturalHeight || rawImageObj.height || 1;
+  const renderW = natW * imgScale;
+  const renderH = natH * imgScale;
 
   const currentLeftRel = baseLeft + posX;
   const currentTopRel = baseTop + posY;
 
-  const minLeftRel = boxRightRel - renderW;
-  const maxLeftRel = boxLeftRel;
-  const minTopRel = boxBottomRel - renderH;
-  const maxTopRel = boxTopRel;
+  let clampedLeftRel = currentLeftRel;
+  let clampedTopRel = currentTopRel;
 
-  const clampedLeftRel = Math.max(minLeftRel, Math.min(maxLeftRel, currentLeftRel));
-  const clampedTopRel = Math.max(minTopRel, Math.min(maxTopRel, currentTopRel));
-
-  if (clampedLeftRel !== currentLeftRel || clampedTopRel !== currentTopRel) {
-    preview.style.transition = "transform 0.2s ease-out";
-    posX = clampedLeftRel - baseLeft;
-    posY = clampedTopRel - baseTop;
-  } else {
-    preview.style.transition = "none";
+  if (renderW >= boxRect.width) {
+    const minLeftRel = boxRightRel - renderW;
+    const maxLeftRel = boxLeftRel;
+    clampedLeftRel = Math.max(minLeftRel, Math.min(maxLeftRel, currentLeftRel));
   }
+
+  if (renderH >= boxRect.height) {
+    const minTopRel = boxBottomRel - renderH;
+    const maxTopRel = boxTopRel;
+    clampedTopRel = Math.max(minTopRel, Math.min(maxTopRel, currentTopRel));
+  }
+
+  posX = clampedLeftRel - baseLeft;
+  posY = clampedTopRel - baseTop;
+  preview.style.transition = "none";
   preview.style.transform = `translate3d(${posX}px, ${posY}px, 0px)`;
 }
 
@@ -1678,30 +1685,46 @@ function bindCoverEditorEvents() {
   const preview = document.getElementById("editorImagePreview");
   if (!editorArea || !preview) return;
 
-  editorArea.addEventListener("mousedown", (e) => {
-    if (!rawImageObj) return;
+  editorArea.style.touchAction = "none";
+  preview.style.touchAction = "none";
+
+  editorArea.addEventListener("pointerdown", (e) => {
+    if (!rawImageObj || e.target.closest("button")) return;
     isDraggingImg = true;
     startMouseX = e.clientX;
     startMouseY = e.clientY;
     preview.style.transition = "none";
+    try {
+      editorArea.setPointerCapture(e.pointerId);
+    } catch (err) {}
     e.preventDefault();
   });
 
-  window.addEventListener("mousemove", (e) => {
+  editorArea.addEventListener("pointermove", (e) => {
     if (!isDraggingImg || !rawImageObj) return;
-    posX += (e.clientX - startMouseX) * 1.25;
-    posY += (e.clientY - startMouseY) * 1.25;
+    const dx = e.clientX - startMouseX;
+    const dy = e.clientY - startMouseY;
     startMouseX = e.clientX;
     startMouseY = e.clientY;
+    posX += dx;
+    posY += dy;
     preview.style.transform = `translate3d(${posX}px, ${posY}px, 0px)`;
+    e.preventDefault();
   });
 
-  window.addEventListener("mouseup", () => {
-    if (isDraggingImg) {
-      isDraggingImg = false;
-      applySmartBoundaryAndSnap();
+  const finishDrag = (e) => {
+    if (!isDraggingImg) return;
+    isDraggingImg = false;
+    if (e && typeof e.pointerId === "number") {
+      try {
+        editorArea.releasePointerCapture(e.pointerId);
+      } catch (err) {}
     }
-  });
+    applySmartBoundaryAndSnap();
+  };
+
+  editorArea.addEventListener("pointerup", finishDrag);
+  editorArea.addEventListener("pointercancel", finishDrag);
 
   editorArea.addEventListener("wheel", (e) => {
     if (!rawImageObj) return;
@@ -1709,53 +1732,6 @@ function bindCoverEditorEvents() {
     const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
     setEditorZoomAroundCenter(imgScale * zoomFactor);
   }, { passive: false });
-
-  editorArea.addEventListener("touchstart", (e) => {
-    if (!rawImageObj) return;
-    if (e.touches.length === 1) {
-      isDraggingImg = true;
-      startMouseX = e.touches[0].clientX;
-      startMouseY = e.touches[0].clientY;
-      initialPinchDistance = null;
-      preview.style.transition = "none";
-    } else if (e.touches.length === 2) {
-      isDraggingImg = false;
-      initialPinchDistance = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-    }
-  }, { passive: true });
-
-  editorArea.addEventListener("touchmove", (e) => {
-    if (!rawImageObj) return;
-    if (e.touches.length === 1 && isDraggingImg) {
-      posX += (e.touches[0].clientX - startMouseX) * 1.25;
-      posY += (e.touches[0].clientY - startMouseY) * 1.25;
-      startMouseX = e.touches[0].clientX;
-      startMouseY = e.touches[0].clientY;
-      preview.style.transform = `translate3d(${posX}px, ${posY}px, 0px)`;
-      e.preventDefault();
-    } else if (e.touches.length === 2 && initialPinchDistance !== null && initialPinchDistance > 0) {
-      const currentPinchDistance = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      const zoomFactor = currentPinchDistance / initialPinchDistance;
-      setEditorZoomAroundCenter(imgScale * zoomFactor);
-      initialPinchDistance = currentPinchDistance;
-      e.preventDefault();
-    }
-  }, { passive: false });
-
-  editorArea.addEventListener("touchend", (e) => {
-    if (!rawImageObj) return;
-    if (e.touches.length < 2) initialPinchDistance = null;
-    if (e.touches.length === 0 && isDraggingImg) {
-      isDraggingImg = false;
-      applySmartBoundaryAndSnap();
-    }
-  });
 }
 
 function cancelEditor() {
@@ -1911,12 +1887,13 @@ function ensureOwnerInlineFileInput() {
       const file = e.target.files && e.target.files[0];
       if (!file || !pendingOwnerEditSlot) return;
 
-      const slotInfo = pendingOwnerEditSlot;
+      const slotInfo = { ...pendingOwnerEditSlot };
       pendingOwnerEditSlot = null;
 
       if (slotInfo.type === "cover") {
         openCoverPhotoEditor(file, (adjustedUrl) => {
           const data = getWorkingStoreData();
+          if (!Array.isArray(data.coverSlots)) data.coverSlots = [""];
           const slotIdx = Number.isInteger(slotInfo.slotIdx) ? slotInfo.slotIdx : 0;
           const wasFirstEmpty = slotIdx === 0 && !data.coverSlots[0];
           data.coverSlots[slotIdx] = adjustedUrl;
