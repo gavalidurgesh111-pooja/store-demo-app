@@ -2605,3 +2605,22 @@ if (currentPage === "store") {
     true
   );
 })();
+
+(function fixUsersScreenSideBars() {
+  function applyFullWidthToUsersScreen() {
+    const usersTab = document.getElementById("tabActiveUsers");
+    if (!usersTab) return;
+
+    usersTab.style.width = "100%";
+    usersTab.style.maxWidth = "100%";
+    usersTab.style.marginLeft = "0";
+    usersTab.style.marginRight = "0";
+    usersTab.style.boxSizing = "border-box";
+  }
+
+  document.addEventListener("DOMContentLoaded", applyFullWidthToUsersScreen);
+  document.addEventListener("click", () => {
+    setTimeout(applyFullWidthToUsersScreen, 20);
+  });
+  applyFullWidthToUsersScreen();
+})();
