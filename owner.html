@@ -46,8 +46,8 @@
     <div class="clean-boxes-grid" id="ownerFoldersGrid"></div>
 
     <!-- Selected Folder Details -->
-    <section class="folder-details-wrap" id="ownerFolderDetailsWrap">
-      <h4 id="activeFolderHeading"></h4>
+    <section class="folder-details-wrap" id="ownerFolderDetailsWrap" style="margin-top:14px;">
+      <h4 id="activeFolderHeading" style="margin-bottom:10px;"></h4>
 
       <!-- Active Users Tab -->
       <div class="folder-tab-pane" id="tabActiveUsers" style="display:none;">
@@ -55,23 +55,23 @@
           <div class="stat-num" id="activeUsersCount">0</div>
           <div class="stat-label">Active Users</div>
         </div>
-        <div class="users-action-row">
+        <div style="margin-top:8px;">
           <button type="button" class="btn-secondary btn-compact" id="toggleUsersBtn" onclick="toggleUsersList()">View List</button>
         </div>
-        <div id="activeUsersListWrap" style="display:none;">
+        <div id="activeUsersListWrap" style="display:none;margin-top:10px;">
           <div id="activeUsersList"></div>
-          <button type="button" class="btn-secondary btn-compact" id="loadMoreUsersBtn" onclick="loadMoreUsers()" style="display:none;">Load More</button>
+          <button type="button" class="btn-secondary btn-compact" id="loadMoreUsersBtn" onclick="loadMoreUsers()" style="display:none;margin-top:8px;">Load More</button>
         </div>
       </div>
 
       <!-- Sold Items Tab -->
       <div class="folder-tab-pane" id="tabSoldItems" style="display:none;">
-        <div class="stats-pair-row">
-          <div class="stat-box">
+        <div style="display:flex;gap:10px;margin-bottom:10px;">
+          <div class="stat-box" style="flex:1;">
             <div class="stat-num" id="statSold">0</div>
             <div class="stat-label">Sold Units</div>
           </div>
-          <div class="stat-box">
+          <div class="stat-box" style="flex:1;">
             <div class="stat-num" id="statRevenue">₹0</div>
             <div class="stat-label">Total Sales</div>
           </div>
@@ -81,7 +81,7 @@
 
       <!-- Buyers / Orders Tab -->
       <div class="folder-tab-pane" id="tabBuyers" style="display:none;">
-        <div class="stat-box">
+        <div class="stat-box" style="margin-bottom:10px;">
           <div class="stat-num" id="statOrders">0</div>
           <div class="stat-label">Total Orders</div>
         </div>
@@ -90,8 +90,8 @@
 
       <!-- Custom Folder Tab -->
       <div class="folder-tab-pane" id="tabCustomFolder" style="display:none;">
-        <div class="custom-entry-row">
-          <input type="text" id="customEntryInput" placeholder="Add entry..." />
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <input type="text" id="customEntryInput" placeholder="Add entry..." style="flex:1;" />
           <button type="button" class="btn-primary btn-compact" onclick="addCustomFolderEntry()">Add</button>
         </div>
         <div id="customFolderEntriesList"></div>
