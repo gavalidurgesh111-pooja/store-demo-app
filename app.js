@@ -120,6 +120,9 @@ try {
   storeData = buildInitialData();
 }
 
+if (!storeData.userProfile || typeof storeData.userProfile !== "object") {
+  storeData.userProfile = buildInitialData().userProfile;
+}
 if (!storeData.ownerFolders || storeData.ownerFolders.length < 14) {
   storeData.ownerFolders = buildInitialData().ownerFolders;
 }
@@ -141,7 +144,7 @@ if (!storeData.ownerUserBoxes) storeData.ownerUserBoxes = [];
 if (!storeData.ownerBuyerBoxes) storeData.ownerBuyerBoxes = [];
 
 let activeOrderItem = null;
-let draftPhoto = storeData.userProfile?.photo || "";
+let draftPhoto = (storeData.userProfile && storeData.userProfile.photo) || "";
 let tempManagerPhoto = "";
 let otpCountdownInterval = null;
 let coverAutoScrollTimer = null;
@@ -150,6 +153,7 @@ let activeFolderIdx = 0;
 let usersVisibleLimit = 10;
 
 let OWNER_EDIT_MODE = new URLSearchParams(window.location.search).get("ownerEdit") === "1";
+window.OWNER_EDIT_MODE = OWNER_EDIT_MODE;
 let draftStoreData = null;
 let pendingOwnerEditSlot = null;
 
@@ -517,6 +521,7 @@ function verifyPin() {
 
 function lockOwnerPage() {
   OWNER_EDIT_MODE = false;
+  window.OWNER_EDIT_MODE = false;
   draftStoreData = null;
   pendingOwnerEditSlot = null;
 
