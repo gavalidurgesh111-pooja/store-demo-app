@@ -2403,3 +2403,141 @@ if (currentPage === "store") {
   const pinModal = document.getElementById("pinModal");
   if (pinModal) pinModal.classList.add("active");
 }
+
+(function attachUsersManagePinPopup() {
+  const PIN_VALUE = typeof OWNER_PIN !== "undefined" ? OWNER_PIN : "1234";
+  const POPUP_ID = "usersManagePinPopupOverlay";
+  const INPUT_ID = "usersManagePinPopupInput";
+  const ERR_ID = "usersManagePinPopupError";
+
+  let pendingTargetUrl = "";
+  let pendingCallback = null;
+
+  function ensurePinPopup() {
+    let overlay = document.getElementById(POPUP_ID);
+    if (overlay) return overlay;
+
+    overlay = document.createElement("div");
+    overlay.id = POPUP_ID;
+    overlay.style.cssText =
+      "display:none;position:fixed;inset:0;z-index:99998;background:rgba(15,23,42,0.65);align-items:center;justify-content:center;padding:16px;";
+
+    overlay.innerHTML = `
+      <div style="width:100%;max-width:340px;background:#ffffff;border-radius:14px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,0.35);display:flex;flex-direction:column;gap:12px;">
+        <div style="font-size:1rem;font-weight:700;color:#111827;">Enter PIN</div>
+        <input id="${INPUT_ID}" type="password" inputmode="numeric" autocomplete="off" placeholder="Enter PIN" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:1rem;color:#111827;box-sizing:border-box;" />
+        <div id="${ERR_ID}" style="min-height:18px;font-size:0.82rem;font-weight:600;color:#dc2626;"></div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;">
+          <button type="button" id="usersManagePinCancelBtn" style="padding:8px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:#334155;font-weight:600;cursor:pointer;">Cancel</button>
+          <button type="button" id="usersManagePinSubmitBtn" style="padding:8px 16px;border:none;border-radius:8px;background:#0f766e;color:#ffffff;font-weight:700;cursor:pointer;">Continue</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const inputEl = document.getElementById(INPUT_ID);
+    const errEl = document.getElementById(ERR_ID);
+    const cancelBtn = document.getElementById("usersManagePinCancelBtn");
+    const submitBtn = document.getElementById("usersManagePinSubmitBtn");
+
+    function closePopup() {
+      overlay.style.display = "none";
+      pendingTargetUrl = "";
+      pendingCallback = null;
+      if (inputEl) inputEl.value = "";
+      if (errEl) errEl.textContent = "";
+    }
+
+    function submitPin() {
+      const entered = (inputEl && inputEl.value ? inputEl.value : "").trim();
+      if (entered === String(PIN_VALUE)) {
+        const targetUrl = pendingTargetUrl;
+        const cb = pendingCallback;
+        closePopup();
+        if (typeof cb === "function") cb();
+        if (targetUrl) window.location.href = targetUrl;
+      } else if (errEl) {
+        errEl.textContent = "Incorrect PIN";
+      }
+    }
+
+    cancelBtn.addEventListener("click", closePopup);
+    submitBtn.addEventListener("click", submitPin);
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submitPin();
+      } else if (e.key === "Escape") {
+        closePopup();
+      }
+    });
+
+    return overlay;
+  }
+
+  window.openUsersManagePinPopup = function (targetUrl, onSuccess) {
+    pendingTargetUrl = targetUrl || "";
+    pendingCallback = typeof onSuccess === "function" ? onSuccess : null;
+    const overlay = ensurePinPopup();
+    const inputEl = document.getElementById(INPUT_ID);
+    const errEl = document.getElementById(ERR_ID);
+    if (errEl) errEl.textContent = "";
+    if (inputEl) inputEl.value = "";
+    overlay.style.display = "flex";
+    setTimeout(() => {
+      if (inputEl) inputEl.focus();
+    }, 30);
+  };
+
+  function isManageControl(el) {
+    if (!el) return false;
+    const text = (el.textContent || "").trim().toLowerCase();
+    const aria = (el.getAttribute("aria-label") || "").trim().toLowerCase();
+    const title = (el.getAttribute("title") || "").trim().toLowerCase();
+    return text === "manage" || aria === "manage" || title === "manage";
+  }
+
+  function isOnUsersContext(el) {
+    const usersTab = document.getElementById("tabActiveUsers");
+    const usersVisible = usersTab && getComputedStyle(usersTab).display !== "none";
+    const inUsersContainer = Boolean(
+      el.closest("#tabActiveUsers, [data-section='users'], [data-tab='users'], .users-section, #usersSection")
+    );
+    const onUsersPage =
+      document.body.getAttribute("data-page") === "users" ||
+      window.location.pathname.toLowerCase().includes("users");
+    return Boolean(usersVisible || inUsersContainer || onUsersPage);
+  }
+
+  document.addEventListener(
+    "click",
+    (e) => {
+      const trigger = e.target.closest("button, a, [role='button'], .manage-btn");
+      if (!trigger || trigger.closest(`#${POPUP_ID}`)) return;
+      if (!isManageControl(trigger) || !isOnUsersContext(trigger)) return;
+
+      const href = trigger.getAttribute("href");
+      const onclickAttr = trigger.getAttribute("onclick") || "";
+      let nextUrl = href && href !== "#" && !href.startsWith("javascript:") ? href : "";
+
+      if (!nextUrl) {
+        const match = onclickAttr.match(/location\.href\s*=\s*['"]([^'"]+)['"]/i);
+        if (match && match[1]) nextUrl = match[1];
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      window.openUsersManagePinPopup(nextUrl, () => {
+        if (!nextUrl && onclickAttr) {
+          try {
+            new Function(onclickAttr).call(trigger);
+          } catch (err) {}
+        }
+      });
+    },
+    true
+  );
+})();
