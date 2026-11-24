@@ -1,4 +1,4 @@
-const STORAGE_KEY = "storeOwnerModularV3";
+Const STORAGE_KEY = "storeOwnerModularV3";
 const OWNER_PIN = "1234";
 
 const MAX_OWNER_BOXES = 50;
@@ -36,7 +36,23 @@ const CARTOON_AVATARS = [
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='60' fill='%23e0f2fe'/><ellipse cx='46' cy='24' rx='6' ry='16' fill='%23ffffff'/><ellipse cx='74' cy='24' rx='6' ry='16' fill='%23ffffff'/><circle cx='60' cy='54' r='23' fill='%23ffffff'/><circle cx='51' cy='51' r='3' fill='%23111827'/><circle cx='69' cy='51' r='3' fill='%23111827'/><circle cx='60' cy='57' r='3' fill='%23f43f5e'/><path d='M52 64q8 6 16 0' stroke='%23111827' stroke-width='2.5' fill='none' stroke-linecap='round'/><path d='M30 110c5-20 16-28 30-28s25 8 30 28' fill='%230284c7'/></svg>"
 ];
 
-const DEFAULT_SECTION_TITLES = Array.from({ length: 15 }, () => "Name");
+const DEFAULT_SECTION_TITLES = [
+  "Trending Deals",
+  "Fresh Fruits & Vegetables",
+  "Dairy & Bakery",
+  "Snacks & Namkeen",
+  "Cold Drinks & Juices",
+  "Atta, Rice & Dal",
+  "Cooking Oil & Ghee",
+  "Spices & Masala",
+  "Tea, Coffee & Health Drinks",
+  "Biscuits & Chocolates",
+  "Personal Care",
+  "Household & Cleaning",
+  "Baby Care Essentials",
+  "Dry Fruits & Nuts",
+  "Combo Value Packs"
+];
 
 function stripAllDigits(text, fallback = "") {
   const cleaned = String(text || "").replace(/\d+/g, "").replace(/\s{2,}/g, " ").trim();
@@ -44,7 +60,7 @@ function stripAllDigits(text, fallback = "") {
 }
 
 function getSectionTitleForView(rawTitle, index) {
-  const cleanName = stripAllDigits(rawTitle || "", "Name");
+  const cleanName = stripAllDigits(rawTitle || "", "Section");
   if (OWNER_EDIT_MODE) {
     return `${index + 1}. ${cleanName}`;
   }
@@ -62,19 +78,19 @@ function buildInitialData() {
   });
 
   const ownerFolders = [
-    { id: "store", name: "Name", isCustom: false, entries: [], bigLeftLabel: "Name", bigRightLabel: "Name", customName: "" },
-    { id: "users", name: "Name", isCustom: false, entries: [], bigLeftLabel: "Name", bigRightLabel: "Name", customName: "" },
-    { id: "sales", name: "Name", isCustom: false, entries: [], bigLeftLabel: "Name", bigRightLabel: "Name", customName: "" },
-    { id: "buyers", name: "Name", isCustom: false, entries: [], bigLeftLabel: "Name", bigRightLabel: "Name", customName: "" }
+    { id: "store", name: "Store Setup", isCustom: false, entries: [], bigLeftLabel: "Sections", bigRightLabel: "Store Boxes", customName: "" },
+    { id: "users", name: "Active Users", isCustom: false, entries: [], bigLeftLabel: "Active Users", bigRightLabel: "Box Limit", customName: "" },
+    { id: "sales", name: "Sold Items", isCustom: false, entries: [], bigLeftLabel: "Total Units Sold", bigRightLabel: "Total Sales", customName: "" },
+    { id: "buyers", name: "Customer Orders", isCustom: false, entries: [], bigLeftLabel: "Total Orders", bigRightLabel: "Buyers", customName: "" }
   ];
   for (let i = 1; i <= 10; i++) {
     ownerFolders.push({
       id: `custom-${i}`,
-      name: "Name",
+      name: "",
       isCustom: true,
       entries: [],
-      bigLeftLabel: "Name",
-      bigRightLabel: "Name",
+      bigLeftLabel: "Box 1",
+      bigRightLabel: "Box 2",
       customName: ""
     });
   }
@@ -120,9 +136,6 @@ try {
   storeData = buildInitialData();
 }
 
-if (!storeData.userProfile || typeof storeData.userProfile !== "object") {
-  storeData.userProfile = buildInitialData().userProfile;
-}
 if (!storeData.ownerFolders || storeData.ownerFolders.length < 14) {
   storeData.ownerFolders = buildInitialData().ownerFolders;
 }
@@ -144,7 +157,7 @@ if (!storeData.ownerUserBoxes) storeData.ownerUserBoxes = [];
 if (!storeData.ownerBuyerBoxes) storeData.ownerBuyerBoxes = [];
 
 let activeOrderItem = null;
-let draftPhoto = (storeData.userProfile && storeData.userProfile.photo) || "";
+let draftPhoto = storeData.userProfile?.photo || "";
 let tempManagerPhoto = "";
 let otpCountdownInterval = null;
 let coverAutoScrollTimer = null;
@@ -152,8 +165,7 @@ let coverAutoScrollTimer = null;
 let activeFolderIdx = 0;
 let usersVisibleLimit = 10;
 
-let OWNER_EDIT_MODE = new URLSearchParams(window.location.search).get("ownerEdit") === "1";
-window.OWNER_EDIT_MODE = OWNER_EDIT_MODE;
+const OWNER_EDIT_MODE = new URLSearchParams(window.location.search).get("ownerEdit") === "1";
 let draftStoreData = null;
 let pendingOwnerEditSlot = null;
 
@@ -299,7 +311,7 @@ function renderHeader() {
   }
   const titleEl = document.getElementById("storeTitle");
   if (!titleEl) return;
-  titleEl.textContent = data.storeTitle || "Store Name";
+  titleEl.textContent = data.storeTitle || "Store";
   const subEl = document.getElementById("storeSubtitle");
   if (subEl) subEl.textContent = data.storeSubtitle || "";
 
@@ -520,28 +532,12 @@ function verifyPin() {
 }
 
 function lockOwnerPage() {
-  OWNER_EDIT_MODE = false;
-  window.OWNER_EDIT_MODE = false;
-  draftStoreData = null;
-  pendingOwnerEditSlot = null;
-
-  const url = new URL(window.location.href);
-  if (url.searchParams.has("ownerEdit")) {
-    url.searchParams.delete("ownerEdit");
-    window.history.replaceState({}, "", url.pathname + url.search);
-  }
-
   const panel = document.getElementById("ownerPanel");
   if (panel) panel.classList.remove("active");
   const pinInput = document.getElementById("ownerPinInput");
   if (pinInput) pinInput.value = "";
   const pinModal = document.getElementById("pinModal");
   if (pinModal) pinModal.classList.add("active");
-
-  if (document.body.getAttribute("data-page") === "store") {
-    renderHeader();
-    renderSections();
-  }
 }
 
 function renderOwnerWorkspace() {
@@ -593,7 +589,7 @@ function renderFolderGrid() {
   storeData.ownerFolders.forEach((folder, idx) => {
     const card = document.createElement("div");
     const isNamed = Boolean(folder.name && folder.name.trim());
-    const label = isNamed ? folder.name : "Name";
+    const label = isNamed ? folder.name : `Folder ${idx - 3}`;
 
     card.className =
       "folder-card" +
@@ -626,14 +622,14 @@ function renderFolderGrid() {
 function renameFolderAt(idx) {
   const folder = storeData.ownerFolders[idx];
   const current = folder.name || "";
-  const next = prompt("Enter Name:", current);
+  const next = prompt("Enter Folder Name:", current);
   if (next !== null) {
-    folder.name = next.trim() || "Name";
+    folder.name = next.trim();
     saveData();
     renderFolderGrid();
     const heading = document.getElementById("activeFolderHeading");
     if (heading && idx === activeFolderIdx) {
-      heading.textContent = folder.name || "Name";
+      heading.textContent = folder.name || `Folder ${idx - 3}`;
     }
   }
 }
@@ -649,7 +645,7 @@ function selectOwnerFolder(idx) {
   const folder = storeData.ownerFolders[idx];
   const heading = document.getElementById("activeFolderHeading");
   if (heading && folder) {
-    heading.textContent = folder.name || "Name";
+    heading.textContent = folder.name || (folder.isCustom ? `Folder ${idx - 3}` : "");
   }
 
   document.querySelectorAll(".folder-tab-pane").forEach((el) => {
@@ -795,7 +791,7 @@ function addOwnerBuyerBox() {
     alert(`Box limit reached (Max ${storeData.ownerBoxLimit}).`);
     return;
   }
-  storeData.ownerBuyerBoxes.push({ name: "Name" });
+  storeData.ownerBuyerBoxes.push({ name: "Buyer Box" });
   saveData();
   renderBuyersTab();
 }
@@ -860,8 +856,8 @@ function renderCustomFolderTab() {
   const rightLbl = document.getElementById("customBigRightLabel");
   const leftCnt = document.getElementById("customBigLeftCount");
   const rightCnt = document.getElementById("customBigRightCount");
-  if (leftLbl) leftLbl.textContent = folder.bigLeftLabel || "Name";
-  if (rightLbl) rightLbl.textContent = folder.bigRightLabel || "Name";
+  if (leftLbl) leftLbl.textContent = folder.bigLeftLabel || "Box 1";
+  if (rightLbl) rightLbl.textContent = folder.bigRightLabel || "Box 2";
   if (leftCnt) leftCnt.textContent = (folder.entries || []).length;
   if (rightCnt) rightCnt.textContent = `${(folder.entries || []).length} / ${storeData.ownerBoxLimit}`;
 
@@ -885,10 +881,10 @@ function renderCustomFolderTab() {
 function renameCustomSubLabel(side) {
   const folder = storeData.ownerFolders[activeFolderIdx];
   if (side === "left") {
-    const next = prompt("Edit Name:", folder.bigLeftLabel || "Name");
+    const next = prompt("Edit Name:", folder.bigLeftLabel || "Box 1");
     if (next && next.trim()) folder.bigLeftLabel = next.trim();
   } else {
-    const next = prompt("Edit Name:", folder.bigRightLabel || "Name");
+    const next = prompt("Edit Name:", folder.bigRightLabel || "Box 2");
     if (next && next.trim()) folder.bigRightLabel = next.trim();
   }
   saveData();
