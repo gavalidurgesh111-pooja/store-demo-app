@@ -1745,6 +1745,8 @@ function cancelEditor() {
   if (screen) screen.style.display = "none";
   rawImageObj = null;
   onCoverEditorDone = null;
+  isDraggingImg = false;
+  initialPinchDistance = null;
 }
 
 function confirmEditor() {
@@ -1883,43 +1885,49 @@ function ensureOwnerInlineFileInput() {
     input.id = "ownerLivePhotoInput";
     input.accept = "image/*";
     input.style.display = "none";
-    input.addEventListener("change", async (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file || !pendingOwnerEditSlot) return;
-
-      const slotInfo = { ...pendingOwnerEditSlot };
-      pendingOwnerEditSlot = null;
-
-      if (slotInfo.type === "cover") {
-        openCoverPhotoEditor(file, (adjustedUrl) => {
-          const data = getWorkingStoreData();
-          if (!Array.isArray(data.coverSlots)) data.coverSlots = [""];
-          const slotIdx = Number.isInteger(slotInfo.slotIdx) ? slotInfo.slotIdx : 0;
-          const wasFirstEmpty = slotIdx === 0 && !data.coverSlots[0];
-          data.coverSlots[slotIdx] = adjustedUrl;
-          data.coverImg = data.coverSlots[0] || adjustedUrl;
-          renderHeader();
-          attachOwnerStoreEditHandlers();
-          if (wasFirstEmpty) {
-            peekNextCoverHint();
-          }
-        });
-      } else if (slotInfo.type === "item") {
-        const resizedUrl = await readImageAsDataURL(file, 500);
-        if (!resizedUrl) return;
-        const data = getWorkingStoreData();
-        const { sIdx, itemId } = slotInfo;
-        const item = data.sections[sIdx]?.items?.find((i) => i.id === itemId);
-        if (item) {
-          item.img = resizedUrl;
-        }
-        renderHeader();
-        renderSections();
-        attachOwnerStoreEditHandlers();
-      }
-    });
     document.body.appendChild(input);
   }
+
+  input.onchange = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    const slotInfo = pendingOwnerEditSlot ? { ...pendingOwnerEditSlot } : null;
+    pendingOwnerEditSlot = null;
+    e.target.value = "";
+
+    if (!file || !slotInfo) return;
+
+    if (slotInfo.type === "cover") {
+      openCoverPhotoEditor(file, (adjustedUrl) => {
+        const data = getWorkingStoreData();
+        if (!Array.isArray(data.coverSlots)) data.coverSlots = [""];
+        const slotIdx = Number.isInteger(slotInfo.slotIdx) ? slotInfo.slotIdx : 0;
+        while (data.coverSlots.length <= slotIdx) {
+          data.coverSlots.push("");
+        }
+        const wasFirstEmpty = slotIdx === 0 && !data.coverSlots[0];
+        data.coverSlots[slotIdx] = adjustedUrl;
+        data.coverImg = data.coverSlots.find(Boolean) || adjustedUrl;
+        renderHeader();
+        attachOwnerStoreEditHandlers();
+        if (wasFirstEmpty) {
+          peekNextCoverHint();
+        }
+      });
+    } else if (slotInfo.type === "item") {
+      const resizedUrl = await readImageAsDataURL(file, 500);
+      if (!resizedUrl) return;
+      const data = getWorkingStoreData();
+      const { sIdx, itemId } = slotInfo;
+      const item = data.sections[sIdx]?.items?.find((i) => i.id === itemId);
+      if (item) {
+        item.img = resizedUrl;
+      }
+      renderHeader();
+      renderSections();
+      attachOwnerStoreEditHandlers();
+    }
+  };
+
   return input;
 }
 
