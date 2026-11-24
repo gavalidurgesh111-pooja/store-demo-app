@@ -38,8 +38,13 @@ const CARTOON_AVATARS = [
 
 const DEFAULT_SECTION_TITLES = Array.from({ length: 15 }, () => "Name");
 
+function stripAllDigits(text, fallback = "") {
+  const cleaned = String(text || "").replace(/\d+/g, "").replace(/\s{2,}/g, " ").trim();
+  return cleaned || fallback;
+}
+
 function getSectionTitleForView(rawTitle, index) {
-  const cleanName = String(rawTitle || "").trim() || "Name";
+  const cleanName = stripAllDigits(rawTitle || "", "Name");
   if (OWNER_EDIT_MODE) {
     return `${index + 1}. ${cleanName}`;
   }
@@ -147,7 +152,8 @@ let coverAutoScrollTimer = null;
 let activeFolderIdx = 0;
 let usersVisibleLimit = 10;
 
-const OWNER_EDIT_MODE = new URLSearchParams(window.location.search).get("ownerEdit") === "1";
+let OWNER_EDIT_MODE = new URLSearchParams(window.location.search).get("ownerEdit") === "1";
+window.OWNER_EDIT_MODE = OWNER_EDIT_MODE;
 let draftStoreData = null;
 let pendingOwnerEditSlot = null;
 
@@ -387,7 +393,7 @@ function renderSections() {
       const topRowLimit = Math.min(MAX_TOP_ROW_BOXES, maxBoxes);
 
       sec.items.slice(0, topRowLimit).forEach((item) => {
-        const cleanItemName = String(item.name || "").trim() || "Item";
+        const cleanItemName = stripAllDigits(item.name || "", "Item");
         const amountVal = Number(item.price || 0);
         const priceDisplay = `₹${amountVal}`;
         const box = document.createElement("div");
@@ -423,7 +429,7 @@ function renderSections() {
       scrollEl.className = "scroll-row";
 
       sec.items.slice(0, maxBoxes).forEach((item) => {
-        const cleanItemName = String(item.name || "").trim() || "Item";
+        const cleanItemName = stripAllDigits(item.name || "", "Item");
         const amountVal = Number(item.price || 0);
         const priceDisplay = `₹${amountVal}`;
         const box = document.createElement("div");
@@ -452,7 +458,7 @@ function openOrderModal(sectionIdx, itemId) {
   if (!item) return;
   activeOrderItem = item;
   const amountVal = Number(item.price || 0);
-  document.getElementById("modalItemTitle").textContent = String(item.name || "").trim() || "Item";
+  document.getElementById("modalItemTitle").textContent = stripAllDigits(item.name || "", "Item");
   document.getElementById("modalItemPrice").textContent = `Price: ₹${amountVal}`;
 
   const up = data.userProfile || {};
@@ -475,7 +481,7 @@ function confirmOrder() {
   const qty = Math.max(1, parseInt(document.getElementById("orderQty").value, 10) || 1);
   const unitPrice = Number(activeOrderItem.price || 0);
   const amount = unitPrice * qty;
-  const cleanItemName = String(activeOrderItem.name || "").trim() || "Item";
+  const cleanItemName = stripAllDigits(activeOrderItem.name || "", "Item");
 
   storeData.orders.push({
     customer,
@@ -514,21 +520,28 @@ function verifyPin() {
 }
 
 function lockOwnerPage() {
+  OWNER_EDIT_MODE = false;
+  window.OWNER_EDIT_MODE = false;
   draftStoreData = null;
   pendingOwnerEditSlot = null;
+
+  const url = new URL(window.location.href);
+  if (url.searchParams.has("ownerEdit")) {
+    url.searchParams.delete("ownerEdit");
+    window.history.replaceState({}, "", url.pathname + url.search);
+  }
 
   const panel = document.getElementById("ownerPanel");
   if (panel) panel.classList.remove("active");
   const pinInput = document.getElementById("ownerPinInput");
   if (pinInput) pinInput.value = "";
   const pinModal = document.getElementById("pinModal");
-  if (pinModal) pinModal.classList.remove("active");
+  if (pinModal) pinModal.classList.add("active");
 
-  if (typeof removeOwnerStoreEditUI === "function") {
-    removeOwnerStoreEditUI();
+  if (document.body.getAttribute("data-page") === "store") {
+    renderHeader();
+    renderSections();
   }
-
-  window.location.href = "index.html";
 }
 
 function renderOwnerWorkspace() {
@@ -744,7 +757,7 @@ function renderSoldItemsTab() {
 
   const grouped = {};
   storeData.orders.forEach((o) => {
-    const key = String(o.itemName || "").trim() || "Item";
+    const key = stripAllDigits(o.itemName || "", "Item");
     if (!grouped[key]) {
       grouped[key] = { name: key, price: o.itemPrice || 0, img: o.itemImg || "", soldQty: 0 };
     }
@@ -806,7 +819,7 @@ function renderBuyersTab() {
       : `<div class="row-thumb round">${(o.customer || "C").charAt(0).toUpperCase()}</div>`;
 
     const phoneLine = o.customerPhone || savedPhone;
-    const cleanItem = String(o.itemName || "").trim() || "Item";
+    const cleanItem = stripAllDigits(o.itemName || "", "Item");
 
     const row = document.createElement("div");
     row.className = "list-row-card";
