@@ -1763,6 +1763,7 @@ function cancelEditor() {
   const preview = document.getElementById("editorImagePreview");
   if (preview) {
     preview.onload = null;
+    preview.onerror = null;
     preview.src = "";
   }
   if (screen) screen.style.display = "none";
@@ -1801,11 +1802,7 @@ function confirmEditor() {
     ctx.drawImage(rawImageObj, sX, sY, sW, sH, 0, 0, canvas.width, canvas.height);
     const croppedUrl = canvas.toDataURL("image/jpeg", 0.85);
 
-    if (preview) preview.src = "";
-    const screen = document.getElementById("screenPhotoEditor");
-    if (screen) screen.style.display = "none";
-    rawImageObj = null;
-
+    cancelEditor();
     if (typeof cb === "function") {
       cb(croppedUrl);
     }
@@ -1831,14 +1828,21 @@ function openCoverPhotoEditor(file, onDone) {
   const reader = new FileReader();
   reader.onload = function (e) {
     const dataUrl = e.target && e.target.result;
-    if (!dataUrl) return;
+    if (!dataUrl) {
+      cancelEditor();
+      return;
+    }
 
     const img = new Image();
+    img.onerror = function () {
+      cancelEditor();
+      alert("Could not load image.");
+    };
     img.onload = function () {
       rawImageObj = img;
       preview.src = dataUrl;
 
-      requestAnimationFrame(() => {
+      setTimeout(() => {
         const area = document.getElementById("editorCanvasArea");
         const box = document.getElementById("cropFrameBox");
         if (!area || !box || !rawImageObj) return;
@@ -1870,9 +1874,13 @@ function openCoverPhotoEditor(file, onDone) {
         posX = 0;
         posY = 0;
         preview.style.transform = "translate3d(0px, 0px, 0px)";
-      });
+      }, 30);
     };
     img.src = dataUrl;
+  };
+  reader.onerror = function () {
+    cancelEditor();
+    alert("Failed to read file.");
   };
   reader.readAsDataURL(file);
 }
