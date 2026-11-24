@@ -67,24 +67,6 @@ function getSectionTitleForView(rawTitle, index) {
   return cleanName;
 }
 
-function hideDigitsOnUserPage() {
-  if (document.body.getAttribute("data-page") !== "store" || OWNER_EDIT_MODE) return;
-  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
-  const textNodes = [];
-  let node;
-  while ((node = walker.nextNode())) {
-    if (node.parentElement && node.parentElement.closest("#ownerLiveSaveBar, #ownerCustomColorPickerModal, #ownerPhotoPositionModal, #ownerStoreNameModal, #screenPhotoEditor")) {
-      continue;
-    }
-    if (/\d/.test(node.nodeValue)) {
-      textNodes.push(node);
-    }
-  }
-  textNodes.forEach((tn) => {
-    tn.nodeValue = tn.nodeValue.replace(/\d+/g, "").replace(/\s{2,}/g, " ");
-  });
-}
-
 function buildInitialData() {
   const sections = DEFAULT_SECTION_TITLES.map((title, idx) => {
     const count = idx === 0 ? 4 : 5;
@@ -245,7 +227,6 @@ function startCoverAutoScroll(track, slideCount) {
     return;
   }
 
-  let currentSlide = 0;
   let resetTimer = null;
 
   coverAutoScrollTimer = setInterval(() => {
@@ -258,21 +239,22 @@ function startCoverAutoScroll(track, slideCount) {
     const slideWidth = track.clientWidth;
     if (!slideWidth) return;
 
-    currentSlide += 1;
+    const currentIdx = Math.round(track.scrollLeft / slideWidth);
+    const nextIdx = currentIdx + 1;
+
+    track.style.scrollBehavior = "smooth";
     track.scrollTo({
-      left: currentSlide * slideWidth,
+      left: nextIdx * slideWidth,
       behavior: "smooth"
     });
 
-    if (currentSlide >= slideCount) {
+    if (nextIdx >= slideCount) {
       clearTimeout(resetTimer);
       resetTimer = setTimeout(() => {
         if (!document.body.contains(track)) return;
-        track.scrollTo({
-          left: 0,
-          behavior: "instant"
-        });
-        currentSlide = 0;
+        track.style.scrollBehavior = "auto";
+        track.scrollLeft = 0;
+        track.style.scrollBehavior = "smooth";
       }, 550);
     }
   }, 3000);
@@ -393,9 +375,6 @@ function renderHeader() {
   });
 
   startCoverAutoScroll(track, visibleSlots.length);
-  if (!OWNER_EDIT_MODE) {
-    hideDigitsOnUserPage();
-  }
 }
 
 function renderSections() {
@@ -483,21 +462,18 @@ function renderSections() {
 
     container.appendChild(sectionEl);
   });
-
-  if (!OWNER_EDIT_MODE) {
-    hideDigitsOnUserPage();
-  }
 }
 
 function openOrderModal(sectionIdx, itemId) {
-  const item = storeData.sections[sectionIdx]?.items.find((i) => i.id === itemId);
+  const data = getWorkingStoreData();
+  const item = data.sections[sectionIdx]?.items.find((i) => i.id === itemId);
   if (!item) return;
   activeOrderItem = item;
   const amountVal = Number(item.price || 0);
   document.getElementById("modalItemTitle").textContent = stripAllDigits(item.name || "", "Item");
   document.getElementById("modalItemPrice").textContent = `Price: ₹${amountVal}`;
 
-  const up = storeData.userProfile || {};
+  const up = data.userProfile || {};
   const fullName = [up.firstName, up.surname].filter(Boolean).join(" ");
   document.getElementById("orderCustomer").value = fullName;
   document.getElementById("orderQty").value = "1";
@@ -1144,7 +1120,13 @@ function saveUserProfile() {
   };
 
   storeData.userProfile = updatedProfile;
-  storeData.activeUsers = [{ key: "fixed-user-registration", ...updatedProfile }];
+  const existingIdx = storeData.activeUsers.findIndex((u) => u.key === "fixed-user-registration");
+  const entry = { key: "fixed-user-registration", ...updatedProfile };
+  if (existingIdx >= 0) {
+    storeData.activeUsers[existingIdx] = entry;
+  } else {
+    storeData.activeUsers.unshift(entry);
+  }
 
   saveData();
   window.location.href = "index.html";
