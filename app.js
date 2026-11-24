@@ -395,7 +395,6 @@ function renderSections() {
     stripEl.className = "strip-bar";
     stripEl.innerHTML = `
       <span class="strip-title">${displayTitle}</span>
-      <span class="strip-tag">Swipe →</span>
     `;
     sectionEl.appendChild(stripEl);
 
@@ -2162,7 +2161,7 @@ function attachOwnerStoreEditHandlers() {
       const slidePhotoBtn = document.createElement("button");
       slidePhotoBtn.type = "button";
       slidePhotoBtn.className = "owner-inline-edit-btn";
-      slidePhotoBtn.textContent = `Update ${idx + 1}`;
+      slidePhotoBtn.textContent = `Update Photo ${idx + 1}`;
       slidePhotoBtn.style.cssText =
         `position:absolute;top:10px;right:48px;z-index:20;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
       slidePhotoBtn.onclick = (e) => {
@@ -2191,7 +2190,7 @@ function attachOwnerStoreEditHandlers() {
     const addCoverBtn = document.createElement("button");
     addCoverBtn.type = "button";
     addCoverBtn.className = "owner-inline-edit-btn";
-    addCoverBtn.textContent = "+ Cover";
+    addCoverBtn.textContent = "+ Cover Update";
     addCoverBtn.style.cssText =
       `position:absolute;bottom:10px;right:10px;z-index:20;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
     addCoverBtn.onclick = (e) => {
@@ -2278,7 +2277,7 @@ function attachOwnerStoreEditHandlers() {
       const priceBtn = document.createElement("button");
       priceBtn.type = "button";
       priceBtn.className = "owner-inline-edit-btn";
-      priceBtn.textContent = "₹";
+      priceBtn.textContent = "✎ ₹";
       priceBtn.title = "Set Amount";
       priceBtn.style.cssText =
         "margin-left:4px;padding:1px 6px;border:1px solid #cbd5e1;border-radius:5px;background:#fefce8;color:#854d0e;font-size:0.72rem;font-weight:700;cursor:pointer;";
