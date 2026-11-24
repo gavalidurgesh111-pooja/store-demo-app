@@ -6,24 +6,6 @@
   <meta name="theme-color" content="#0f172a" />
   <title>Owner Page</title>
   <link rel="stylesheet" href="style.css" />
-  <style>
-    .owner-panel.users-screen-full {
-      max-width: 100% !important;
-      width: 100% !important;
-      padding-left: 0 !important;
-      padding-right: 0 !important;
-    }
-
-    .owner-panel.users-screen-full #ownerFolderDetailsWrap,
-    .owner-panel.users-screen-full #tabActiveUsers,
-    .owner-panel.users-screen-full #activeUsersListWrap,
-    .owner-panel.users-screen-full #activeUsersList {
-      width: 100% !important;
-      max-width: 100% !important;
-      margin-left: 0 !important;
-      margin-right: 0 !important;
-    }
-  </style>
 </head>
 <body data-page="owner">
 
@@ -64,8 +46,8 @@
     <div class="clean-boxes-grid" id="ownerFoldersGrid"></div>
 
     <!-- Selected Folder Details -->
-    <section class="folder-details-wrap" id="ownerFolderDetailsWrap" style="margin-top:14px;">
-      <h4 id="activeFolderHeading" style="margin-bottom:10px;"></h4>
+    <section class="folder-details-wrap" id="ownerFolderDetailsWrap">
+      <h4 id="activeFolderHeading"></h4>
 
       <!-- Active Users Tab -->
       <div class="folder-tab-pane" id="tabActiveUsers" style="display:none;">
@@ -73,23 +55,23 @@
           <div class="stat-num" id="activeUsersCount">0</div>
           <div class="stat-label">Active Users</div>
         </div>
-        <div style="margin-top:8px;">
+        <div class="users-action-row">
           <button type="button" class="btn-secondary btn-compact" id="toggleUsersBtn" onclick="toggleUsersList()">View List</button>
         </div>
-        <div id="activeUsersListWrap" style="display:none;margin-top:10px;">
+        <div id="activeUsersListWrap" style="display:none;">
           <div id="activeUsersList"></div>
-          <button type="button" class="btn-secondary btn-compact" id="loadMoreUsersBtn" onclick="loadMoreUsers()" style="display:none;margin-top:8px;">Load More</button>
+          <button type="button" class="btn-secondary btn-compact" id="loadMoreUsersBtn" onclick="loadMoreUsers()" style="display:none;">Load More</button>
         </div>
       </div>
 
       <!-- Sold Items Tab -->
       <div class="folder-tab-pane" id="tabSoldItems" style="display:none;">
-        <div style="display:flex;gap:10px;margin-bottom:10px;">
-          <div class="stat-box" style="flex:1;">
+        <div class="stats-pair-row">
+          <div class="stat-box">
             <div class="stat-num" id="statSold">0</div>
             <div class="stat-label">Sold Units</div>
           </div>
-          <div class="stat-box" style="flex:1;">
+          <div class="stat-box">
             <div class="stat-num" id="statRevenue">₹0</div>
             <div class="stat-label">Total Sales</div>
           </div>
@@ -99,7 +81,7 @@
 
       <!-- Buyers / Orders Tab -->
       <div class="folder-tab-pane" id="tabBuyers" style="display:none;">
-        <div class="stat-box" style="margin-bottom:10px;">
+        <div class="stat-box">
           <div class="stat-num" id="statOrders">0</div>
           <div class="stat-label">Total Orders</div>
         </div>
@@ -108,8 +90,8 @@
 
       <!-- Custom Folder Tab -->
       <div class="folder-tab-pane" id="tabCustomFolder" style="display:none;">
-        <div style="display:flex;gap:8px;margin-bottom:10px;">
-          <input type="text" id="customEntryInput" placeholder="Add entry..." style="flex:1;" />
+        <div class="custom-entry-row">
+          <input type="text" id="customEntryInput" placeholder="Add entry..." />
           <button type="button" class="btn-primary btn-compact" onclick="addCustomFolderEntry()">Add</button>
         </div>
         <div id="customFolderEntriesList"></div>
@@ -141,27 +123,6 @@
     </div>
   </div>
 
-  <script>
-    (function syncUsersFullWidthScreen() {
-      function updateUsersScreenClass() {
-        const panel = document.getElementById("ownerPanel");
-        const usersTab = document.getElementById("tabActiveUsers");
-        if (!panel || !usersTab) return;
-
-        const isUsersVisible =
-          usersTab.style.display !== "none" &&
-          getComputedStyle(usersTab).display !== "none";
-
-        panel.classList.toggle("users-screen-full", isUsersVisible);
-      }
-
-      document.addEventListener("DOMContentLoaded", updateUsersScreenClass);
-      document.addEventListener("click", () => {
-        setTimeout(updateUsersScreenClass, 25);
-      });
-      setTimeout(updateUsersScreenClass, 100);
-    })();
-  </script>
   <script src="app.js"></script>
   <script src="owner-edit.js"></script>
 </body>
