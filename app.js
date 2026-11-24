@@ -38,6 +38,14 @@ const CARTOON_AVATARS = [
 
 const DEFAULT_SECTION_TITLES = Array.from({ length: 15 }, () => "Name");
 
+let OWNER_EDIT_MODE = new URLSearchParams(window.location.search).get("ownerEdit") === "1";
+window.OWNER_EDIT_MODE = OWNER_EDIT_MODE;
+
+function setOwnerEditMode(active) {
+  OWNER_EDIT_MODE = Boolean(active);
+  window.OWNER_EDIT_MODE = OWNER_EDIT_MODE;
+}
+
 function getSectionTitleForView(rawTitle, index) {
   const cleanName = String(rawTitle || "").trim() || "Name";
   if (OWNER_EDIT_MODE) {
@@ -108,35 +116,46 @@ function buildInitialData() {
   };
 }
 
+function normalizeStoreData(raw) {
+  const base = buildInitialData();
+  const data = raw && typeof raw === "object" ? raw : base;
+
+  data.userProfile =
+    data.userProfile && typeof data.userProfile === "object"
+      ? { ...base.userProfile, ...data.userProfile }
+      : { ...base.userProfile };
+
+  if (!Array.isArray(data.ownerFolders) || data.ownerFolders.length < 14) {
+    data.ownerFolders = base.ownerFolders;
+  }
+  if (!Array.isArray(data.activeUsers)) data.activeUsers = [];
+  if (!Array.isArray(data.orders)) data.orders = [];
+  if (!Array.isArray(data.sections) || data.sections.length === 0) data.sections = base.sections;
+  if (!data.themeColor) data.themeColor = "#0f766e";
+  if (!data.titlePos || typeof data.titlePos.x !== "number" || typeof data.titlePos.y !== "number") {
+    data.titlePos = { x: 0, y: 0 };
+  }
+  if (!data.titleFont) data.titleFont = STORE_FONT_OPTIONS[0].value;
+  if (!data.titleColor) data.titleColor = STORE_NAME_COLORS[0];
+  if (!Array.isArray(data.coverSlots) || data.coverSlots.length === 0) {
+    data.coverSlots = [data.coverImg || ""];
+  }
+  if (!data.coverSlotsLimit) data.coverSlotsLimit = MAX_COVER_SLOTS;
+  if (!data.ownerBoxLimit) data.ownerBoxLimit = MAX_OWNER_BOXES;
+  if (!data.indexBoxLimit) data.indexBoxLimit = MAX_INDEX_BOXES;
+  if (!Array.isArray(data.ownerExtraBoxes)) data.ownerExtraBoxes = [];
+  if (!Array.isArray(data.ownerUserBoxes)) data.ownerUserBoxes = [];
+  if (!Array.isArray(data.ownerBuyerBoxes)) data.ownerBuyerBoxes = [];
+
+  return data;
+}
+
 let storeData;
 try {
-  storeData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || buildInitialData();
+  storeData = normalizeStoreData(JSON.parse(localStorage.getItem(STORAGE_KEY)));
 } catch (err) {
   storeData = buildInitialData();
 }
-
-if (!storeData.userProfile || typeof storeData.userProfile !== "object") {
-  storeData.userProfile = buildInitialData().userProfile;
-}
-if (!storeData.ownerFolders || storeData.ownerFolders.length < 14) {
-  storeData.ownerFolders = buildInitialData().ownerFolders;
-}
-if (!storeData.activeUsers) storeData.activeUsers = [];
-if (!storeData.themeColor) storeData.themeColor = "#0f766e";
-if (!storeData.titlePos || typeof storeData.titlePos.x !== "number" || typeof storeData.titlePos.y !== "number") {
-  storeData.titlePos = { x: 0, y: 0 };
-}
-if (!storeData.titleFont) storeData.titleFont = STORE_FONT_OPTIONS[0].value;
-if (!storeData.titleColor) storeData.titleColor = STORE_NAME_COLORS[0];
-if (!Array.isArray(storeData.coverSlots) || storeData.coverSlots.length === 0) {
-  storeData.coverSlots = [storeData.coverImg || ""];
-}
-if (!storeData.coverSlotsLimit) storeData.coverSlotsLimit = MAX_COVER_SLOTS;
-if (!storeData.ownerBoxLimit) storeData.ownerBoxLimit = MAX_OWNER_BOXES;
-if (!storeData.indexBoxLimit) storeData.indexBoxLimit = MAX_INDEX_BOXES;
-if (!storeData.ownerExtraBoxes) storeData.ownerExtraBoxes = [];
-if (!storeData.ownerUserBoxes) storeData.ownerUserBoxes = [];
-if (!storeData.ownerBuyerBoxes) storeData.ownerBuyerBoxes = [];
 
 let activeOrderItem = null;
 let draftPhoto = (storeData.userProfile && storeData.userProfile.photo) || "";
@@ -147,8 +166,6 @@ let coverAutoScrollTimer = null;
 let activeFolderIdx = 0;
 let usersVisibleLimit = 10;
 
-let OWNER_EDIT_MODE = new URLSearchParams(window.location.search).get("ownerEdit") === "1";
-window.OWNER_EDIT_MODE = OWNER_EDIT_MODE;
 let draftStoreData = null;
 let pendingOwnerEditSlot = null;
 
@@ -162,7 +179,7 @@ function initDraftStoreData() {
 
 function commitDraftStoreData() {
   if (!draftStoreData) return;
-  storeData = JSON.parse(JSON.stringify(draftStoreData));
+  storeData = normalizeStoreData(JSON.parse(JSON.stringify(draftStoreData)));
   saveData();
 }
 
@@ -182,9 +199,9 @@ function readImageAsDataURL(file, maxWidth = 600) {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const scale = Math.min(1, maxWidth / img.width);
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
+        const scale = Math.min(1, maxWidth / (img.width || 1));
+        canvas.width = Math.max(1, Math.round((img.width || 1) * scale));
+        canvas.height = Math.max(1, Math.round((img.height || 1) * scale));
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         resolve(canvas.toDataURL("image/jpeg", 0.78));
@@ -500,6 +517,8 @@ function openPinModal() {
 }
 
 function goToStoreFromPin() {
+  setOwnerEditMode(false);
+  draftStoreData = null;
   window.location.href = "index.html";
 }
 
@@ -515,10 +534,10 @@ function verifyPin() {
 }
 
 function lockOwnerPage() {
-  OWNER_EDIT_MODE = false;
-  window.OWNER_EDIT_MODE = false;
+  setOwnerEditMode(false);
   draftStoreData = null;
   pendingOwnerEditSlot = null;
+  clearInterval(coverAutoScrollTimer);
 
   const panel = document.getElementById("ownerPanel");
   if (panel) panel.classList.remove("active");
@@ -921,7 +940,7 @@ function updateMainAvatarCircleUI() {
 function openRegistrationPopup() {
   const modal = document.getElementById("userProfileModal");
   if (!modal) return;
-  const up = storeData.userProfile;
+  const up = storeData.userProfile || {};
   draftPhoto = up.photo || "";
   updateMainAvatarCircleUI();
 
@@ -1323,8 +1342,8 @@ function openCustomColourPickerModal() {
 
   function updateShadeFromPointer(clientX, clientY) {
     const rect = shadeArea.getBoundingClientRect();
-    const x = Math.min(Math.max(0, clientX - rect.left), rect.width);
-    const y = Math.min(Math.max(0, clientY - rect.top), rect.height);
+    const x = Math.min(Math.max(0, clientX - rect.left), rect.width || 1);
+    const y = Math.min(Math.max(0, clientY - rect.top), rect.height || 1);
     sat = rect.width ? x / rect.width : 0.85;
     val = rect.height ? 1 - y / rect.height : 0.85;
     const hex = syncColorUI();
@@ -1333,7 +1352,7 @@ function openCustomColourPickerModal() {
 
   function updateHueFromPointer(clientX) {
     const rect = hueTrackWrap.getBoundingClientRect();
-    const x = Math.min(Math.max(0, clientX - rect.left), rect.width);
+    const x = Math.min(Math.max(0, clientX - rect.left), rect.width || 1);
     hue = rect.width ? (x / rect.width) * 360 : 0;
     const hex = syncColorUI();
     applyDraftThemeColor(hex);
@@ -1765,10 +1784,10 @@ function confirmEditor() {
   const renderedWidth = previewRect.width || (rawImageObj.width * imgScale);
   const renderedHeight = previewRect.height || (rawImageObj.height * imgScale);
 
-  const sX = ((box.left - previewRect.left) / renderedWidth) * rawImageObj.width;
-  const sY = ((box.top - previewRect.top) / renderedHeight) * rawImageObj.height;
-  const sW = (box.width / renderedWidth) * rawImageObj.width;
-  const sH = (box.height / renderedHeight) * rawImageObj.height;
+  const sX = ((box.left - previewRect.left) / (renderedWidth || 1)) * rawImageObj.width;
+  const sY = ((box.top - previewRect.top) / (renderedHeight || 1)) * rawImageObj.height;
+  const sW = (box.width / (renderedWidth || 1)) * rawImageObj.width;
+  const sH = (box.height / (renderedHeight || 1)) * rawImageObj.height;
 
   ctx.drawImage(rawImageObj, sX, sY, sW, sH, 0, 0, canvas.width, canvas.height);
   const croppedUrl = canvas.toDataURL("image/jpeg", 0.88);
@@ -1810,7 +1829,7 @@ function openCoverPhotoEditor(file, onDone) {
         const areaRect = area.getBoundingClientRect();
         const boxRect = box.getBoundingClientRect();
 
-        minScale = Math.max(boxRect.width / rawImageObj.width, boxRect.height / rawImageObj.height);
+        minScale = Math.max(boxRect.width / (rawImageObj.width || 1), boxRect.height / (rawImageObj.height || 1));
         maxScale = minScale * 2.5;
         imgScale = minScale;
 
@@ -2099,6 +2118,7 @@ function attachOwnerStoreEditHandlers() {
   backBtn.style.cssText =
     "padding:7px 10px;border:1px solid rgba(255,255,255,0.55);border-radius:8px;background:transparent;color:#ffffff;font-weight:600;cursor:pointer;";
   backBtn.onclick = () => {
+    setOwnerEditMode(false);
     draftStoreData = null;
     removeOwnerStoreEditUI();
     window.location.href = "index.html";
@@ -2338,7 +2358,8 @@ function attachOwnerStoreEditHandlers() {
 
 window.addEventListener("storage", () => {
   try {
-    storeData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || storeData;
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (parsed) storeData = normalizeStoreData(parsed);
   } catch (err) {}
   renderHeader();
   renderSections();
