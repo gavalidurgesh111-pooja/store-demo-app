@@ -106,7 +106,7 @@ body {
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  padding-bottom: 6px;
+  padding-bottom: 4px;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -115,6 +115,8 @@ body {
 
 .five-boxes-row::-webkit-scrollbar {
   display: none;
+  width: 0;
+  height: 0;
 }
 
 .mini-box {
@@ -184,7 +186,7 @@ body {
   display: flex;
   gap: 12px;
   overflow-x: auto;
-  padding-bottom: 8px;
+  padding-bottom: 4px;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -193,6 +195,8 @@ body {
 
 .scroll-row::-webkit-scrollbar {
   display: none;
+  width: 0;
+  height: 0;
 }
 
 .item-box {
