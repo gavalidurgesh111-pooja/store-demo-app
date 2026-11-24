@@ -6,6 +6,24 @@
   <meta name="theme-color" content="#0f172a" />
   <title>Owner Page</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    .owner-panel.users-screen-full {
+      max-width: 100% !important;
+      width: 100% !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+
+    .owner-panel.users-screen-full #ownerFolderDetailsWrap,
+    .owner-panel.users-screen-full #tabActiveUsers,
+    .owner-panel.users-screen-full #activeUsersListWrap,
+    .owner-panel.users-screen-full #activeUsersList {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+    }
+  </style>
 </head>
 <body data-page="owner">
 
@@ -123,6 +141,27 @@
     </div>
   </div>
 
+  <script>
+    (function syncUsersFullWidthScreen() {
+      function updateUsersScreenClass() {
+        const panel = document.getElementById("ownerPanel");
+        const usersTab = document.getElementById("tabActiveUsers");
+        if (!panel || !usersTab) return;
+
+        const isUsersVisible =
+          usersTab.style.display !== "none" &&
+          getComputedStyle(usersTab).display !== "none";
+
+        panel.classList.toggle("users-screen-full", isUsersVisible);
+      }
+
+      document.addEventListener("DOMContentLoaded", updateUsersScreenClass);
+      document.addEventListener("click", () => {
+        setTimeout(updateUsersScreenClass, 25);
+      });
+      setTimeout(updateUsersScreenClass, 100);
+    })();
+  </script>
   <script src="app.js"></script>
   <script src="owner-edit.js"></script>
 </body>
