@@ -149,7 +149,7 @@ let coverAutoScrollTimer = null;
 let activeFolderIdx = 0;
 let usersVisibleLimit = 10;
 
-const OWNER_EDIT_MODE = new URLSearchParams(window.location.search).get("ownerEdit") === "1";
+let OWNER_EDIT_MODE = new URLSearchParams(window.location.search).get("ownerEdit") === "1";
 let draftStoreData = null;
 let pendingOwnerEditSlot = null;
 
@@ -516,12 +516,27 @@ function verifyPin() {
 }
 
 function lockOwnerPage() {
+  OWNER_EDIT_MODE = false;
+  draftStoreData = null;
+  pendingOwnerEditSlot = null;
+
+  const url = new URL(window.location.href);
+  if (url.searchParams.has("ownerEdit")) {
+    url.searchParams.delete("ownerEdit");
+    window.history.replaceState({}, "", url.pathname + url.search);
+  }
+
   const panel = document.getElementById("ownerPanel");
   if (panel) panel.classList.remove("active");
   const pinInput = document.getElementById("ownerPinInput");
   if (pinInput) pinInput.value = "";
   const pinModal = document.getElementById("pinModal");
   if (pinModal) pinModal.classList.add("active");
+
+  if (document.body.getAttribute("data-page") === "store") {
+    renderHeader();
+    renderSections();
+  }
 }
 
 function renderOwnerWorkspace() {
