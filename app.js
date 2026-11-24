@@ -2400,8 +2400,24 @@ if (currentPage === "store") {
 } else if (currentPage === "profile") {
   openRegistrationPopup();
 } else if (currentPage === "owner") {
-  const pinModal = document.getElementById("pinModal");
-  if (pinModal) pinModal.classList.add("active");
+  let alreadyVerified = false;
+  try {
+    if (sessionStorage.getItem("ownerPinVerifiedForNextPage") === "1") {
+      alreadyVerified = true;
+      sessionStorage.removeItem("ownerPinVerifiedForNextPage");
+    }
+  } catch (err) {}
+
+  if (alreadyVerified) {
+    const pinModal = document.getElementById("pinModal");
+    if (pinModal) pinModal.classList.remove("active");
+    const panel = document.getElementById("ownerPanel");
+    if (panel) panel.classList.add("active");
+    if (typeof renderOwnerWorkspace === "function") renderOwnerWorkspace();
+  } else {
+    const pinModal = document.getElementById("pinModal");
+    if (pinModal) pinModal.classList.add("active");
+  }
 }
 
 (function attachUsersManagePinPopup() {
@@ -2454,6 +2470,9 @@ if (currentPage === "store") {
       if (entered === String(PIN_VALUE)) {
         const targetUrl = pendingTargetUrl;
         const cb = pendingCallback;
+        try {
+          sessionStorage.setItem("ownerPinVerifiedForNextPage", "1");
+        } catch (err) {}
         closePopup();
         if (typeof cb === "function") cb();
         if (targetUrl) window.location.href = targetUrl;
