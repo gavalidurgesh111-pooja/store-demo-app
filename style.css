@@ -15,10 +15,17 @@
   padding: 0;
 }
 
+html,
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   background: var(--bg);
   color: var(--text);
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   padding-bottom: 48px;
   min-height: 100vh;
 }
@@ -64,6 +71,7 @@ body {
 
 /* Layout & Sections */
 .container {
+  width: 100%;
   max-width: 1080px;
   margin: 0 auto;
   padding: 14px 12px;
@@ -259,6 +267,7 @@ body {
 
 /* Top Navigation Bar */
 .top-bar {
+  width: 100%;
   max-width: 1080px;
   margin: 0 auto;
   padding: 12px 16px;
@@ -619,6 +628,7 @@ body {
 
 /* Footer */
 footer {
+  width: 100%;
   max-width: 1080px;
   margin: 24px auto 0;
   padding: 12px 16px;
@@ -638,6 +648,7 @@ footer {
 /* ==================== OWNER PAGE (owner.html) ==================== */
 .owner-panel {
   display: none;
+  width: 100%;
   max-width: 1080px;
   margin: 0 auto;
   padding: 12px;
@@ -737,6 +748,78 @@ footer {
   font-weight: 700;
   color: var(--text);
   word-break: break-word;
+}
+
+.folder-details-wrap {
+  width: 100%;
+  margin-top: 14px;
+}
+
+#activeFolderHeading {
+  margin-bottom: 10px;
+}
+
+.folder-tab-pane {
+  width: 100%;
+}
+
+.stat-box {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+}
+
+.stat-num {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.stat-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.users-action-row {
+  margin-top: 8px;
+}
+
+#activeUsersListWrap {
+  width: 100%;
+  margin-top: 10px;
+}
+
+#activeUsersList {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#loadMoreUsersBtn {
+  margin-top: 8px;
+}
+
+.stats-pair-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.stats-pair-row .stat-box {
+  flex: 1;
+}
+
+.custom-entry-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
 .owner-box {
@@ -885,6 +968,7 @@ footer {
 }
 
 .list-row-card {
+  width: 100%;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -941,14 +1025,21 @@ footer {
   flex-shrink: 0;
 }
 
-/* Users Screen Full-Width Fix */
-#tabActiveUsers,
-#tabActiveUsers .stat-box,
-#tabActiveUsers #activeUsersListWrap,
-#tabActiveUsers #activeUsersList,
-#tabActiveUsers .list-row-card {
-  width: 100%;
+/* Remove side strips around Active Users screen */
+.owner-panel.active {
   max-width: 100%;
-  margin-left: 0;
-  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.owner-panel.active .owner-top-two-bars,
+.owner-panel.active .clean-boxes-grid,
+.owner-panel.active .folder-details-wrap {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.owner-panel.active #tabActiveUsers {
+  padding-left: 0;
+  padding-right: 0;
 }
