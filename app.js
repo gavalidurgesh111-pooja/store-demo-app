@@ -1761,7 +1761,10 @@ function bindCoverEditorEvents() {
 function cancelEditor() {
   const screen = document.getElementById("screenPhotoEditor");
   const preview = document.getElementById("editorImagePreview");
-  if (preview) preview.src = "";
+  if (preview) {
+    preview.onload = null;
+    preview.src = "";
+  }
   if (screen) screen.style.display = "none";
   rawImageObj = null;
   onCoverEditorDone = null;
@@ -1770,34 +1773,45 @@ function cancelEditor() {
 function confirmEditor() {
   const preview = document.getElementById("editorImagePreview");
   const box = document.getElementById("cropFrameBox")?.getBoundingClientRect();
-  if (!rawImageObj || !preview || !box) return;
+  const cb = onCoverEditorDone;
+  onCoverEditorDone = null;
 
-  const canvas = document.createElement("canvas");
-  canvas.width = 1080;
-  canvas.height = 520;
-  const ctx = canvas.getContext("2d");
+  if (!rawImageObj || !preview || !box || !box.width || !box.height) {
+    cancelEditor();
+    return;
+  }
 
-  const previewRect = preview.getBoundingClientRect();
-  const renderedWidth = previewRect.width || (rawImageObj.width * imgScale);
-  const renderedHeight = previewRect.height || (rawImageObj.height * imgScale);
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1080;
+    canvas.height = 520;
+    const ctx = canvas.getContext("2d");
 
-  const sX = ((box.left - previewRect.left) / (renderedWidth || 1)) * rawImageObj.width;
-  const sY = ((box.top - previewRect.top) / (renderedHeight || 1)) * rawImageObj.height;
-  const sW = (box.width / (renderedWidth || 1)) * rawImageObj.width;
-  const sH = (box.height / (renderedHeight || 1)) * rawImageObj.height;
+    const previewRect = preview.getBoundingClientRect();
+    const natW = rawImageObj.naturalWidth || rawImageObj.width || 1;
+    const natH = rawImageObj.naturalHeight || rawImageObj.height || 1;
+    const renderedWidth = previewRect.width || (natW * imgScale) || 1;
+    const renderedHeight = previewRect.height || (natH * imgScale) || 1;
 
-  ctx.drawImage(rawImageObj, sX, sY, sW, sH, 0, 0, canvas.width, canvas.height);
-  const croppedUrl = canvas.toDataURL("image/jpeg", 0.88);
+    const sX = Math.max(0, ((box.left - previewRect.left) / renderedWidth) * natW);
+    const sY = Math.max(0, ((box.top - previewRect.top) / renderedHeight) * natH);
+    const sW = Math.min(natW - sX, (box.width / renderedWidth) * natW);
+    const sH = Math.min(natH - sY, (box.height / renderedHeight) * natH);
 
-  if (preview) preview.src = "";
-  const screen = document.getElementById("screenPhotoEditor");
-  if (screen) screen.style.display = "none";
-  rawImageObj = null;
+    ctx.drawImage(rawImageObj, sX, sY, sW, sH, 0, 0, canvas.width, canvas.height);
+    const croppedUrl = canvas.toDataURL("image/jpeg", 0.85);
 
-  if (onCoverEditorDone) {
-    const cb = onCoverEditorDone;
-    onCoverEditorDone = null;
-    cb(croppedUrl);
+    if (preview) preview.src = "";
+    const screen = document.getElementById("screenPhotoEditor");
+    if (screen) screen.style.display = "none";
+    rawImageObj = null;
+
+    if (typeof cb === "function") {
+      cb(croppedUrl);
+    }
+  } catch (err) {
+    cancelEditor();
+    alert("Photo crop failed. Try another photo.");
   }
 }
 
@@ -1806,18 +1820,24 @@ function openCoverPhotoEditor(file, onDone) {
   onCoverEditorDone = onDone;
   ensureCoverEditorDOM();
 
+  const screen = document.getElementById("screenPhotoEditor");
+  const preview = document.getElementById("editorImagePreview");
+  if (screen) screen.style.display = "flex";
+  if (!preview) return;
+
+  preview.style.transition = "none";
+  preview.src = "";
+
   const reader = new FileReader();
   reader.onload = function (e) {
-    rawImageObj = new Image();
-    const screen = document.getElementById("screenPhotoEditor");
-    const preview = document.getElementById("editorImagePreview");
-    if (screen) screen.style.display = "flex";
-    if (!preview) return;
+    const dataUrl = e.target && e.target.result;
+    if (!dataUrl) return;
 
-    preview.style.transition = "none";
-    preview.src = e.target.result;
+    const img = new Image();
+    img.onload = function () {
+      rawImageObj = img;
+      preview.src = dataUrl;
 
-    rawImageObj.onload = function () {
       requestAnimationFrame(() => {
         const area = document.getElementById("editorCanvasArea");
         const box = document.getElementById("cropFrameBox");
@@ -1825,18 +1845,22 @@ function openCoverPhotoEditor(file, onDone) {
 
         const areaRect = area.getBoundingClientRect();
         const boxRect = box.getBoundingClientRect();
+        const natW = rawImageObj.naturalWidth || rawImageObj.width || 1;
+        const natH = rawImageObj.naturalHeight || rawImageObj.height || 1;
+        const boxW = boxRect.width || 290;
+        const boxH = boxRect.height || 140;
 
-        minScale = Math.max(boxRect.width / (rawImageObj.width || 1), boxRect.height / (rawImageObj.height || 1));
+        minScale = Math.max(boxW / natW, boxH / natH) || 1;
         maxScale = minScale * 2.5;
         imgScale = minScale;
 
-        const renderW = rawImageObj.width * imgScale;
-        const renderH = rawImageObj.height * imgScale;
+        const renderW = natW * imgScale;
+        const renderH = natH * imgScale;
         preview.style.width = renderW + "px";
         preview.style.height = renderH + "px";
 
-        const centerXRel = (boxRect.left + boxRect.right) / 2 - areaRect.left;
-        const centerYRel = (boxRect.top + boxRect.bottom) / 2 - areaRect.top;
+        const centerXRel = ((boxRect.left + boxRect.right) / 2 || (areaRect.width / 2)) - (areaRect.left || 0);
+        const centerYRel = ((boxRect.top + boxRect.bottom) / 2 || (areaRect.height / 2)) - (areaRect.top || 0);
 
         baseLeft = centerXRel - renderW / 2;
         baseTop = centerYRel - renderH / 2;
@@ -1848,7 +1872,7 @@ function openCoverPhotoEditor(file, onDone) {
         preview.style.transform = "translate3d(0px, 0px, 0px)";
       });
     };
-    rawImageObj.src = e.target.result;
+    img.src = dataUrl;
   };
   reader.readAsDataURL(file);
 }
