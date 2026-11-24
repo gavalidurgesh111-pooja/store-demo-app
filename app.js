@@ -36,31 +36,10 @@ const CARTOON_AVATARS = [
   "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><rect width='120' height='120' rx='60' fill='%23e0f2fe'/><ellipse cx='46' cy='24' rx='6' ry='16' fill='%23ffffff'/><ellipse cx='74' cy='24' rx='6' ry='16' fill='%23ffffff'/><circle cx='60' cy='54' r='23' fill='%23ffffff'/><circle cx='51' cy='51' r='3' fill='%23111827'/><circle cx='69' cy='51' r='3' fill='%23111827'/><circle cx='60' cy='57' r='3' fill='%23f43f5e'/><path d='M52 64q8 6 16 0' stroke='%23111827' stroke-width='2.5' fill='none' stroke-linecap='round'/><path d='M30 110c5-20 16-28 30-28s25 8 30 28' fill='%230284c7'/></svg>"
 ];
 
-const DEFAULT_SECTION_TITLES = [
-  "Trending Deals",
-  "Fresh Fruits & Vegetables",
-  "Dairy & Bakery",
-  "Snacks & Namkeen",
-  "Cold Drinks & Juices",
-  "Atta, Rice & Dal",
-  "Cooking Oil & Ghee",
-  "Spices & Masala",
-  "Tea, Coffee & Health Drinks",
-  "Biscuits & Chocolates",
-  "Personal Care",
-  "Household & Cleaning",
-  "Baby Care Essentials",
-  "Dry Fruits & Nuts",
-  "Combo Value Packs"
-];
-
-function stripAllDigits(text, fallback = "") {
-  const cleaned = String(text || "").replace(/\d+/g, "").replace(/\s{2,}/g, " ").trim();
-  return cleaned || fallback;
-}
+const DEFAULT_SECTION_TITLES = Array.from({ length: 15 }, () => "Name");
 
 function getSectionTitleForView(rawTitle, index) {
-  const cleanName = stripAllDigits(rawTitle || "", "Section");
+  const cleanName = String(rawTitle || "").trim() || "Name";
   if (OWNER_EDIT_MODE) {
     return `${index + 1}. ${cleanName}`;
   }
@@ -78,19 +57,19 @@ function buildInitialData() {
   });
 
   const ownerFolders = [
-    { id: "store", name: "Store Setup", isCustom: false, entries: [], bigLeftLabel: "Sections", bigRightLabel: "Store Boxes", customName: "" },
-    { id: "users", name: "Active Users", isCustom: false, entries: [], bigLeftLabel: "Active Users", bigRightLabel: "Box Limit", customName: "" },
-    { id: "sales", name: "Sold Items", isCustom: false, entries: [], bigLeftLabel: "Total Units Sold", bigRightLabel: "Total Sales", customName: "" },
-    { id: "buyers", name: "Customer Orders", isCustom: false, entries: [], bigLeftLabel: "Total Orders", bigRightLabel: "Buyers", customName: "" }
+    { id: "store", name: "Name", isCustom: false, entries: [], bigLeftLabel: "Name", bigRightLabel: "Name", customName: "" },
+    { id: "users", name: "Name", isCustom: false, entries: [], bigLeftLabel: "Name", bigRightLabel: "Name", customName: "" },
+    { id: "sales", name: "Name", isCustom: false, entries: [], bigLeftLabel: "Name", bigRightLabel: "Name", customName: "" },
+    { id: "buyers", name: "Name", isCustom: false, entries: [], bigLeftLabel: "Name", bigRightLabel: "Name", customName: "" }
   ];
   for (let i = 1; i <= 10; i++) {
     ownerFolders.push({
       id: `custom-${i}`,
-      name: "",
+      name: "Name",
       isCustom: true,
       entries: [],
-      bigLeftLabel: "Box 1",
-      bigRightLabel: "Box 2",
+      bigLeftLabel: "Name",
+      bigRightLabel: "Name",
       customName: ""
     });
   }
@@ -311,7 +290,7 @@ function renderHeader() {
   }
   const titleEl = document.getElementById("storeTitle");
   if (!titleEl) return;
-  titleEl.textContent = data.storeTitle || "Store";
+  titleEl.textContent = data.storeTitle || "Store Name";
   const subEl = document.getElementById("storeSubtitle");
   if (subEl) subEl.textContent = data.storeSubtitle || "";
 
@@ -405,7 +384,7 @@ function renderSections() {
       const topRowLimit = Math.min(MAX_TOP_ROW_BOXES, maxBoxes);
 
       sec.items.slice(0, topRowLimit).forEach((item) => {
-        const cleanItemName = stripAllDigits(item.name || "", "Item");
+        const cleanItemName = String(item.name || "").trim() || "Item";
         const amountVal = Number(item.price || 0);
         const priceDisplay = `₹${amountVal}`;
         const box = document.createElement("div");
@@ -441,7 +420,7 @@ function renderSections() {
       scrollEl.className = "scroll-row";
 
       sec.items.slice(0, maxBoxes).forEach((item) => {
-        const cleanItemName = stripAllDigits(item.name || "", "Item");
+        const cleanItemName = String(item.name || "").trim() || "Item";
         const amountVal = Number(item.price || 0);
         const priceDisplay = `₹${amountVal}`;
         const box = document.createElement("div");
@@ -470,7 +449,7 @@ function openOrderModal(sectionIdx, itemId) {
   if (!item) return;
   activeOrderItem = item;
   const amountVal = Number(item.price || 0);
-  document.getElementById("modalItemTitle").textContent = stripAllDigits(item.name || "", "Item");
+  document.getElementById("modalItemTitle").textContent = String(item.name || "").trim() || "Item";
   document.getElementById("modalItemPrice").textContent = `Price: ₹${amountVal}`;
 
   const up = data.userProfile || {};
@@ -493,7 +472,7 @@ function confirmOrder() {
   const qty = Math.max(1, parseInt(document.getElementById("orderQty").value, 10) || 1);
   const unitPrice = Number(activeOrderItem.price || 0);
   const amount = unitPrice * qty;
-  const cleanItemName = stripAllDigits(activeOrderItem.name || "", "Item");
+  const cleanItemName = String(activeOrderItem.name || "").trim() || "Item";
 
   storeData.orders.push({
     customer,
@@ -589,7 +568,7 @@ function renderFolderGrid() {
   storeData.ownerFolders.forEach((folder, idx) => {
     const card = document.createElement("div");
     const isNamed = Boolean(folder.name && folder.name.trim());
-    const label = isNamed ? folder.name : `Folder ${idx - 3}`;
+    const label = isNamed ? folder.name : "Name";
 
     card.className =
       "folder-card" +
@@ -622,14 +601,14 @@ function renderFolderGrid() {
 function renameFolderAt(idx) {
   const folder = storeData.ownerFolders[idx];
   const current = folder.name || "";
-  const next = prompt("Enter Folder Name:", current);
+  const next = prompt("Enter Name:", current);
   if (next !== null) {
-    folder.name = next.trim();
+    folder.name = next.trim() || "Name";
     saveData();
     renderFolderGrid();
     const heading = document.getElementById("activeFolderHeading");
     if (heading && idx === activeFolderIdx) {
-      heading.textContent = folder.name || `Folder ${idx - 3}`;
+      heading.textContent = folder.name || "Name";
     }
   }
 }
@@ -645,7 +624,7 @@ function selectOwnerFolder(idx) {
   const folder = storeData.ownerFolders[idx];
   const heading = document.getElementById("activeFolderHeading");
   if (heading && folder) {
-    heading.textContent = folder.name || (folder.isCustom ? `Folder ${idx - 3}` : "");
+    heading.textContent = folder.name || "Name";
   }
 
   document.querySelectorAll(".folder-tab-pane").forEach((el) => {
@@ -753,7 +732,7 @@ function renderSoldItemsTab() {
 
   const grouped = {};
   storeData.orders.forEach((o) => {
-    const key = stripAllDigits(o.itemName || "", "Item");
+    const key = String(o.itemName || "").trim() || "Item";
     if (!grouped[key]) {
       grouped[key] = { name: key, price: o.itemPrice || 0, img: o.itemImg || "", soldQty: 0 };
     }
@@ -791,7 +770,7 @@ function addOwnerBuyerBox() {
     alert(`Box limit reached (Max ${storeData.ownerBoxLimit}).`);
     return;
   }
-  storeData.ownerBuyerBoxes.push({ name: "Buyer Box" });
+  storeData.ownerBuyerBoxes.push({ name: "Name" });
   saveData();
   renderBuyersTab();
 }
@@ -815,7 +794,7 @@ function renderBuyersTab() {
       : `<div class="row-thumb round">${(o.customer || "C").charAt(0).toUpperCase()}</div>`;
 
     const phoneLine = o.customerPhone || savedPhone;
-    const cleanItem = stripAllDigits(o.itemName || "", "Item");
+    const cleanItem = String(o.itemName || "").trim() || "Item";
 
     const row = document.createElement("div");
     row.className = "list-row-card";
@@ -856,8 +835,8 @@ function renderCustomFolderTab() {
   const rightLbl = document.getElementById("customBigRightLabel");
   const leftCnt = document.getElementById("customBigLeftCount");
   const rightCnt = document.getElementById("customBigRightCount");
-  if (leftLbl) leftLbl.textContent = folder.bigLeftLabel || "Box 1";
-  if (rightLbl) rightLbl.textContent = folder.bigRightLabel || "Box 2";
+  if (leftLbl) leftLbl.textContent = folder.bigLeftLabel || "Name";
+  if (rightLbl) rightLbl.textContent = folder.bigRightLabel || "Name";
   if (leftCnt) leftCnt.textContent = (folder.entries || []).length;
   if (rightCnt) rightCnt.textContent = `${(folder.entries || []).length} / ${storeData.ownerBoxLimit}`;
 
@@ -881,10 +860,10 @@ function renderCustomFolderTab() {
 function renameCustomSubLabel(side) {
   const folder = storeData.ownerFolders[activeFolderIdx];
   if (side === "left") {
-    const next = prompt("Edit Name:", folder.bigLeftLabel || "Box 1");
+    const next = prompt("Edit Name:", folder.bigLeftLabel || "Name");
     if (next && next.trim()) folder.bigLeftLabel = next.trim();
   } else {
-    const next = prompt("Edit Name:", folder.bigRightLabel || "Box 2");
+    const next = prompt("Edit Name:", folder.bigRightLabel || "Name");
     if (next && next.trim()) folder.bigRightLabel = next.trim();
   }
   saveData();
