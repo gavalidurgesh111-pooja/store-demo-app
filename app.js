@@ -525,23 +525,18 @@ function lockOwnerPage() {
   draftStoreData = null;
   pendingOwnerEditSlot = null;
 
-  const url = new URL(window.location.href);
-  if (url.searchParams.has("ownerEdit")) {
-    url.searchParams.delete("ownerEdit");
-    window.history.replaceState({}, "", url.pathname + url.search);
-  }
-
   const panel = document.getElementById("ownerPanel");
   if (panel) panel.classList.remove("active");
   const pinInput = document.getElementById("ownerPinInput");
   if (pinInput) pinInput.value = "";
   const pinModal = document.getElementById("pinModal");
-  if (pinModal) pinModal.classList.add("active");
+  if (pinModal) pinModal.classList.remove("active");
 
-  if (document.body.getAttribute("data-page") === "store") {
-    renderHeader();
-    renderSections();
+  if (typeof removeOwnerStoreEditUI === "function") {
+    removeOwnerStoreEditUI();
   }
+
+  window.location.href = "index.html";
 }
 
 function renderOwnerWorkspace() {
