@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V10");
+console.log("OWNER_EDIT_COMPLETE_V11");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -287,6 +287,112 @@ function openCustomColourPickerModal() {
   );
 }
 
+// ==================== KNOB-ONLY SLIDER (पट्टी पर छूने से नहीं, केवल नीले गोल बटन से हिलेगा) ====================
+function createBlueKnobSlider(min, max, step, initialVal, onValueChange) {
+  const minNum = Number(min);
+  const maxNum = Number(max);
+  const stepNum = Number(step) || 1;
+  const knobColor = "#2563eb";
+  const knobSize = 26;
+
+  const container = document.createElement("div");
+  container.style.cssText =
+    `position:relative;width:100%;height:${knobSize + 8}px;display:flex;align-items:center;user-select:none;-webkit-user-select:none;`;
+
+  const trackLine = document.createElement("div");
+  trackLine.style.cssText =
+    "position:relative;width:100%;height:7px;border-radius:999px;background:#cbd5e1;overflow:hidden;pointer-events:none;";
+
+  const activeFill = document.createElement("div");
+  activeFill.style.cssText =
+    `position:absolute;left:0;top:0;bottom:0;width:0%;background:${knobColor};border-radius:999px;`;
+  trackLine.appendChild(activeFill);
+
+  const knob = document.createElement("button");
+  knob.type = "button";
+  knob.setAttribute("aria-label", "Adjust slider");
+  knob.style.cssText =
+    `position:absolute;top:50%;left:0%;width:${knobSize}px;height:${knobSize}px;border-radius:50%;background:${knobColor};border:3px solid #ffffff;box-shadow:0 2px 7px rgba(37,99,235,0.55);transform:translate(-50%,-50%);cursor:grab;touch-action:none;padding:0;z-index:2;`;
+
+  let currentVal = Number(initialVal);
+
+  function snapAndClamp(val) {
+    const raw = Number(val);
+    if (!Number.isFinite(raw)) return minNum;
+    const steps = Math.round((raw - minNum) / stepNum);
+    const snapped = minNum + steps * stepNum;
+    const clamped = Math.max(minNum, Math.min(maxNum, snapped));
+    return stepNum < 1 ? Number(clamped.toFixed(2)) : Math.round(clamped);
+  }
+
+  function renderKnobPosition(val) {
+    currentVal = snapAndClamp(val);
+    const span = maxNum - minNum;
+    const pct = span > 0 ? ((currentVal - minNum) / span) * 100 : 0;
+    const safePct = Math.max(0, Math.min(100, pct));
+    activeFill.style.width = `${safePct}%`;
+    knob.style.left = `${safePct}%`;
+  }
+
+  let isDraggingKnob = false;
+
+  const updateFromClientX = (clientX) => {
+    const rect = container.getBoundingClientRect();
+    const usableWidth = Math.max(1, rect.width - knobSize);
+    const relX = clientX - rect.left - knobSize / 2;
+    const ratio = Math.max(0, Math.min(1, relX / usableWidth));
+    const nextVal = snapAndClamp(minNum + ratio * (maxNum - minNum));
+    if (nextVal !== currentVal) {
+      renderKnobPosition(nextVal);
+      if (typeof onValueChange === "function") {
+        onValueChange(currentVal);
+      }
+    }
+  };
+
+  knob.addEventListener("pointerdown", (e) => {
+    e.stopPropagation();
+    isDraggingKnob = true;
+    knob.style.cursor = "grabbing";
+    try {
+      knob.setPointerCapture(e.pointerId);
+    } catch (err) {}
+    updateFromClientX(e.clientX);
+    e.preventDefault();
+  });
+
+  knob.addEventListener("pointermove", (e) => {
+    if (!isDraggingKnob) return;
+    e.stopPropagation();
+    updateFromClientX(e.clientX);
+    e.preventDefault();
+  });
+
+  const stopKnobDrag = (e) => {
+    if (!isDraggingKnob) return;
+    isDraggingKnob = false;
+    knob.style.cursor = "grab";
+    if (e && typeof e.pointerId === "number") {
+      try {
+        knob.releasePointerCapture(e.pointerId);
+      } catch (err) {}
+    }
+  };
+
+  knob.addEventListener("pointerup", stopKnobDrag);
+  knob.addEventListener("pointercancel", stopKnobDrag);
+
+  container.appendChild(trackLine);
+  container.appendChild(knob);
+  renderKnobPosition(initialVal);
+
+  return {
+    element: container,
+    setValue: (v) => renderKnobPosition(v),
+    getValue: () => currentVal
+  };
+}
+
 // ==================== BOX SIZE PANEL (छोटा बॉक्स और प्रोडक्ट बॉक्स) ====================
 const FALLBACK_BOX_SIZES = {
   miniBox: { width: 92, height: 122, imgHeight: 74, fontSize: 12 },
@@ -426,8 +532,8 @@ function openBoxSizePanelModal() {
     "display:inline-block;width:28px;height:4px;border-radius:999px;background:#cbd5e1;";
 
   const title = document.createElement("span");
-  title.textContent = "Box Size Panel (Scroll ↓)";
-  title.style.cssText = "font-size:0.96rem;font-weight:800;color:#111827;";
+  title.textContent = "Box Size Panel (नीले गोल बटन से बदलें)";
+  title.style.cssText = "font-size:0.94rem;font-weight:800;color:#111827;";
 
   titleWrap.appendChild(dragHandle);
   titleWrap.appendChild(title);
@@ -495,39 +601,34 @@ function openBoxSizePanelModal() {
       numInput.style.cssText =
         "width:64px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:7px;font-size:0.8rem;font-weight:700;color:#111827;text-align:right;background:#ffffff;";
 
-      const slider = document.createElement("input");
-      slider.type = "range";
-      slider.min = String(minV);
-      slider.max = String(maxV);
-      slider.step = String(stepV);
-      slider.value = String(targetObj[propKey]);
-      slider.style.cssText = "width:100%;height:24px;cursor:pointer;touch-action:none;";
-
       const applyValue = (rawVal) => {
         const parsed = Number(rawVal);
         if (!Number.isFinite(parsed)) return;
         const clamped = Math.max(minV, Math.min(maxV, Math.round(parsed)));
         targetObj[propKey] = clamped;
-        slider.value = String(clamped);
+        knobSlider.setValue(clamped);
         numInput.value = String(clamped);
         updateBadge();
         applyBoxSizePanelToDom(sizes);
         highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex);
       };
 
-      slider.oninput = () => applyValue(slider.value);
+      const knobSlider = createBlueKnobSlider(minV, maxV, stepV, targetObj[propKey], (nextVal) => {
+        applyValue(nextVal);
+      });
+
       numInput.onchange = () => applyValue(numInput.value);
 
       topLine.appendChild(lbl);
       topLine.appendChild(numInput);
       row.appendChild(topLine);
-      row.appendChild(slider);
+      row.appendChild(knobSlider.element);
       secWrap.appendChild(row);
 
       rows.push({
         propKey,
         sync: () => {
-          slider.value = String(targetObj[propKey]);
+          knobSlider.setValue(targetObj[propKey]);
           numInput.value = String(targetObj[propKey]);
           updateBadge();
         }
@@ -632,23 +733,15 @@ function makeLabeledSlider(labelText, min, max, step, initialVal, unitSuffix, ac
   valBadge.textContent = `${initialVal}${unitSuffix}`;
   valBadge.style.cssText = `font-size:0.84rem;font-weight:700;color:${accentHex};`;
 
-  const slider = document.createElement("input");
-  slider.type = "range";
-  slider.min = String(min);
-  slider.max = String(max);
-  slider.step = String(step);
-  slider.value = String(initialVal);
-  slider.style.cssText = "width:100%;height:26px;cursor:pointer;touch-action:pan-y;";
-  slider.oninput = () => {
-    const num = Number(slider.value);
+  const knobSlider = createBlueKnobSlider(min, max, step, initialVal, (num) => {
     valBadge.textContent = `${num}${unitSuffix}`;
     onChange(num);
-  };
+  });
 
   top.appendChild(lbl);
   top.appendChild(valBadge);
   wrap.appendChild(top);
-  wrap.appendChild(slider);
+  wrap.appendChild(knobSlider.element);
   return wrap;
 }
 
