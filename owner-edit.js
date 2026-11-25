@@ -463,6 +463,15 @@ function ensureOwnerInlineFileInput() {
           data.coverImg = data.coverSlots.find(Boolean) || adjustedUrl;
           renderHeader();
           attachOwnerStoreEditHandlers();
+
+          const track = document.getElementById("coverSliderTrack");
+          if (track) {
+            track.scrollTo({
+              left: slotIdx * track.clientWidth,
+              behavior: "smooth"
+            });
+          }
+
           if (wasFirstEmpty) {
             peekNextCoverHint();
           }
@@ -504,13 +513,25 @@ function addCoverInEditMode() {
   if ((data.coverSlotsLimit || 1) < data.coverSlots.length + 1) {
     data.coverSlotsLimit = data.coverSlots.length + 1;
   }
+
   data.coverSlots.push("");
+  const newSlotIdx = data.coverSlots.length - 1;
+
   renderHeader();
   attachOwnerStoreEditHandlers();
+
   const track = document.getElementById("coverSliderTrack");
   if (track) {
-    track.scrollTo({ left: track.scrollWidth, behavior: "smooth" });
+    track.scrollTo({
+      left: newSlotIdx * track.clientWidth,
+      behavior: "smooth"
+    });
   }
+
+  pendingOwnerEditSlot = { type: "cover", slotIdx: newSlotIdx };
+  const fileInput = ensureOwnerInlineFileInput();
+  fileInput.value = "";
+  fileInput.click();
 }
 
 function removeCoverSlotAt(slotIdx) {
@@ -766,9 +787,9 @@ function attachOwnerStoreEditHandlers() {
     const addCoverBtn = document.createElement("button");
     addCoverBtn.type = "button";
     addCoverBtn.className = "owner-inline-edit-btn";
-    addCoverBtn.textContent = "+ Cover";
+    addCoverBtn.textContent = "+ Add Cover";
     addCoverBtn.style.cssText =
-      `position:absolute;bottom:10px;right:10px;z-index:20;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
+      `position:absolute;top:10px;left:10px;z-index:30;padding:6px 11px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
     addCoverBtn.onclick = (e) => {
       e.stopPropagation();
       addCoverInEditMode();
