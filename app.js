@@ -405,7 +405,12 @@ function applyTitlePositionStyle() {
   const data = getWorkingStoreData();
   const overlayEl = document.querySelector(".cover-overlay");
   const titleEl = document.getElementById("storeTitle");
+  const subEl = document.getElementById("storeSubtitle");
   if (!overlayEl) return;
+
+  if (subEl && !subEl.textContent.trim()) {
+    subEl.style.display = "none";
+  }
 
   const pos = data.titlePos || { x: 0, y: 0 };
   overlayEl.style.position = "absolute";
@@ -415,19 +420,22 @@ function applyTitlePositionStyle() {
   overlayEl.style.bottom = "auto";
   overlayEl.style.width = "max-content";
   overlayEl.style.height = "max-content";
-  overlayEl.style.maxWidth = "calc(100% - 8px)";
+  overlayEl.style.maxWidth = "none";
   overlayEl.style.margin = "0";
   overlayEl.style.padding = "0";
+  overlayEl.style.border = "none";
+  overlayEl.style.borderRadius = "0px";
+  overlayEl.style.background = "transparent";
   overlayEl.style.display = "inline-flex";
   overlayEl.style.alignItems = "center";
-  overlayEl.style.gap = "4px";
+  overlayEl.style.gap = "6px";
   overlayEl.style.boxSizing = "border-box";
-  overlayEl.style.zIndex = "15";
+  overlayEl.style.zIndex = "22";
 
   if (titleEl) {
     titleEl.style.display = "inline-block";
     titleEl.style.margin = "0";
-    titleEl.style.lineHeight = "1.02";
+    titleEl.style.lineHeight = "0.92";
     titleEl.style.whiteSpace = "nowrap";
     titleEl.style.overflow = "visible";
 
@@ -442,16 +450,6 @@ function applyTitlePositionStyle() {
       titleEl.style.padding = "0px";
       titleEl.style.borderRadius = "0px";
     }
-  }
-
-  if (OWNER_EDIT_MODE) {
-    overlayEl.style.border = "1px dashed rgba(255, 255, 255, 0.85)";
-    overlayEl.style.borderRadius = "2px";
-    overlayEl.style.background = "transparent";
-  } else {
-    overlayEl.style.border = "none";
-    overlayEl.style.borderRadius = "0px";
-    overlayEl.style.background = "transparent";
   }
 }
 
