@@ -76,7 +76,7 @@ function openCustomColourPickerModal() {
   const modal = document.createElement("div");
   modal.id = "ownerCustomColorPickerModal";
   modal.style.cssText =
-    "position:fixed;inset:0;z-index:120;background:rgba(15,23,42,0.55);display:flex;align-items:center;justify-content:center;padding:14px;";
+    "position:fixed;inset:0;z-index:120;background:rgba(15,23,42,0.55);display:flex;align-items:center;justify-content:center;padding:12px;";
 
   const card = document.createElement("div");
   card.style.cssText =
@@ -110,7 +110,7 @@ function openCustomColourPickerModal() {
   closeBtn.type = "button";
   closeBtn.textContent = "✕";
   closeBtn.style.cssText =
-    "border:none;background:transparent;font-size:1.1rem;font-weight:700;color:#475569;cursor:pointer;padding:2px 6px;";
+    "border:none;background:transparent;font-size:1.15rem;font-weight:700;color:#475569;cursor:pointer;padding:6px 10px;min-width:36px;min-height:36px;";
   closeBtn.onclick = closeModalAndRestore;
 
   header.appendChild(leftHead);
@@ -136,7 +136,7 @@ function openCustomColourPickerModal() {
 
   const thumbRing = document.createElement("div");
   thumbRing.style.cssText =
-    "position:absolute;width:24px;height:24px;border:3px solid #ffffff;border-radius:50%;box-shadow:0 0 4px rgba(0,0,0,0.65);transform:translate(-50%,-50%);pointer-events:none;left:85%;top:15%;";
+    "position:absolute;width:26px;height:26px;border:3px solid #ffffff;border-radius:50%;box-shadow:0 0 4px rgba(0,0,0,0.65);transform:translate(-50%,-50%);pointer-events:none;left:85%;top:15%;";
 
   shadeArea.appendChild(satOverlay);
   shadeArea.appendChild(valOverlay);
@@ -150,11 +150,11 @@ function openCustomColourPickerModal() {
 
   const hueTrackWrap = document.createElement("div");
   hueTrackWrap.style.cssText =
-    "position:relative;height:14px;border-radius:999px;background:linear-gradient(to right,#ff0000,#ffff00,#00ff00,#00ffff,#0000ff,#ff00ff,#ff0000);touch-action:none;cursor:pointer;";
+    "position:relative;height:16px;border-radius:999px;background:linear-gradient(to right,#ff0000,#ffff00,#00ff00,#00ffff,#0000ff,#ff00ff,#ff0000);touch-action:none;cursor:pointer;";
 
   const hueKnob = document.createElement("div");
   hueKnob.style.cssText =
-    "position:absolute;top:50%;left:0%;width:24px;height:24px;border-radius:50%;background:#ff0000;border:2px solid #ffffff;box-shadow:0 1px 5px rgba(0,0,0,0.45);transform:translate(-50%,-50%);pointer-events:none;";
+    "position:absolute;top:50%;left:0%;width:26px;height:26px;border-radius:50%;background:#ff0000;border:2px solid #ffffff;box-shadow:0 1px 5px rgba(0,0,0,0.45);transform:translate(-50%,-50%);pointer-events:none;";
 
   hueTrackWrap.appendChild(hueKnob);
 
@@ -172,14 +172,14 @@ function openCustomColourPickerModal() {
   cancelBtn.type = "button";
   cancelBtn.textContent = "Cancel";
   cancelBtn.style.cssText =
-    "padding:7px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:#334155;font-weight:600;cursor:pointer;";
+    "padding:9px 14px;min-height:40px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:#334155;font-weight:600;cursor:pointer;";
   cancelBtn.onclick = closeModalAndRestore;
 
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
   applyBtn.textContent = "Apply";
   applyBtn.style.cssText =
-    "padding:7px 16px;border:none;border-radius:8px;background:#0f766e;color:#ffffff;font-weight:700;cursor:pointer;";
+    "padding:9px 16px;min-height:40px;border:none;border-radius:8px;background:#0f766e;color:#ffffff;font-weight:700;cursor:pointer;";
 
   function syncColorUI() {
     const pureHueHex = hsvToHex(hue, 1, 1);
@@ -267,18 +267,18 @@ function openCustomColourPickerModal() {
 
 function makeLabeledSlider(labelText, min, max, step, initialVal, unitSuffix, accentHex, onChange) {
   const wrap = document.createElement("div");
-  wrap.style.cssText = "display:flex;flex-direction:column;gap:4px;";
+  wrap.style.cssText = "display:flex;flex-direction:column;gap:6px;";
 
   const top = document.createElement("div");
   top.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
 
   const lbl = document.createElement("span");
   lbl.textContent = labelText;
-  lbl.style.cssText = "font-size:0.8rem;font-weight:700;color:#334155;";
+  lbl.style.cssText = "font-size:0.84rem;font-weight:700;color:#334155;";
 
   const valBadge = document.createElement("span");
   valBadge.textContent = `${initialVal}${unitSuffix}`;
-  valBadge.style.cssText = `font-size:0.8rem;font-weight:700;color:${accentHex};`;
+  valBadge.style.cssText = `font-size:0.84rem;font-weight:700;color:${accentHex};`;
 
   const slider = document.createElement("input");
   slider.type = "range";
@@ -286,7 +286,7 @@ function makeLabeledSlider(labelText, min, max, step, initialVal, unitSuffix, ac
   slider.max = String(max);
   slider.step = String(step);
   slider.value = String(initialVal);
-  slider.style.cssText = "width:100%;cursor:pointer;";
+  slider.style.cssText = "width:100%;height:26px;cursor:pointer;touch-action:pan-y;";
   slider.oninput = () => {
     const num = Number(slider.value);
     valBadge.textContent = `${num}${unitSuffix}`;
@@ -303,19 +303,19 @@ function makeLabeledSlider(labelText, min, max, step, initialVal, unitSuffix, ac
 function makeToggleColorBox(titleText, enabledVal, colorVal, accentHex, onToggle, onColorChange) {
   const box = document.createElement("div");
   box.style.cssText =
-    "border:1px solid #e2e8f0;background:#f8fafc;border-radius:10px;padding:9px;display:flex;flex-direction:column;gap:8px;";
+    "border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;padding:11px;display:flex;flex-direction:column;gap:10px;";
 
   const head = document.createElement("div");
   head.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:8px;";
 
   const toggleLabel = document.createElement("label");
   toggleLabel.style.cssText =
-    "display:flex;align-items:center;gap:6px;font-size:0.82rem;font-weight:700;color:#111827;cursor:pointer;";
+    "display:flex;align-items:center;gap:8px;min-height:36px;font-size:0.88rem;font-weight:700;color:#111827;cursor:pointer;flex:1;";
 
   const chk = document.createElement("input");
   chk.type = "checkbox";
   chk.checked = Boolean(enabledVal);
-  chk.style.cssText = "width:16px;height:16px;cursor:pointer;";
+  chk.style.cssText = "width:20px;height:20px;cursor:pointer;flex-shrink:0;";
   chk.onchange = () => onToggle(chk.checked);
 
   const txt = document.createElement("span");
@@ -328,7 +328,7 @@ function makeToggleColorBox(titleText, enabledVal, colorVal, accentHex, onToggle
   colorPicker.type = "color";
   colorPicker.value = colorVal || "#38bdf8";
   colorPicker.style.cssText =
-    "width:34px;height:26px;border:1px solid #cbd5e1;border-radius:6px;padding:1px;background:#ffffff;cursor:pointer;";
+    "width:42px;height:34px;border:1px solid #cbd5e1;border-radius:8px;padding:2px;background:#ffffff;cursor:pointer;flex-shrink:0;";
   colorPicker.oninput = () => onColorChange(colorPicker.value);
 
   head.appendChild(toggleLabel);
@@ -336,7 +336,7 @@ function makeToggleColorBox(titleText, enabledVal, colorVal, accentHex, onToggle
   box.appendChild(head);
 
   const extraWrap = document.createElement("div");
-  extraWrap.style.cssText = "display:flex;flex-direction:column;gap:6px;";
+  extraWrap.style.cssText = "display:flex;flex-direction:column;gap:8px;";
   box.appendChild(extraWrap);
 
   return { box, extraWrap, chk, colorPicker };
@@ -401,53 +401,152 @@ function openCustomTextStylePopup(config) {
   const modal = document.createElement("div");
   modal.id = "ownerStoreNameModal";
   modal.style.cssText =
-    "position:fixed;inset:0;z-index:125;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;padding:12px;overflow-y:auto;";
+    "position:fixed;inset:0;z-index:125;background:rgba(15,23,42,0.72);display:flex;align-items:center;justify-content:center;padding:8px;overflow-y:auto;";
 
   const card = document.createElement("div");
   card.style.cssText =
-    "width:100%;max-width:420px;max-height:92vh;overflow-y:auto;background:#ffffff;border-radius:14px;padding:14px;box-shadow:0 12px 32px rgba(0,0,0,0.35);display:flex;flex-direction:column;gap:12px;";
+    "width:100%;max-width:100%;max-height:94vh;overflow-y:auto;background:#ffffff;border-radius:14px;padding:14px;box-shadow:0 12px 32px rgba(0,0,0,0.38);display:flex;flex-direction:column;gap:12px;";
+
+  const topBar = document.createElement("div");
+  topBar.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:8px;";
 
   const heading = document.createElement("div");
   heading.textContent = config.modalTitle || "Name & Style";
-  heading.style.cssText = "font-size:1.02rem;font-weight:800;color:#111827;";
+  heading.style.cssText = "font-size:1.05rem;font-weight:800;color:#111827;";
+
+  const topCloseBtn = document.createElement("button");
+  topCloseBtn.type = "button";
+  topCloseBtn.textContent = "✕";
+  topCloseBtn.style.cssText =
+    "border:none;background:#f1f5f9;border-radius:8px;min-width:36px;min-height:36px;font-size:1rem;font-weight:700;color:#334155;cursor:pointer;";
+  topCloseBtn.onclick = () => modal.remove();
+
+  topBar.appendChild(heading);
+  topBar.appendChild(topCloseBtn);
 
   const textInput = document.createElement("input");
   textInput.type = "text";
   textInput.value = currentText;
   textInput.placeholder = "Enter name";
   textInput.style.cssText =
-    "width:100%;padding:9px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.95rem;color:#111827;box-sizing:border-box;";
+    "width:100%;min-height:44px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;font-size:1rem;color:#111827;box-sizing:border-box;";
 
   const previewBox = document.createElement("div");
   previewBox.style.cssText =
-    `padding:14px;border-radius:10px;background:${isStore ? "#1e293b" : "#f1f5f9"};min-height:56px;display:flex;align-items:center;justify-content:center;overflow-wrap:anywhere;word-break:break-word;text-align:center;`;
+    `padding:16px 12px;border-radius:12px;background:${isStore ? "#1e293b" : "#f1f5f9"};min-height:66px;display:flex;align-items:center;justify-content:center;overflow-wrap:anywhere;word-break:break-word;text-align:center;`;
 
   const previewText = document.createElement("span");
   previewBox.appendChild(previewText);
+
+  // Quick Touch Presets
+  const presetWrap = document.createElement("div");
+  presetWrap.style.cssText = "display:grid;grid-template-columns:repeat(2,1fr);gap:8px;";
+
+  const presets = [
+    {
+      label: "Clean",
+      apply: () => {
+        st.glowEnabled = false;
+        st.borderEnabled = false;
+        st.bgEnabled = false;
+        st.fontWeight = isStore ? 700 : 600;
+      }
+    },
+    {
+      label: "Neon Glow",
+      apply: () => {
+        st.glowEnabled = true;
+        st.glowColor = "#38bdf8";
+        st.glowSize = 14;
+        st.borderEnabled = false;
+        st.fontWeight = 800;
+      }
+    },
+    {
+      label: "Bordered",
+      apply: () => {
+        st.borderEnabled = true;
+        st.borderColor = "#0f172a";
+        st.borderWidth = 1.5;
+        st.fontWeight = 800;
+      }
+    },
+    {
+      label: "Badge Box",
+      apply: () => {
+        st.bgEnabled = true;
+        st.bgColor = "#0f172a";
+        st.bgOpacity = 0.72;
+        st.bgRadius = 10;
+        st.color = "#ffffff";
+      }
+    }
+  ];
+
+  let mainColorPicker;
+  let glowCtrl;
+  let borderCtrl;
+  let bgCtrl;
+  let renderSwatches;
+  let renderFontBtns;
+
+  function syncAllControlsFromState() {
+    if (mainColorPicker && /^#[0-9a-fA-F]{6}$/.test(st.color)) {
+      mainColorPicker.value = st.color;
+    }
+    if (glowCtrl) {
+      glowCtrl.chk.checked = Boolean(st.glowEnabled);
+      if (/^#[0-9a-fA-F]{6}$/.test(st.glowColor)) glowCtrl.colorPicker.value = st.glowColor;
+    }
+    if (borderCtrl) {
+      borderCtrl.chk.checked = Boolean(st.borderEnabled);
+      if (/^#[0-9a-fA-F]{6}$/.test(st.borderColor)) borderCtrl.colorPicker.value = st.borderColor;
+    }
+    if (bgCtrl) {
+      bgCtrl.chk.checked = Boolean(st.bgEnabled);
+      if (/^#[0-9a-fA-F]{6}$/.test(st.bgColor)) bgCtrl.colorPicker.value = st.bgColor;
+    }
+    if (renderSwatches) renderSwatches();
+    if (renderFontBtns) renderFontBtns();
+  }
 
   function syncPreview() {
     previewText.textContent = textInput.value.trim() || (isStore ? "Store Name" : isSection ? "Name" : "Item");
     applyTextStyleToElement(previewText, st);
   }
 
+  presets.forEach((p) => {
+    const pBtn = document.createElement("button");
+    pBtn.type = "button";
+    pBtn.textContent = p.label;
+    pBtn.style.cssText =
+      "min-height:40px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;color:#111827;font-size:0.84rem;font-weight:700;cursor:pointer;";
+    pBtn.onclick = () => {
+      p.apply();
+      syncAllControlsFromState();
+      syncPreview();
+    };
+    presetWrap.appendChild(pBtn);
+  });
+
   textInput.oninput = syncPreview;
 
   // Main Color + Quick Swatches
   const mainColorWrap = document.createElement("div");
-  mainColorWrap.style.cssText = "display:flex;flex-direction:column;gap:6px;";
+  mainColorWrap.style.cssText = "display:flex;flex-direction:column;gap:8px;";
 
   const mainColorTop = document.createElement("div");
   mainColorTop.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
 
   const mainColorLbl = document.createElement("span");
   mainColorLbl.textContent = "Text Colour";
-  mainColorLbl.style.cssText = "font-size:0.82rem;font-weight:700;color:#334155;";
+  mainColorLbl.style.cssText = "font-size:0.86rem;font-weight:700;color:#334155;";
 
-  const mainColorPicker = document.createElement("input");
+  mainColorPicker = document.createElement("input");
   mainColorPicker.type = "color";
   mainColorPicker.value = /^#[0-9a-fA-F]{6}$/.test(st.color) ? st.color : "#ffffff";
   mainColorPicker.style.cssText =
-    "width:38px;height:28px;border:1px solid #cbd5e1;border-radius:6px;padding:1px;background:#ffffff;cursor:pointer;";
+    "width:44px;height:36px;border:1px solid #cbd5e1;border-radius:8px;padding:2px;background:#ffffff;cursor:pointer;";
   mainColorPicker.oninput = () => {
     st.color = mainColorPicker.value;
     renderSwatches();
@@ -458,14 +557,14 @@ function openCustomTextStylePopup(config) {
   mainColorTop.appendChild(mainColorPicker);
 
   const swatchRow = document.createElement("div");
-  swatchRow.style.cssText = "display:flex;flex-wrap:wrap;gap:7px;align-items:center;";
+  swatchRow.style.cssText = "display:flex;flex-wrap:wrap;gap:10px;align-items:center;";
   const palette = Array.from(new Set([accentHex, ...STORE_NAME_COLORS, "#ef4444", "#38bdf8", "#a855f7"]));
 
   palette.forEach((hex) => {
     const b = document.createElement("button");
     b.type = "button";
     b.style.cssText =
-      `width:24px;height:24px;border-radius:50%;background:${hex};border:2px solid #cbd5e1;cursor:pointer;padding:0;`;
+      `width:32px;height:32px;border-radius:50%;background:${hex};border:2px solid #cbd5e1;cursor:pointer;padding:0;`;
     b.onclick = () => {
       st.color = hex;
       if (/^#[0-9a-fA-F]{6}$/.test(hex)) mainColorPicker.value = hex;
@@ -475,13 +574,13 @@ function openCustomTextStylePopup(config) {
     swatchRow.appendChild(b);
   });
 
-  function renderSwatches() {
+  renderSwatches = () => {
     swatchRow.querySelectorAll("button").forEach((b, i) => {
       const active = palette[i].toLowerCase() === String(st.color).toLowerCase();
-      b.style.outline = active ? "2px solid #0f172a" : "none";
+      b.style.outline = active ? "2.5px solid #0f172a" : "none";
       b.style.outlineOffset = active ? "2px" : "0px";
     });
-  }
+  };
 
   mainColorWrap.appendChild(mainColorTop);
   mainColorWrap.appendChild(swatchRow);
@@ -499,21 +598,21 @@ function openCustomTextStylePopup(config) {
 
   // Font Family Chips
   const fontWrap = document.createElement("div");
-  fontWrap.style.cssText = "display:flex;flex-direction:column;gap:6px;";
+  fontWrap.style.cssText = "display:flex;flex-direction:column;gap:8px;";
 
   const fontLbl = document.createElement("span");
   fontLbl.textContent = "Font Style";
-  fontLbl.style.cssText = "font-size:0.82rem;font-weight:700;color:#334155;";
+  fontLbl.style.cssText = "font-size:0.86rem;font-weight:700;color:#334155;";
 
   const fontList = document.createElement("div");
-  fontList.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;";
+  fontList.style.cssText = "display:grid;grid-template-columns:repeat(2,1fr);gap:8px;";
 
   STORE_FONT_OPTIONS.forEach((opt) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.textContent = opt.label;
     btn.style.cssText =
-      `padding:5px 10px;border-radius:6px;border:1px solid #cbd5e1;font-family:${opt.value};font-style:${opt.italic ? "italic" : "normal"};font-size:0.82rem;font-weight:700;cursor:pointer;`;
+      `min-height:40px;padding:7px 10px;border-radius:8px;border:1px solid #cbd5e1;font-family:${opt.value};font-style:${opt.italic ? "italic" : "normal"};font-size:0.86rem;font-weight:700;cursor:pointer;`;
     btn.onclick = () => {
       st.fontFamily = opt.value;
       st.fontStyle = opt.italic ? "italic" : "normal";
@@ -523,7 +622,7 @@ function openCustomTextStylePopup(config) {
     fontList.appendChild(btn);
   });
 
-  function renderFontBtns() {
+  renderFontBtns = () => {
     fontList.querySelectorAll("button").forEach((b, i) => {
       const opt = STORE_FONT_OPTIONS[i];
       const active = opt.value === st.fontFamily && (opt.italic ? "italic" : "normal") === st.fontStyle;
@@ -531,13 +630,13 @@ function openCustomTextStylePopup(config) {
       b.style.color = active ? "#ffffff" : "#111827";
       b.style.borderColor = active ? accentHex : "#cbd5e1";
     });
-  }
+  };
 
   fontWrap.appendChild(fontLbl);
   fontWrap.appendChild(fontList);
 
   // Glow Box
-  const glowCtrl = makeToggleColorBox(
+  glowCtrl = makeToggleColorBox(
     "Glow (चमक)",
     st.glowEnabled,
     st.glowColor,
@@ -559,7 +658,7 @@ function openCustomTextStylePopup(config) {
   );
 
   // Border / Outline Box
-  const borderCtrl = makeToggleColorBox(
+  borderCtrl = makeToggleColorBox(
     "Border / Outline (बॉर्डर)",
     st.borderEnabled,
     st.borderColor,
@@ -581,7 +680,7 @@ function openCustomTextStylePopup(config) {
   );
 
   // Background Box
-  const bgCtrl = makeToggleColorBox(
+  bgCtrl = makeToggleColorBox(
     "Background (बैकग्राउंड)",
     st.bgEnabled,
     st.bgColor,
@@ -609,20 +708,20 @@ function openCustomTextStylePopup(config) {
   );
 
   const footer = document.createElement("div");
-  footer.style.cssText = "display:flex;justify-content:flex-end;gap:8px;margin-top:4px;";
+  footer.style.cssText = "display:flex;gap:10px;margin-top:4px;";
 
   const cancelBtn = document.createElement("button");
   cancelBtn.type = "button";
   cancelBtn.textContent = "Cancel";
   cancelBtn.style.cssText =
-    "padding:8px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:#334155;font-weight:600;cursor:pointer;";
+    "flex:1;min-height:44px;padding:9px 14px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-weight:700;cursor:pointer;";
   cancelBtn.onclick = () => modal.remove();
 
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
   applyBtn.textContent = "Apply";
   applyBtn.style.cssText =
-    `padding:8px 16px;border:none;border-radius:8px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
+    `flex:1;min-height:44px;padding:9px 16px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
   applyBtn.onclick = () => {
     const cleanVal = textInput.value.trim();
     if (isStore) {
@@ -653,9 +752,10 @@ function openCustomTextStylePopup(config) {
   footer.appendChild(cancelBtn);
   footer.appendChild(applyBtn);
 
-  card.appendChild(heading);
+  card.appendChild(topBar);
   card.appendChild(textInput);
   card.appendChild(previewBox);
+  card.appendChild(presetWrap);
   card.appendChild(mainColorWrap);
   card.appendChild(sizeSlider);
   card.appendChild(weightSlider);
