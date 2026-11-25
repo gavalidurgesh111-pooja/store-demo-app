@@ -1,4 +1,4 @@
-Const STORAGE_KEY = "storeOwnerModularV3";
+const STORAGE_KEY = "storeOwnerModularV3";
 const OWNER_PIN = "1234";
 
 const MAX_OWNER_BOXES = 50;
@@ -203,8 +203,10 @@ function readImageAsDataURL(file, maxWidth = 600) {
   return new Promise((resolve) => {
     if (!file) return resolve(null);
     const reader = new FileReader();
+    reader.onerror = () => resolve(null);
     reader.onload = (e) => {
       const img = new Image();
+      img.onerror = () => resolve(null);
       img.onload = () => {
         const canvas = document.createElement("canvas");
         const scale = Math.min(1, maxWidth / (img.width || 1));
