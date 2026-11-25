@@ -17,7 +17,10 @@ function removeOwnerStoreEditUI() {
   const nameModal = document.getElementById("ownerStoreNameModal");
   if (nameModal) nameModal.remove();
   const editorScreen = document.getElementById("screenPhotoEditor");
-  if (editorScreen) editorScreen.remove();
+  if (editorScreen) {
+    editorScreen.remove();
+    coverEditorEventsBound = false;
+  }
   removeCustomPickerIfExists();
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
 }
@@ -197,8 +200,8 @@ function openCustomColourPickerModal() {
 
   function updateShadeFromPointer(clientX, clientY) {
     const rect = shadeArea.getBoundingClientRect();
-    const x = Math.min(Math.max(0, clientX - rect.left), rect.width);
-    const y = Math.min(Math.max(0, clientY - rect.top), rect.height);
+    const x = Math.min(Math.max(0, clientX - rect.left), rect.width || 1);
+    const y = Math.min(Math.max(0, clientY - rect.top), rect.height || 1);
     sat = rect.width ? x / rect.width : 0.85;
     val = rect.height ? 1 - y / rect.height : 0.85;
     const hex = syncColorUI();
@@ -207,7 +210,7 @@ function openCustomColourPickerModal() {
 
   function updateHueFromPointer(clientX) {
     const rect = hueTrackWrap.getBoundingClientRect();
-    const x = Math.min(Math.max(0, clientX - rect.left), rect.width);
+    const x = Math.min(Math.max(0, clientX - rect.left), rect.width || 1);
     hue = rect.width ? (x / rect.width) * 360 : 0;
     const hex = syncColorUI();
     applyDraftThemeColor(hex);
@@ -262,57 +265,244 @@ function openCustomColourPickerModal() {
   syncColorUI();
 }
 
-function openStoreNameEditorPopup() {
+function makeLabeledSlider(labelText, min, max, step, initialVal, unitSuffix, accentHex, onChange) {
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "display:flex;flex-direction:column;gap:4px;";
+
+  const top = document.createElement("div");
+  top.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
+
+  const lbl = document.createElement("span");
+  lbl.textContent = labelText;
+  lbl.style.cssText = "font-size:0.8rem;font-weight:700;color:#334155;";
+
+  const valBadge = document.createElement("span");
+  valBadge.textContent = `${initialVal}${unitSuffix}`;
+  valBadge.style.cssText = `font-size:0.8rem;font-weight:700;color:${accentHex};`;
+
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.min = String(min);
+  slider.max = String(max);
+  slider.step = String(step);
+  slider.value = String(initialVal);
+  slider.style.cssText = "width:100%;cursor:pointer;";
+  slider.oninput = () => {
+    const num = Number(slider.value);
+    valBadge.textContent = `${num}${unitSuffix}`;
+    onChange(num);
+  };
+
+  top.appendChild(lbl);
+  top.appendChild(valBadge);
+  wrap.appendChild(top);
+  wrap.appendChild(slider);
+  return wrap;
+}
+
+function makeToggleColorBox(titleText, enabledVal, colorVal, accentHex, onToggle, onColorChange) {
+  const box = document.createElement("div");
+  box.style.cssText =
+    "border:1px solid #e2e8f0;background:#f8fafc;border-radius:10px;padding:9px;display:flex;flex-direction:column;gap:8px;";
+
+  const head = document.createElement("div");
+  head.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:8px;";
+
+  const toggleLabel = document.createElement("label");
+  toggleLabel.style.cssText =
+    "display:flex;align-items:center;gap:6px;font-size:0.82rem;font-weight:700;color:#111827;cursor:pointer;";
+
+  const chk = document.createElement("input");
+  chk.type = "checkbox";
+  chk.checked = Boolean(enabledVal);
+  chk.style.cssText = "width:16px;height:16px;cursor:pointer;";
+  chk.onchange = () => onToggle(chk.checked);
+
+  const txt = document.createElement("span");
+  txt.textContent = titleText;
+
+  toggleLabel.appendChild(chk);
+  toggleLabel.appendChild(txt);
+
+  const colorPicker = document.createElement("input");
+  colorPicker.type = "color";
+  colorPicker.value = colorVal || "#38bdf8";
+  colorPicker.style.cssText =
+    "width:34px;height:26px;border:1px solid #cbd5e1;border-radius:6px;padding:1px;background:#ffffff;cursor:pointer;";
+  colorPicker.oninput = () => onColorChange(colorPicker.value);
+
+  head.appendChild(toggleLabel);
+  head.appendChild(colorPicker);
+  box.appendChild(head);
+
+  const extraWrap = document.createElement("div");
+  extraWrap.style.cssText = "display:flex;flex-direction:column;gap:6px;";
+  box.appendChild(extraWrap);
+
+  return { box, extraWrap, chk, colorPicker };
+}
+
+function openCustomTextStylePopup(config) {
   const existing = document.getElementById("ownerStoreNameModal");
   if (existing) existing.remove();
 
   const data = getWorkingStoreData();
-  const tempName = data.storeTitle || "";
-  let tempFont = data.titleFont || STORE_FONT_OPTIONS[0].value;
-  let tempColor = data.titleColor || STORE_NAME_COLORS[0];
+  const accentHex = data.themeColor || "#0f766e";
+
+  const isStore = config.targetType === "store";
+  const isSection = config.targetType === "section";
+  const secObj = isSection || config.targetType === "item" ? data.sections[config.sIdx] : null;
+  const itemObj = config.targetType === "item" ? secObj?.items?.find((i) => i.id === config.itemId) : null;
+
+  let currentText = "";
+  let defaultSize = 14;
+  let minSize = 10;
+  let maxSize = 28;
+  let defaultColor = "#111827";
+  let currentStyleSource = null;
+
+  if (isStore) {
+    currentText = data.storeTitle || "Store Name";
+    defaultSize = 30;
+    minSize = 16;
+    maxSize = 56;
+    defaultColor = STORE_NAME_COLORS[0];
+    currentStyleSource = data.titleStyle || {
+      fontFamily: data.titleFont,
+      fontStyle: data.titleFontStyle,
+      fontSize: data.titleSize,
+      color: data.titleColor
+    };
+  } else if (isSection && secObj) {
+    currentText = secObj.title || "Name";
+    defaultSize = 16;
+    minSize = 12;
+    maxSize = 30;
+    defaultColor = "#111827";
+    currentStyleSource = secObj.titleStyle;
+  } else if (itemObj) {
+    currentText = itemObj.name || "Item";
+    defaultSize = 13;
+    minSize = 10;
+    maxSize = 24;
+    defaultColor = "#111827";
+    currentStyleSource = itemObj.nameStyle;
+  } else {
+    return;
+  }
+
+  const st = normalizeTextStyle(currentStyleSource, {
+    fontSize: defaultSize,
+    fontWeight: isStore ? 700 : 600,
+    color: defaultColor
+  });
+  st.fontSize = Math.max(minSize, Math.min(maxSize, st.fontSize));
 
   const modal = document.createElement("div");
   modal.id = "ownerStoreNameModal";
   modal.style.cssText =
-    "position:fixed;inset:0;z-index:125;background:rgba(15,23,42,0.6);display:flex;align-items:center;justify-content:center;padding:14px;";
+    "position:fixed;inset:0;z-index:125;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;padding:12px;overflow-y:auto;";
 
   const card = document.createElement("div");
   card.style.cssText =
-    "width:100%;max-width:380px;background:#ffffff;border-radius:12px;padding:14px;box-shadow:0 12px 30px rgba(0,0,0,0.3);display:flex;flex-direction:column;gap:12px;";
+    "width:100%;max-width:420px;max-height:92vh;overflow-y:auto;background:#ffffff;border-radius:14px;padding:14px;box-shadow:0 12px 32px rgba(0,0,0,0.35);display:flex;flex-direction:column;gap:12px;";
 
-  const title = document.createElement("div");
-  title.textContent = "Store Name";
-  title.style.cssText = "font-size:1rem;font-weight:700;color:#111827;";
+  const heading = document.createElement("div");
+  heading.textContent = config.modalTitle || "Name & Style";
+  heading.style.cssText = "font-size:1.02rem;font-weight:800;color:#111827;";
 
-  const input = document.createElement("input");
-  input.type = "text";
-  input.value = tempName;
-  input.placeholder = "Enter store name";
-  input.style.cssText =
+  const textInput = document.createElement("input");
+  textInput.type = "text";
+  textInput.value = currentText;
+  textInput.placeholder = "Enter name";
+  textInput.style.cssText =
     "width:100%;padding:9px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.95rem;color:#111827;box-sizing:border-box;";
 
   const previewBox = document.createElement("div");
   previewBox.style.cssText =
-    "padding:10px;border-radius:8px;background:#1e293b;min-height:38px;display:flex;align-items:center;overflow-wrap:anywhere;word-break:break-word;";
+    `padding:14px;border-radius:10px;background:${isStore ? "#1e293b" : "#f1f5f9"};min-height:56px;display:flex;align-items:center;justify-content:center;overflow-wrap:anywhere;word-break:break-word;text-align:center;`;
 
   const previewText = document.createElement("span");
   previewBox.appendChild(previewText);
 
   function syncPreview() {
-    previewText.textContent = input.value || "Store Name";
-    previewText.style.fontFamily = tempFont;
-    previewText.style.color = tempColor;
-    previewText.style.fontWeight = "700";
-    previewText.style.fontSize = "1.05rem";
+    previewText.textContent = textInput.value.trim() || (isStore ? "Store Name" : isSection ? "Name" : "Item");
+    applyTextStyleToElement(previewText, st);
   }
 
-  input.oninput = syncPreview;
+  textInput.oninput = syncPreview;
 
+  // Main Color + Quick Swatches
+  const mainColorWrap = document.createElement("div");
+  mainColorWrap.style.cssText = "display:flex;flex-direction:column;gap:6px;";
+
+  const mainColorTop = document.createElement("div");
+  mainColorTop.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
+
+  const mainColorLbl = document.createElement("span");
+  mainColorLbl.textContent = "Text Colour";
+  mainColorLbl.style.cssText = "font-size:0.82rem;font-weight:700;color:#334155;";
+
+  const mainColorPicker = document.createElement("input");
+  mainColorPicker.type = "color";
+  mainColorPicker.value = /^#[0-9a-fA-F]{6}$/.test(st.color) ? st.color : "#ffffff";
+  mainColorPicker.style.cssText =
+    "width:38px;height:28px;border:1px solid #cbd5e1;border-radius:6px;padding:1px;background:#ffffff;cursor:pointer;";
+  mainColorPicker.oninput = () => {
+    st.color = mainColorPicker.value;
+    renderSwatches();
+    syncPreview();
+  };
+
+  mainColorTop.appendChild(mainColorLbl);
+  mainColorTop.appendChild(mainColorPicker);
+
+  const swatchRow = document.createElement("div");
+  swatchRow.style.cssText = "display:flex;flex-wrap:wrap;gap:7px;align-items:center;";
+  const palette = Array.from(new Set([accentHex, ...STORE_NAME_COLORS, "#ef4444", "#38bdf8", "#a855f7"]));
+
+  palette.forEach((hex) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.style.cssText =
+      `width:24px;height:24px;border-radius:50%;background:${hex};border:2px solid #cbd5e1;cursor:pointer;padding:0;`;
+    b.onclick = () => {
+      st.color = hex;
+      if (/^#[0-9a-fA-F]{6}$/.test(hex)) mainColorPicker.value = hex;
+      renderSwatches();
+      syncPreview();
+    };
+    swatchRow.appendChild(b);
+  });
+
+  function renderSwatches() {
+    swatchRow.querySelectorAll("button").forEach((b, i) => {
+      const active = palette[i].toLowerCase() === String(st.color).toLowerCase();
+      b.style.outline = active ? "2px solid #0f172a" : "none";
+      b.style.outlineOffset = active ? "2px" : "0px";
+    });
+  }
+
+  mainColorWrap.appendChild(mainColorTop);
+  mainColorWrap.appendChild(swatchRow);
+
+  // Size & Weight Sliders
+  const sizeSlider = makeLabeledSlider("Size", minSize, maxSize, 1, st.fontSize, "px", accentHex, (val) => {
+    st.fontSize = val;
+    syncPreview();
+  });
+
+  const weightSlider = makeLabeledSlider("Thickness (Thin / Bold)", 300, 900, 50, st.fontWeight, "", accentHex, (val) => {
+    st.fontWeight = val;
+    syncPreview();
+  });
+
+  // Font Family Chips
   const fontWrap = document.createElement("div");
   fontWrap.style.cssText = "display:flex;flex-direction:column;gap:6px;";
 
   const fontLbl = document.createElement("span");
-  fontLbl.textContent = "Font";
+  fontLbl.textContent = "Font Style";
   fontLbl.style.cssText = "font-size:0.82rem;font-weight:700;color:#334155;";
 
   const fontList = document.createElement("div");
@@ -323,62 +513,100 @@ function openStoreNameEditorPopup() {
     btn.type = "button";
     btn.textContent = opt.label;
     btn.style.cssText =
-      `padding:5px 10px;border-radius:6px;border:1px solid #cbd5e1;font-family:${opt.value};font-size:0.82rem;font-weight:700;cursor:pointer;`;
+      `padding:5px 10px;border-radius:6px;border:1px solid #cbd5e1;font-family:${opt.value};font-style:${opt.italic ? "italic" : "normal"};font-size:0.82rem;font-weight:700;cursor:pointer;`;
     btn.onclick = () => {
-      tempFont = opt.value;
-      renderFontButtons();
+      st.fontFamily = opt.value;
+      st.fontStyle = opt.italic ? "italic" : "normal";
+      renderFontBtns();
       syncPreview();
     };
     fontList.appendChild(btn);
   });
 
-  function renderFontButtons() {
-    const btns = fontList.querySelectorAll("button");
-    btns.forEach((b, i) => {
-      const active = STORE_FONT_OPTIONS[i].value === tempFont;
-      b.style.background = active ? "#0f766e" : "#f8fafc";
+  function renderFontBtns() {
+    fontList.querySelectorAll("button").forEach((b, i) => {
+      const opt = STORE_FONT_OPTIONS[i];
+      const active = opt.value === st.fontFamily && (opt.italic ? "italic" : "normal") === st.fontStyle;
+      b.style.background = active ? accentHex : "#f8fafc";
       b.style.color = active ? "#ffffff" : "#111827";
-      b.style.borderColor = active ? "#0f766e" : "#cbd5e1";
+      b.style.borderColor = active ? accentHex : "#cbd5e1";
     });
   }
 
   fontWrap.appendChild(fontLbl);
   fontWrap.appendChild(fontList);
 
-  const colorWrap = document.createElement("div");
-  colorWrap.style.cssText = "display:flex;flex-direction:column;gap:6px;";
-
-  const colorLbl = document.createElement("span");
-  colorLbl.textContent = "Colour";
-  colorLbl.style.cssText = "font-size:0.82rem;font-weight:700;color:#334155;";
-
-  const colorList = document.createElement("div");
-  colorList.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;align-items:center;";
-
-  STORE_NAME_COLORS.forEach((hex) => {
-    const swatch = document.createElement("button");
-    swatch.type = "button";
-    swatch.style.cssText =
-      `width:26px;height:26px;border-radius:50%;background:${hex};border:2px solid #cbd5e1;cursor:pointer;padding:0;`;
-    swatch.onclick = () => {
-      tempColor = hex;
-      renderColorButtons();
+  // Glow Box
+  const glowCtrl = makeToggleColorBox(
+    "Glow (चमक)",
+    st.glowEnabled,
+    st.glowColor,
+    accentHex,
+    (checked) => {
+      st.glowEnabled = checked;
       syncPreview();
-    };
-    colorList.appendChild(swatch);
-  });
+    },
+    (hex) => {
+      st.glowColor = hex;
+      syncPreview();
+    }
+  );
+  glowCtrl.extraWrap.appendChild(
+    makeLabeledSlider("Glow Spread", 2, 28, 1, st.glowSize, "px", accentHex, (val) => {
+      st.glowSize = val;
+      syncPreview();
+    })
+  );
 
-  function renderColorButtons() {
-    const btns = colorList.querySelectorAll("button");
-    btns.forEach((b, i) => {
-      const selected = STORE_NAME_COLORS[i] === tempColor;
-      b.style.outline = selected ? "2px solid #0f172a" : "none";
-      b.style.outlineOffset = selected ? "2px" : "0px";
-    });
-  }
+  // Border / Outline Box
+  const borderCtrl = makeToggleColorBox(
+    "Border / Outline (बॉर्डर)",
+    st.borderEnabled,
+    st.borderColor,
+    accentHex,
+    (checked) => {
+      st.borderEnabled = checked;
+      syncPreview();
+    },
+    (hex) => {
+      st.borderColor = hex;
+      syncPreview();
+    }
+  );
+  borderCtrl.extraWrap.appendChild(
+    makeLabeledSlider("Border Width", 0.5, 4, 0.5, st.borderWidth, "px", accentHex, (val) => {
+      st.borderWidth = val;
+      syncPreview();
+    })
+  );
 
-  colorWrap.appendChild(colorLbl);
-  colorWrap.appendChild(colorList);
+  // Background Box
+  const bgCtrl = makeToggleColorBox(
+    "Background (बैकग्राउंड)",
+    st.bgEnabled,
+    st.bgColor,
+    accentHex,
+    (checked) => {
+      st.bgEnabled = checked;
+      syncPreview();
+    },
+    (hex) => {
+      st.bgColor = hex;
+      syncPreview();
+    }
+  );
+  bgCtrl.extraWrap.appendChild(
+    makeLabeledSlider("Background Opacity", 0.1, 1, 0.05, st.bgOpacity, "", accentHex, (val) => {
+      st.bgOpacity = val;
+      syncPreview();
+    })
+  );
+  bgCtrl.extraWrap.appendChild(
+    makeLabeledSlider("Corner Roundness", 0, 20, 1, st.bgRadius, "px", accentHex, (val) => {
+      st.bgRadius = val;
+      syncPreview();
+    })
+  );
 
   const footer = document.createElement("div");
   footer.style.cssText = "display:flex;justify-content:flex-end;gap:8px;margin-top:4px;";
@@ -387,38 +615,69 @@ function openStoreNameEditorPopup() {
   cancelBtn.type = "button";
   cancelBtn.textContent = "Cancel";
   cancelBtn.style.cssText =
-    "padding:7px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:#334155;font-weight:600;cursor:pointer;";
+    "padding:8px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:#334155;font-weight:600;cursor:pointer;";
   cancelBtn.onclick = () => modal.remove();
 
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
   applyBtn.textContent = "Apply";
   applyBtn.style.cssText =
-    "padding:7px 16px;border:none;border-radius:8px;background:#0f766e;color:#ffffff;font-weight:700;cursor:pointer;";
+    `padding:8px 16px;border:none;border-radius:8px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
   applyBtn.onclick = () => {
-    data.storeTitle = input.value.trim() || "Store Name";
-    data.titleFont = tempFont;
-    data.titleColor = tempColor;
-    modal.remove();
-    renderHeader();
-    attachOwnerStoreEditHandlers();
+    const cleanVal = textInput.value.trim();
+    if (isStore) {
+      data.storeTitle = cleanVal || "Store Name";
+      data.titleStyle = { ...st };
+      data.titleFont = st.fontFamily;
+      data.titleFontStyle = st.fontStyle;
+      data.titleSize = st.fontSize;
+      data.titleColor = st.color;
+      modal.remove();
+      renderHeader();
+      attachOwnerStoreEditHandlers();
+    } else if (isSection && secObj) {
+      secObj.title = cleanVal || "Name";
+      secObj.titleStyle = { ...st };
+      modal.remove();
+      renderSections();
+      attachOwnerStoreEditHandlers();
+    } else if (itemObj) {
+      itemObj.name = cleanVal || "Item";
+      itemObj.nameStyle = { ...st };
+      modal.remove();
+      renderSections();
+      attachOwnerStoreEditHandlers();
+    }
   };
 
   footer.appendChild(cancelBtn);
   footer.appendChild(applyBtn);
 
-  card.appendChild(title);
-  card.appendChild(input);
+  card.appendChild(heading);
+  card.appendChild(textInput);
   card.appendChild(previewBox);
+  card.appendChild(mainColorWrap);
+  card.appendChild(sizeSlider);
+  card.appendChild(weightSlider);
   card.appendChild(fontWrap);
-  card.appendChild(colorWrap);
+  card.appendChild(glowCtrl.box);
+  card.appendChild(borderCtrl.box);
+  card.appendChild(bgCtrl.box);
   card.appendChild(footer);
+
   modal.appendChild(card);
   document.body.appendChild(modal);
 
-  renderFontButtons();
-  renderColorButtons();
+  renderSwatches();
+  renderFontBtns();
   syncPreview();
+}
+
+function openStoreNameEditorPopup() {
+  openCustomTextStylePopup({
+    targetType: "store",
+    modalTitle: "Store Name & Style"
+  });
 }
 
 // ==================== COVER SIZE CROP POP-UP EDITOR (#screenPhotoEditor) ====================
@@ -433,6 +692,7 @@ let coverEditorEventsBound = false;
 function ensureCoverEditorDOM() {
   let screen = document.getElementById("screenPhotoEditor");
   if (!screen) {
+    coverEditorEventsBound = false;
     screen = document.createElement("div");
     screen.id = "screenPhotoEditor";
     screen.style.cssText =
@@ -470,8 +730,10 @@ function setEditorZoomAroundCenter(nextScale) {
   const boxCenterX = (boxRect.left + boxRect.right) / 2 - areaRect.left;
   const boxCenterY = (boxRect.top + boxRect.bottom) / 2 - areaRect.top;
 
-  const oldW = rawImageObj.width * imgScale;
-  const oldH = rawImageObj.height * imgScale;
+  const natW = rawImageObj.naturalWidth || rawImageObj.width || 1;
+  const natH = rawImageObj.naturalHeight || rawImageObj.height || 1;
+  const oldW = natW * imgScale;
+  const oldH = natH * imgScale;
   const oldLeft = baseLeft + posX;
   const oldTop = baseTop + posY;
 
@@ -479,8 +741,8 @@ function setEditorZoomAroundCenter(nextScale) {
   const ratioY = oldH ? (boxCenterY - oldTop) / oldH : 0.5;
 
   imgScale = clampedScale;
-  const newW = rawImageObj.width * imgScale;
-  const newH = rawImageObj.height * imgScale;
+  const newW = natW * imgScale;
+  const newH = natH * imgScale;
 
   preview.style.width = newW + "px";
   preview.style.height = newH + "px";
@@ -505,27 +767,32 @@ function applySmartBoundaryAndSnap() {
   const boxRightRel = boxRect.right - areaRect.left;
   const boxBottomRel = boxRect.bottom - areaRect.top;
 
-  const renderW = rawImageObj.width * imgScale;
-  const renderH = rawImageObj.height * imgScale;
+  const natW = rawImageObj.naturalWidth || rawImageObj.width || 1;
+  const natH = rawImageObj.naturalHeight || rawImageObj.height || 1;
+  const renderW = natW * imgScale;
+  const renderH = natH * imgScale;
 
   const currentLeftRel = baseLeft + posX;
   const currentTopRel = baseTop + posY;
 
-  const minLeftRel = boxRightRel - renderW;
-  const maxLeftRel = boxLeftRel;
-  const minTopRel = boxBottomRel - renderH;
-  const maxTopRel = boxTopRel;
+  let clampedLeftRel = currentLeftRel;
+  let clampedTopRel = currentTopRel;
 
-  const clampedLeftRel = Math.max(minLeftRel, Math.min(maxLeftRel, currentLeftRel));
-  const clampedTopRel = Math.max(minTopRel, Math.min(maxTopRel, currentTopRel));
-
-  if (clampedLeftRel !== currentLeftRel || clampedTopRel !== currentTopRel) {
-    preview.style.transition = "transform 0.2s ease-out";
-    posX = clampedLeftRel - baseLeft;
-    posY = clampedTopRel - baseTop;
-  } else {
-    preview.style.transition = "none";
+  if (renderW >= boxRect.width) {
+    const minLeftRel = boxRightRel - renderW;
+    const maxLeftRel = boxLeftRel;
+    clampedLeftRel = Math.max(minLeftRel, Math.min(maxLeftRel, currentLeftRel));
   }
+
+  if (renderH >= boxRect.height) {
+    const minTopRel = boxBottomRel - renderH;
+    const maxTopRel = boxTopRel;
+    clampedTopRel = Math.max(minTopRel, Math.min(maxTopRel, currentTopRel));
+  }
+
+  posX = clampedLeftRel - baseLeft;
+  posY = clampedTopRel - baseTop;
+  preview.style.transition = "none";
   preview.style.transform = `translate3d(${posX}px, ${posY}px, 0px)`;
 }
 
@@ -537,30 +804,46 @@ function bindCoverEditorEvents() {
   const preview = document.getElementById("editorImagePreview");
   if (!editorArea || !preview) return;
 
-  editorArea.addEventListener("mousedown", (e) => {
-    if (!rawImageObj) return;
+  editorArea.style.touchAction = "none";
+  preview.style.touchAction = "none";
+
+  editorArea.addEventListener("pointerdown", (e) => {
+    if (!rawImageObj || e.target.closest("button")) return;
     isDraggingImg = true;
     startMouseX = e.clientX;
     startMouseY = e.clientY;
     preview.style.transition = "none";
+    try {
+      editorArea.setPointerCapture(e.pointerId);
+    } catch (err) {}
     e.preventDefault();
   });
 
-  window.addEventListener("mousemove", (e) => {
+  editorArea.addEventListener("pointermove", (e) => {
     if (!isDraggingImg || !rawImageObj) return;
-    posX += (e.clientX - startMouseX) * 1.25;
-    posY += (e.clientY - startMouseY) * 1.25;
+    const dx = e.clientX - startMouseX;
+    const dy = e.clientY - startMouseY;
     startMouseX = e.clientX;
     startMouseY = e.clientY;
+    posX += dx;
+    posY += dy;
     preview.style.transform = `translate3d(${posX}px, ${posY}px, 0px)`;
+    e.preventDefault();
   });
 
-  window.addEventListener("mouseup", () => {
-    if (isDraggingImg) {
-      isDraggingImg = false;
-      applySmartBoundaryAndSnap();
+  const finishDrag = (e) => {
+    if (!isDraggingImg) return;
+    isDraggingImg = false;
+    if (e && typeof e.pointerId === "number") {
+      try {
+        editorArea.releasePointerCapture(e.pointerId);
+      } catch (err) {}
     }
-  });
+    applySmartBoundaryAndSnap();
+  };
+
+  editorArea.addEventListener("pointerup", finishDrag);
+  editorArea.addEventListener("pointercancel", finishDrag);
 
   editorArea.addEventListener("wheel", (e) => {
     if (!rawImageObj) return;
@@ -568,95 +851,61 @@ function bindCoverEditorEvents() {
     const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
     setEditorZoomAroundCenter(imgScale * zoomFactor);
   }, { passive: false });
-
-  editorArea.addEventListener("touchstart", (e) => {
-    if (!rawImageObj) return;
-    if (e.touches.length === 1) {
-      isDraggingImg = true;
-      startMouseX = e.touches[0].clientX;
-      startMouseY = e.touches[0].clientY;
-      initialPinchDistance = null;
-      preview.style.transition = "none";
-    } else if (e.touches.length === 2) {
-      isDraggingImg = false;
-      initialPinchDistance = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-    }
-  }, { passive: true });
-
-  editorArea.addEventListener("touchmove", (e) => {
-    if (!rawImageObj) return;
-    if (e.touches.length === 1 && isDraggingImg) {
-      posX += (e.touches[0].clientX - startMouseX) * 1.25;
-      posY += (e.touches[0].clientY - startMouseY) * 1.25;
-      startMouseX = e.touches[0].clientX;
-      startMouseY = e.touches[0].clientY;
-      preview.style.transform = `translate3d(${posX}px, ${posY}px, 0px)`;
-      e.preventDefault();
-    } else if (e.touches.length === 2 && initialPinchDistance !== null && initialPinchDistance > 0) {
-      const currentPinchDistance = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      const zoomFactor = currentPinchDistance / initialPinchDistance;
-      setEditorZoomAroundCenter(imgScale * zoomFactor);
-      initialPinchDistance = currentPinchDistance;
-      e.preventDefault();
-    }
-  }, { passive: false });
-
-  editorArea.addEventListener("touchend", (e) => {
-    if (!rawImageObj) return;
-    if (e.touches.length < 2) initialPinchDistance = null;
-    if (e.touches.length === 0 && isDraggingImg) {
-      isDraggingImg = false;
-      applySmartBoundaryAndSnap();
-    }
-  });
 }
 
 function cancelEditor() {
   const screen = document.getElementById("screenPhotoEditor");
   const preview = document.getElementById("editorImagePreview");
-  if (preview) preview.src = "";
+  if (preview) {
+    preview.onload = null;
+    preview.onerror = null;
+    preview.src = "";
+  }
   if (screen) screen.style.display = "none";
   rawImageObj = null;
   onCoverEditorDone = null;
+  isDraggingImg = false;
+  initialPinchDistance = null;
 }
 
 function confirmEditor() {
   const preview = document.getElementById("editorImagePreview");
   const box = document.getElementById("cropFrameBox")?.getBoundingClientRect();
-  if (!rawImageObj || !preview || !box) return;
+  const cb = onCoverEditorDone;
+  onCoverEditorDone = null;
 
-  const canvas = document.createElement("canvas");
-  canvas.width = 1080;
-  canvas.height = 520;
-  const ctx = canvas.getContext("2d");
+  if (!rawImageObj || !preview || !box || !box.width || !box.height) {
+    cancelEditor();
+    return;
+  }
 
-  const previewRect = preview.getBoundingClientRect();
-  const renderedWidth = previewRect.width || (rawImageObj.width * imgScale);
-  const renderedHeight = previewRect.height || (rawImageObj.height * imgScale);
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1080;
+    canvas.height = 520;
+    const ctx = canvas.getContext("2d");
 
-  const sX = ((box.left - previewRect.left) / renderedWidth) * rawImageObj.width;
-  const sY = ((box.top - previewRect.top) / renderedHeight) * rawImageObj.height;
-  const sW = (box.width / renderedWidth) * rawImageObj.width;
-  const sH = (box.height / renderedHeight) * rawImageObj.height;
+    const previewRect = preview.getBoundingClientRect();
+    const natW = rawImageObj.naturalWidth || rawImageObj.width || 1;
+    const natH = rawImageObj.naturalHeight || rawImageObj.height || 1;
+    const renderedWidth = previewRect.width || (natW * imgScale) || 1;
+    const renderedHeight = previewRect.height || (natH * imgScale) || 1;
 
-  ctx.drawImage(rawImageObj, sX, sY, sW, sH, 0, 0, canvas.width, canvas.height);
-  const croppedUrl = canvas.toDataURL("image/jpeg", 0.88);
+    const sX = Math.max(0, ((box.left - previewRect.left) / renderedWidth) * natW);
+    const sY = Math.max(0, ((box.top - previewRect.top) / renderedHeight) * natH);
+    const sW = Math.min(natW - sX, (box.width / renderedWidth) * natW);
+    const sH = Math.min(natH - sY, (box.height / renderedHeight) * natH);
 
-  if (preview) preview.src = "";
-  const screen = document.getElementById("screenPhotoEditor");
-  if (screen) screen.style.display = "none";
-  rawImageObj = null;
+    ctx.drawImage(rawImageObj, sX, sY, sW, sH, 0, 0, canvas.width, canvas.height);
+    const croppedUrl = canvas.toDataURL("image/jpeg", 0.85);
 
-  if (onCoverEditorDone) {
-    const cb = onCoverEditorDone;
-    onCoverEditorDone = null;
-    cb(croppedUrl);
+    cancelEditor();
+    if (typeof cb === "function") {
+      cb(croppedUrl);
+    }
+  } catch (err) {
+    cancelEditor();
+    alert("Photo crop failed. Try another photo.");
   }
 }
 
@@ -665,37 +914,54 @@ function openCoverPhotoEditor(file, onDone) {
   onCoverEditorDone = onDone;
   ensureCoverEditorDOM();
 
+  const screen = document.getElementById("screenPhotoEditor");
+  const preview = document.getElementById("editorImagePreview");
+  if (screen) screen.style.display = "flex";
+  if (!preview) return;
+
+  preview.style.transition = "none";
+  preview.src = "";
+
   const reader = new FileReader();
   reader.onload = function (e) {
-    rawImageObj = new Image();
-    const screen = document.getElementById("screenPhotoEditor");
-    const preview = document.getElementById("editorImagePreview");
-    if (screen) screen.style.display = "flex";
-    if (!preview) return;
+    const dataUrl = e.target && e.target.result;
+    if (!dataUrl) {
+      cancelEditor();
+      return;
+    }
 
-    preview.style.transition = "none";
-    preview.src = e.target.result;
+    const img = new Image();
+    img.onerror = function () {
+      cancelEditor();
+      alert("Could not load image.");
+    };
+    img.onload = function () {
+      rawImageObj = img;
+      preview.src = dataUrl;
 
-    rawImageObj.onload = function () {
-      requestAnimationFrame(() => {
+      setTimeout(() => {
         const area = document.getElementById("editorCanvasArea");
         const box = document.getElementById("cropFrameBox");
         if (!area || !box || !rawImageObj) return;
 
         const areaRect = area.getBoundingClientRect();
         const boxRect = box.getBoundingClientRect();
+        const natW = rawImageObj.naturalWidth || rawImageObj.width || 1;
+        const natH = rawImageObj.naturalHeight || rawImageObj.height || 1;
+        const boxW = boxRect.width || 290;
+        const boxH = boxRect.height || 140;
 
-        minScale = Math.max(boxRect.width / rawImageObj.width, boxRect.height / rawImageObj.height);
+        minScale = Math.max(boxW / natW, boxH / natH) || 1;
         maxScale = minScale * 2.5;
         imgScale = minScale;
 
-        const renderW = rawImageObj.width * imgScale;
-        const renderH = rawImageObj.height * imgScale;
+        const renderW = natW * imgScale;
+        const renderH = natH * imgScale;
         preview.style.width = renderW + "px";
         preview.style.height = renderH + "px";
 
-        const centerXRel = (boxRect.left + boxRect.right) / 2 - areaRect.left;
-        const centerYRel = (boxRect.top + boxRect.bottom) / 2 - areaRect.top;
+        const centerXRel = ((boxRect.left + boxRect.right) / 2 || (areaRect.width / 2)) - (areaRect.left || 0);
+        const centerYRel = ((boxRect.top + boxRect.bottom) / 2 || (areaRect.height / 2)) - (areaRect.top || 0);
 
         baseLeft = centerXRel - renderW / 2;
         baseTop = centerYRel - renderH / 2;
@@ -705,9 +971,13 @@ function openCoverPhotoEditor(file, onDone) {
         posX = 0;
         posY = 0;
         preview.style.transform = "translate3d(0px, 0px, 0px)";
-      });
+      }, 30);
     };
-    rawImageObj.src = e.target.result;
+    img.src = dataUrl;
+  };
+  reader.onerror = function () {
+    cancelEditor();
+    alert("Failed to read file.");
   };
   reader.readAsDataURL(file);
 }
@@ -734,42 +1004,49 @@ function ensureOwnerInlineFileInput() {
     input.id = "ownerLivePhotoInput";
     input.accept = "image/*";
     input.style.display = "none";
-    input.addEventListener("change", async (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file || !pendingOwnerEditSlot) return;
-
-      const slotInfo = pendingOwnerEditSlot;
-      pendingOwnerEditSlot = null;
-
-      if (slotInfo.type === "cover") {
-        openCoverPhotoEditor(file, (adjustedUrl) => {
-          const data = getWorkingStoreData();
-          const slotIdx = Number.isInteger(slotInfo.slotIdx) ? slotInfo.slotIdx : 0;
-          const wasFirstEmpty = slotIdx === 0 && !data.coverSlots[0];
-          data.coverSlots[slotIdx] = adjustedUrl;
-          data.coverImg = data.coverSlots[0] || adjustedUrl;
-          renderHeader();
-          attachOwnerStoreEditHandlers();
-          if (wasFirstEmpty) {
-            peekNextCoverHint();
-          }
-        });
-      } else if (slotInfo.type === "item") {
-        const resizedUrl = await readImageAsDataURL(file, 500);
-        if (!resizedUrl) return;
-        const data = getWorkingStoreData();
-        const { sIdx, itemId } = slotInfo;
-        const item = data.sections[sIdx]?.items?.find((i) => i.id === itemId);
-        if (item) {
-          item.img = resizedUrl;
-        }
-        renderHeader();
-        renderSections();
-        attachOwnerStoreEditHandlers();
-      }
-    });
     document.body.appendChild(input);
   }
+
+  input.onchange = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    const slotInfo = pendingOwnerEditSlot ? { ...pendingOwnerEditSlot } : null;
+    pendingOwnerEditSlot = null;
+    e.target.value = "";
+
+    if (!file || !slotInfo) return;
+
+    if (slotInfo.type === "cover") {
+      openCoverPhotoEditor(file, (adjustedUrl) => {
+        const data = getWorkingStoreData();
+        if (!Array.isArray(data.coverSlots)) data.coverSlots = [""];
+        const slotIdx = Number.isInteger(slotInfo.slotIdx) ? slotInfo.slotIdx : 0;
+        while (data.coverSlots.length <= slotIdx) {
+          data.coverSlots.push("");
+        }
+        const wasFirstEmpty = slotIdx === 0 && !data.coverSlots[0];
+        data.coverSlots[slotIdx] = adjustedUrl;
+        data.coverImg = data.coverSlots.find(Boolean) || adjustedUrl;
+        renderHeader();
+        attachOwnerStoreEditHandlers();
+        if (wasFirstEmpty) {
+          peekNextCoverHint();
+        }
+      });
+    } else if (slotInfo.type === "item") {
+      const resizedUrl = await readImageAsDataURL(file, 500);
+      if (!resizedUrl) return;
+      const data = getWorkingStoreData();
+      const { sIdx, itemId } = slotInfo;
+      const item = data.sections[sIdx]?.items?.find((i) => i.id === itemId);
+      if (item) {
+        item.img = resizedUrl;
+      }
+      renderHeader();
+      renderSections();
+      attachOwnerStoreEditHandlers();
+    }
+  };
+
   return input;
 }
 
@@ -785,17 +1062,12 @@ function addCoverInEditMode() {
     data.coverSlotsLimit = data.coverSlots.length + 1;
   }
   data.coverSlots.push("");
-  const newSlotIdx = data.coverSlots.length - 1;
   renderHeader();
   attachOwnerStoreEditHandlers();
   const track = document.getElementById("coverSliderTrack");
   if (track) {
     track.scrollTo({ left: track.scrollWidth, behavior: "smooth" });
   }
-  pendingOwnerEditSlot = { type: "cover", slotIdx: newSlotIdx };
-  const fileInput = ensureOwnerInlineFileInput();
-  fileInput.value = "";
-  fileInput.click();
 }
 
 function removeCoverSlotAt(slotIdx) {
@@ -834,7 +1106,8 @@ function addBoxToSection(sIdx) {
     id: `${sIdx}-${Date.now()}-${sec.items.length + 1}`,
     name: "Item",
     price: 0,
-    img: ""
+    img: "",
+    nameStyle: null
   });
 
   renderSections();
@@ -864,11 +1137,12 @@ function addBottomStoreRow() {
   const rowNum = data.sections.length + 1;
   const items = [];
   for (let i = 1; i <= 5; i++) {
-    items.push({ id: `${rowNum}-${Date.now()}-${i}`, name: "Item", price: 0, img: "" });
+    items.push({ id: `${rowNum}-${Date.now()}-${i}`, name: "Item", price: 0, img: "", nameStyle: null });
   }
   data.sections.push({
     title: "Name",
-    items
+    items,
+    titleStyle: null
   });
 
   renderSections();
@@ -979,6 +1253,7 @@ function attachOwnerStoreEditHandlers() {
   backBtn.style.cssText =
     "padding:7px 10px;border:1px solid rgba(255,255,255,0.55);border-radius:8px;background:transparent;color:#ffffff;font-weight:600;cursor:pointer;";
   backBtn.onclick = () => {
+    setOwnerEditMode(false);
     draftStoreData = null;
     removeOwnerStoreEditUI();
     window.location.href = "index.html";
@@ -1006,7 +1281,7 @@ function attachOwnerStoreEditHandlers() {
       pencilBtn.type = "button";
       pencilBtn.className = "owner-inline-edit-btn";
       pencilBtn.textContent = "✎";
-      pencilBtn.title = "Edit Store Name";
+      pencilBtn.title = "Edit Store Name & Style";
       pencilBtn.style.cssText =
         "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:25;padding:1px 5px;margin:0;border:1px solid #0f172a;border-radius:4px;background:rgba(255,255,255,0.92);color:#0f172a;font-size:0.75rem;font-weight:700;line-height:1;cursor:pointer;";
       pencilBtn.onclick = (e) => {
@@ -1022,7 +1297,7 @@ function attachOwnerStoreEditHandlers() {
       const slidePhotoBtn = document.createElement("button");
       slidePhotoBtn.type = "button";
       slidePhotoBtn.className = "owner-inline-edit-btn";
-      slidePhotoBtn.textContent = `Update ${idx + 1}`;
+      slidePhotoBtn.textContent = `Update Photo ${idx + 1}`;
       slidePhotoBtn.style.cssText =
         `position:absolute;top:10px;right:48px;z-index:20;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
       slidePhotoBtn.onclick = (e) => {
@@ -1051,7 +1326,7 @@ function attachOwnerStoreEditHandlers() {
     const addCoverBtn = document.createElement("button");
     addCoverBtn.type = "button";
     addCoverBtn.className = "owner-inline-edit-btn";
-    addCoverBtn.textContent = "+ Cover";
+    addCoverBtn.textContent = "+ Cover Update";
     addCoverBtn.style.cssText =
       `position:absolute;bottom:10px;right:10px;z-index:20;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
     addCoverBtn.onclick = (e) => {
@@ -1074,17 +1349,16 @@ function attachOwnerStoreEditHandlers() {
       secEditBtn.type = "button";
       secEditBtn.className = "owner-inline-edit-btn";
       secEditBtn.textContent = "✎";
-      secEditBtn.title = "Edit Name";
+      secEditBtn.title = "Edit Name & Style";
       secEditBtn.style.cssText =
         "margin-left:8px;padding:3px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
       secEditBtn.onclick = (e) => {
         e.stopPropagation();
-        const next = prompt("Edit Name:", sec.title || "Name");
-        if (next !== null) {
-          sec.title = next.trim() || "Name";
-          renderSections();
-          attachOwnerStoreEditHandlers();
-        }
+        openCustomTextStylePopup({
+          targetType: "section",
+          sIdx,
+          modalTitle: `Section ${sIdx + 1} Name & Style`
+        });
       };
       stripTitle.insertAdjacentElement("afterend", secEditBtn);
     }
@@ -1119,18 +1393,18 @@ function attachOwnerStoreEditHandlers() {
         nameBtn.type = "button";
         nameBtn.className = "owner-inline-edit-btn";
         nameBtn.textContent = "✎";
-        nameBtn.title = "Edit Name";
+        nameBtn.title = "Edit Name & Style";
         nameBtn.style.cssText =
           "margin-left:4px;padding:1px 6px;border:1px solid #cbd5e1;border-radius:5px;background:#f1f5f9;color:#111827;font-size:0.72rem;font-weight:700;cursor:pointer;";
         nameBtn.onclick = (e) => {
           e.preventDefault();
           e.stopPropagation();
-          const next = prompt("Edit Name:", item.name || "Item");
-          if (next !== null) {
-            item.name = next.trim() || "Item";
-            renderSections();
-            attachOwnerStoreEditHandlers();
-          }
+          openCustomTextStylePopup({
+            targetType: "item",
+            sIdx,
+            itemId: item.id,
+            modalTitle: "Item Name & Style"
+          });
         };
         nameEl.insertAdjacentElement("afterend", nameBtn);
       }
@@ -1138,7 +1412,7 @@ function attachOwnerStoreEditHandlers() {
       const priceBtn = document.createElement("button");
       priceBtn.type = "button";
       priceBtn.className = "owner-inline-edit-btn";
-      priceBtn.textContent = "₹";
+      priceBtn.textContent = "✎ ₹";
       priceBtn.title = "Set Amount";
       priceBtn.style.cssText =
         "margin-left:4px;padding:1px 6px;border:1px solid #cbd5e1;border-radius:5px;background:#fefce8;color:#854d0e;font-size:0.72rem;font-weight:700;cursor:pointer;";
