@@ -421,6 +421,117 @@ function openStoreNameEditorPopup() {
   syncPreview();
 }
 
+function peekNextCoverHint() {
+  const track = document.getElementById("coverSliderTrack");
+  if (!track || OWNER_EDIT_MODE) return;
+  const peekAmount = Math.min(80, Math.round(track.clientWidth * 0.22));
+  if (peekAmount <= 0) return;
+
+  track.scrollTo({ left: peekAmount, behavior: "smooth" });
+  setTimeout(() => {
+    if (document.body.contains(track)) {
+      track.scrollTo({ left: 0, behavior: "smooth" });
+    }
+  }, 650);
+}
+
+function ensureOwnerInlineFileInput() {
+  let input = document.getElementById("ownerLivePhotoInput");
+  if (!input) {
+    input = document.createElement("input");
+    input.type = "file";
+    input.id = "ownerLivePhotoInput";
+    input.accept = "image/*";
+    input.style.display = "none";
+    input.addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      const slotInfo = pendingOwnerEditSlot ? { ...pendingOwnerEditSlot } : null;
+      pendingOwnerEditSlot = null;
+      e.target.value = "";
+      if (!file || !slotInfo) return;
+
+      if (slotInfo.type === "cover") {
+        const applyCoverUrl = (adjustedUrl) => {
+          const data = getWorkingStoreData();
+          if (!Array.isArray(data.coverSlots)) data.coverSlots = [""];
+          const slotIdx = Number.isInteger(slotInfo.slotIdx) ? slotInfo.slotIdx : 0;
+          while (data.coverSlots.length <= slotIdx) {
+            data.coverSlots.push("");
+          }
+          const wasFirstEmpty = slotIdx === 0 && !data.coverSlots[0];
+          data.coverSlots[slotIdx] = adjustedUrl;
+          data.coverImg = data.coverSlots.find(Boolean) || adjustedUrl;
+          renderHeader();
+          attachOwnerStoreEditHandlers();
+          if (wasFirstEmpty) {
+            peekNextCoverHint();
+          }
+        };
+
+        if (typeof openCoverPhotoEditor === "function") {
+          openCoverPhotoEditor(file, applyCoverUrl);
+        } else {
+          const fallbackUrl = await readImageAsDataURL(file, 900);
+          if (fallbackUrl) applyCoverUrl(fallbackUrl);
+        }
+      } else if (slotInfo.type === "item") {
+        const resizedUrl = await readImageAsDataURL(file, 500);
+        if (!resizedUrl) return;
+        const data = getWorkingStoreData();
+        const { sIdx, itemId } = slotInfo;
+        const item = data.sections[sIdx]?.items?.find((i) => i.id === itemId);
+        if (item) {
+          item.img = resizedUrl;
+        }
+        renderHeader();
+        renderSections();
+        attachOwnerStoreEditHandlers();
+      }
+    });
+    document.body.appendChild(input);
+  }
+  return input;
+}
+
+function addCoverInEditMode() {
+  const data = getWorkingStoreData();
+  const maxAllowed = MAX_COVER_SLOTS;
+  if (!Array.isArray(data.coverSlots)) data.coverSlots = [""];
+  if (data.coverSlots.length >= maxAllowed) {
+    alert(`Cover limit reached (${maxAllowed} max).`);
+    return;
+  }
+  if ((data.coverSlotsLimit || 1) < data.coverSlots.length + 1) {
+    data.coverSlotsLimit = data.coverSlots.length + 1;
+  }
+  data.coverSlots.push("");
+  renderHeader();
+  attachOwnerStoreEditHandlers();
+  const track = document.getElementById("coverSliderTrack");
+  if (track) {
+    track.scrollTo({ left: track.scrollWidth, behavior: "smooth" });
+  }
+}
+
+function removeCoverSlotAt(slotIdx) {
+  const data = getWorkingStoreData();
+  if (!Array.isArray(data.coverSlots) || data.coverSlots.length === 0) {
+    data.coverSlots = [""];
+  }
+
+  if (data.coverSlots.length <= 1) {
+    data.coverSlots[0] = "";
+    data.coverImg = "";
+  } else {
+    const safeIdx = Math.max(0, Math.min(data.coverSlots.length - 1, slotIdx));
+    data.coverSlots.splice(safeIdx, 1);
+    data.coverImg = data.coverSlots.find(Boolean) || "";
+  }
+
+  renderHeader();
+  attachOwnerStoreEditHandlers();
+}
+
 function addBoxToSection(sIdx) {
   const data = getWorkingStoreData();
   const sec = data.sections[sIdx];
