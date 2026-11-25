@@ -10,12 +10,14 @@ const DEFAULT_BOX_SIZES = {
   miniBox: {
     width: 92,
     height: 122,
-    imgHeight: 74
+    imgHeight: 74,
+    fontSize: 12
   },
   productBox: {
     width: 150,
     height: 215,
-    imgHeight: 125
+    imgHeight: 125,
+    fontSize: 14
   }
 };
 
@@ -113,12 +115,14 @@ function normalizeBoxSizes(raw) {
     miniBox: {
       width: clampNum(mini.width, 64, 180, DEFAULT_BOX_SIZES.miniBox.width),
       height: clampNum(mini.height, 90, 240, DEFAULT_BOX_SIZES.miniBox.height),
-      imgHeight: clampNum(mini.imgHeight, 44, 160, DEFAULT_BOX_SIZES.miniBox.imgHeight)
+      imgHeight: clampNum(mini.imgHeight, 44, 160, DEFAULT_BOX_SIZES.miniBox.imgHeight),
+      fontSize: clampNum(mini.fontSize, 9, 26, DEFAULT_BOX_SIZES.miniBox.fontSize)
     },
     productBox: {
       width: clampNum(prod.width, 110, 320, DEFAULT_BOX_SIZES.productBox.width),
       height: clampNum(prod.height, 165, 420, DEFAULT_BOX_SIZES.productBox.height),
-      imgHeight: clampNum(prod.imgHeight, 80, 260, DEFAULT_BOX_SIZES.productBox.imgHeight)
+      imgHeight: clampNum(prod.imgHeight, 80, 260, DEFAULT_BOX_SIZES.productBox.imgHeight),
+      fontSize: clampNum(prod.fontSize, 10, 30, DEFAULT_BOX_SIZES.productBox.fontSize)
     }
   };
 }
@@ -132,9 +136,11 @@ function applyBoxSizeStyles() {
   root.style.setProperty("--mini-box-w", `${sizes.miniBox.width}px`);
   root.style.setProperty("--mini-box-h", `${sizes.miniBox.height}px`);
   root.style.setProperty("--mini-box-img-h", `${sizes.miniBox.imgHeight}px`);
+  root.style.setProperty("--mini-box-font-sz", `${sizes.miniBox.fontSize}px`);
   root.style.setProperty("--product-box-w", `${sizes.productBox.width}px`);
   root.style.setProperty("--product-box-h", `${sizes.productBox.height}px`);
   root.style.setProperty("--product-box-img-h", `${sizes.productBox.imgHeight}px`);
+  root.style.setProperty("--product-box-font-sz", `${sizes.productBox.fontSize}px`);
 
   document.querySelectorAll(".mini-box").forEach((box) => {
     box.style.flex = `0 0 ${sizes.miniBox.width}px`;
@@ -154,6 +160,15 @@ function applyBoxSizeStyles() {
     if (placeholder) {
       placeholder.style.width = "100%";
       placeholder.style.height = `${sizes.miniBox.imgHeight}px`;
+    }
+
+    const nameEl = box.querySelector(".mini-box-name");
+    if (nameEl) {
+      nameEl.style.fontSize = `${sizes.miniBox.fontSize}px`;
+    }
+    const priceEl = box.querySelector(".mini-box-price");
+    if (priceEl) {
+      priceEl.style.fontSize = `${Math.max(9, sizes.miniBox.fontSize - 1)}px`;
     }
   });
 
@@ -175,6 +190,15 @@ function applyBoxSizeStyles() {
       placeholder.style.width = "100%";
       placeholder.style.height = `${sizes.productBox.imgHeight}px`;
     }
+
+    const nameEl = box.querySelector(".item-name");
+    if (nameEl) {
+      nameEl.style.fontSize = `${sizes.productBox.fontSize}px`;
+    }
+    const priceEl = box.querySelector(".item-price");
+    if (priceEl) {
+      priceEl.style.fontSize = `${Math.max(10, sizes.productBox.fontSize - 1)}px`;
+    }
   });
 }
 
@@ -193,6 +217,8 @@ function updateBoxSizeSetting(boxType, prop, value, { persist = false } = {}) {
       }
     } else if (prop === "imgHeight") {
       targetData.boxSizes.miniBox.imgHeight = clampNum(value, 44, 160, DEFAULT_BOX_SIZES.miniBox.imgHeight);
+    } else if (prop === "fontSize") {
+      targetData.boxSizes.miniBox.fontSize = clampNum(value, 9, 26, DEFAULT_BOX_SIZES.miniBox.fontSize);
     }
   } else if (boxType === "product") {
     if (prop === "width") {
@@ -205,6 +231,8 @@ function updateBoxSizeSetting(boxType, prop, value, { persist = false } = {}) {
       }
     } else if (prop === "imgHeight") {
       targetData.boxSizes.productBox.imgHeight = clampNum(value, 80, 260, DEFAULT_BOX_SIZES.productBox.imgHeight);
+    } else if (prop === "fontSize") {
+      targetData.boxSizes.productBox.fontSize = clampNum(value, 10, 30, DEFAULT_BOX_SIZES.productBox.fontSize);
     }
   }
 
@@ -217,7 +245,6 @@ function updateBoxSizeSetting(boxType, prop, value, { persist = false } = {}) {
   }
 
   applyBoxSizeStyles();
-  syncBoxSizePanelUI();
 }
 
 function resetBoxSizes({ persist = false } = {}) {
@@ -232,182 +259,7 @@ function resetBoxSizes({ persist = false } = {}) {
     storeData.boxSizes = JSON.parse(JSON.stringify(fresh));
   }
   applyBoxSizeStyles();
-  syncBoxSizePanelUI();
 }
-
-function syncBoxSizePanelUI() {
-  const panel = document.getElementById("boxSizePanel");
-  if (!panel) return;
-  const sizes = normalizeBoxSizes(getWorkingStoreData().boxSizes);
-
-  const setVal = (id, v) => {
-    const el = document.getElementById(id);
-    if (el) el.value = String(v);
-  };
-  const setTxt = (id, t) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = t;
-  };
-
-  setVal("miniBoxWidthRange", sizes.miniBox.width);
-  setVal("miniBoxWidthNum", sizes.miniBox.width);
-  setTxt("miniBoxWidthVal", `${sizes.miniBox.width}px`);
-
-  setVal("miniBoxHeightRange", sizes.miniBox.height);
-  setVal("miniBoxHeightNum", sizes.miniBox.height);
-  setTxt("miniBoxHeightVal", `${sizes.miniBox.height}px`);
-
-  setVal("miniBoxImgRange", sizes.miniBox.imgHeight);
-  setTxt("miniBoxImgVal", `${sizes.miniBox.imgHeight}px`);
-
-  setVal("productBoxWidthRange", sizes.productBox.width);
-  setVal("productBoxWidthNum", sizes.productBox.width);
-  setTxt("productBoxWidthVal", `${sizes.productBox.width}px`);
-
-  setVal("productBoxHeightRange", sizes.productBox.height);
-  setVal("productBoxHeightNum", sizes.productBox.height);
-  setTxt("productBoxHeightVal", `${sizes.productBox.height}px`);
-
-  setVal("productBoxImgRange", sizes.productBox.imgHeight);
-  setTxt("productBoxImgVal", `${sizes.productBox.imgHeight}px`);
-}
-
-function ensureBoxSizePanel() {
-  let panel = document.getElementById("boxSizePanel");
-  if (panel) return panel;
-
-  panel = document.createElement("div");
-  panel.id = "boxSizePanel";
-  panel.style.cssText =
-    "display:none;position:fixed;bottom:16px;right:16px;z-index:99990;width:320px;max-width:calc(100vw - 24px);background:#ffffff;border:1px solid #cbd5e1;border-radius:14px;padding:14px;box-shadow:0 14px 34px rgba(15,23,42,0.25);color:#0f172a;font-family:system-ui,-apple-system,sans-serif;";
-
-  panel.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">
-      <strong style="font-size:0.95rem;">Box Size Panel</strong>
-      <button type="button" id="closeBoxSizePanelBtn" style="border:none;background:#f1f5f9;color:#334155;border-radius:6px;padding:2px 8px;font-weight:700;cursor:pointer;">×</button>
-    </div>
-
-    <div style="margin-bottom:12px;padding:10px;background:#f8fafc;border-radius:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <span style="font-size:0.82rem;font-weight:700;color:#0f766e;">छोटा बॉक्स (.mini-box)</span>
-        <span id="miniBoxWidthVal" style="font-size:0.75rem;color:#475569;">92px</span>
-      </div>
-      <label style="display:block;font-size:0.75rem;color:#475569;margin-bottom:2px;">चौड़ाई (Width)</label>
-      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
-        <input id="miniBoxWidthRange" type="range" min="64" max="180" style="flex:1;" />
-        <input id="miniBoxWidthNum" type="number" min="64" max="180" style="width:62px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.8rem;" />
-      </div>
-
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
-        <label style="font-size:0.75rem;color:#475569;">ऊँचाई (Height)</label>
-        <span id="miniBoxHeightVal" style="font-size:0.75rem;color:#475569;">122px</span>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
-        <input id="miniBoxHeightRange" type="range" min="90" max="240" style="flex:1;" />
-        <input id="miniBoxHeightNum" type="number" min="90" max="240" style="width:62px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.8rem;" />
-      </div>
-
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
-        <label style="font-size:0.75rem;color:#475569;">फ़ोटो ऊँचाई (Image Height)</label>
-        <span id="miniBoxImgVal" style="font-size:0.75rem;color:#475569;">74px</span>
-      </div>
-      <input id="miniBoxImgRange" type="range" min="44" max="160" style="width:100%;" />
-    </div>
-
-    <div style="margin-bottom:12px;padding:10px;background:#f8fafc;border-radius:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <span style="font-size:0.82rem;font-weight:700;color:#0f766e;">प्रोडक्ट बॉक्स (.item-box)</span>
-        <span id="productBoxWidthVal" style="font-size:0.75rem;color:#475569;">150px</span>
-      </div>
-      <label style="display:block;font-size:0.75rem;color:#475569;margin-bottom:2px;">चौड़ाई (Width)</label>
-      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
-        <input id="productBoxWidthRange" type="range" min="110" max="320" style="flex:1;" />
-        <input id="productBoxWidthNum" type="number" min="110" max="320" style="width:62px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.8rem;" />
-      </div>
-
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
-        <label style="font-size:0.75rem;color:#475569;">ऊँचाई (Height)</label>
-        <span id="productBoxHeightVal" style="font-size:0.75rem;color:#475569;">215px</span>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
-        <input id="productBoxHeightRange" type="range" min="165" max="420" style="flex:1;" />
-        <input id="productBoxHeightNum" type="number" min="165" max="420" style="width:62px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:0.8rem;" />
-      </div>
-
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
-        <label style="font-size:0.75rem;color:#475569;">फ़ोटो ऊँचाई (Image Height)</label>
-        <span id="productBoxImgVal" style="font-size:0.75rem;color:#475569;">125px</span>
-      </div>
-      <input id="productBoxImgRange" type="range" min="80" max="260" style="width:100%;" />
-    </div>
-
-    <div style="display:flex;gap:8px;justify-content:space-between;">
-      <button type="button" id="resetBoxSizePanelBtn" style="flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:#334155;font-weight:600;cursor:pointer;">Reset</button>
-      <button type="button" id="saveBoxSizePanelBtn" style="flex:1;padding:8px 10px;border:none;border-radius:8px;background:#0f766e;color:#ffffff;font-weight:700;cursor:pointer;">Save Sizes</button>
-    </div>
-  `;
-
-  document.body.appendChild(panel);
-
-  const bindPair = (rangeId, numId, boxType, prop) => {
-    const r = document.getElementById(rangeId);
-    const n = document.getElementById(numId);
-    if (r) {
-      r.addEventListener("input", () => updateBoxSizeSetting(boxType, prop, r.value, { persist: false }));
-    }
-    if (n) {
-      n.addEventListener("input", () => updateBoxSizeSetting(boxType, prop, n.value, { persist: false }));
-    }
-  };
-
-  bindPair("miniBoxWidthRange", "miniBoxWidthNum", "mini", "width");
-  bindPair("miniBoxHeightRange", "miniBoxHeightNum", "mini", "height");
-  bindPair("productBoxWidthRange", "productBoxWidthNum", "product", "width");
-  bindPair("productBoxHeightRange", "productBoxHeightNum", "product", "height");
-
-  const miniImg = document.getElementById("miniBoxImgRange");
-  if (miniImg) {
-    miniImg.addEventListener("input", () => updateBoxSizeSetting("mini", "imgHeight", miniImg.value, { persist: false }));
-  }
-  const prodImg = document.getElementById("productBoxImgRange");
-  if (prodImg) {
-    prodImg.addEventListener("input", () => updateBoxSizeSetting("product", "imgHeight", prodImg.value, { persist: false }));
-  }
-
-  document.getElementById("closeBoxSizePanelBtn").addEventListener("click", () => {
-    panel.style.display = "none";
-  });
-
-  document.getElementById("resetBoxSizePanelBtn").addEventListener("click", () => {
-    resetBoxSizes({ persist: false });
-  });
-
-  document.getElementById("saveBoxSizePanelBtn").addEventListener("click", () => {
-    const currentSizes = normalizeBoxSizes(getWorkingStoreData().boxSizes);
-    storeData.boxSizes = JSON.parse(JSON.stringify(currentSizes));
-    if (OWNER_EDIT_MODE && draftStoreData) {
-      draftStoreData.boxSizes = JSON.parse(JSON.stringify(currentSizes));
-    }
-    saveData();
-    applyBoxSizeStyles();
-    syncBoxSizePanelUI();
-    alert("Box sizes saved!");
-  });
-
-  return panel;
-}
-
-window.openBoxSizePanel = function (forceOpen) {
-  const panel = ensureBoxSizePanel();
-  syncBoxSizePanelUI();
-  if (forceOpen === true) {
-    panel.style.display = "block";
-  } else if (forceOpen === false) {
-    panel.style.display = "none";
-  } else {
-    panel.style.display = panel.style.display === "none" || !panel.style.display ? "block" : "none";
-  }
-};
 
 window.updateBoxSizeSetting = updateBoxSizeSetting;
 window.resetBoxSizes = resetBoxSizes;
@@ -897,6 +749,7 @@ function renderSections() {
   container.innerHTML = "";
   const savedPhoto = data.userProfile?.photo || "";
   const maxBoxes = Math.min(MAX_INDEX_BOXES, Math.max(0, Number(data.indexBoxLimit ?? MAX_INDEX_BOXES)));
+  const boxSizes = normalizeBoxSizes(data.boxSizes);
 
   data.sections.forEach((sec, sIdx) => {
     const sectionEl = document.createElement("section");
@@ -944,7 +797,7 @@ function renderSections() {
         const miniNameEl = box.querySelector(".mini-box-name");
         miniNameEl.textContent = cleanItemName;
         applyTextStyleToElement(miniNameEl, item.nameStyle, {
-          fontSize: 12,
+          fontSize: boxSizes.miniBox.fontSize,
           fontWeight: 600,
           color: "#111827"
         });
@@ -987,7 +840,7 @@ function renderSections() {
         itemNameEl.textContent = cleanItemName;
         itemNameEl.title = cleanItemName;
         applyTextStyleToElement(itemNameEl, item.nameStyle, {
-          fontSize: 14,
+          fontSize: boxSizes.productBox.fontSize,
           fontWeight: 600,
           color: "#111827"
         });
@@ -1696,7 +1549,6 @@ window.addEventListener("storage", () => {
   renderHeader();
   renderSections();
   applyBoxSizeStyles();
-  syncBoxSizePanelUI();
   if (OWNER_EDIT_MODE && !draftStoreData) {
     initDraftStoreData();
   }
