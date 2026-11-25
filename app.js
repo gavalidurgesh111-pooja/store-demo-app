@@ -6,16 +6,36 @@ const MAX_INDEX_BOXES = 50;
 const MAX_COVER_SLOTS = 10;
 const MAX_TOP_ROW_BOXES = 30;
 
-const STORE_FONT_OPTIONS = [
-  { label: "Sans", value: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" },
-  { label: "Rounded", value: "'Trebuchet MS', 'Segoe UI', sans-serif" },
-  { label: "Serif", value: "Georgia, 'Times New Roman', serif" },
-  { label: "Slab", value: "'Rockwell', 'Courier New', Georgia, serif" },
-  { label: "Condensed", value: "'Arial Narrow', 'Impact', sans-serif" },
-  { label: "Italic", value: "'Segoe UI', Roboto, sans-serif", italic: true },
-  { label: "Script", value: "'Brush Script MT', 'Segoe Script', cursive" },
-  { label: "Mono", value: "'Courier New', monospace" }
+const BASE_FONT_FAMILIES = [
+  "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+  "'Trebuchet MS', 'Segoe UI', sans-serif",
+  "Georgia, 'Times New Roman', serif",
+  "'Rockwell', 'Courier New', Georgia, serif",
+  "'Arial Narrow', 'Impact', sans-serif",
+  "'Segoe UI', Roboto, sans-serif",
+  "'Brush Script MT', 'Segoe Script', cursive",
+  "'Courier New', monospace",
+  "Verdana, Geneva, sans-serif",
+  "Tahoma, Geneva, sans-serif",
+  "'Palatino Linotype', 'Book Antiqua', Palatino, serif",
+  "'Lucida Sans Unicode', 'Lucida Grande', sans-serif",
+  "Garamond, Baskerville, 'Times New Roman', serif",
+  "'Gill Sans', 'Gill Sans MT', Calibri, sans-serif",
+  "CenturyGothic, AppleGothic, sans-serif"
 ];
+
+const STORE_FONT_OPTIONS = Array.from({ length: 100 }, (_, idx) => {
+  const num = idx + 1;
+  const family = BASE_FONT_FAMILIES[idx % BASE_FONT_FAMILIES.length];
+  const isItalic = idx % 4 === 2 || idx % 9 === 5;
+  const weight = 300 + ((idx * 70) % 650);
+  return {
+    label: `${num}. Font Style ${num}`,
+    value: family,
+    italic: isItalic,
+    weight
+  };
+});
 
 const STORE_NAME_COLORS = [
   "#ffffff",
