@@ -226,8 +226,11 @@ function applyBoxSizeStyles() {
     box.style.maxWidth = `${sizes.miniBox.width}px`;
     box.style.minHeight = `${sizes.miniBox.height}px`;
     box.style.height = "auto";
+    box.style.overflow = "hidden";
 
     applyInnerBoxColor(box, ".mini-box-body", sizes.miniBox.bgColor);
+    const bodyEl = box.querySelector(".mini-box-body");
+    if (bodyEl) bodyEl.style.overflow = "hidden";
 
     const img = box.querySelector("img");
     if (img) {
@@ -244,6 +247,8 @@ function applyBoxSizeStyles() {
     const nameEl = box.querySelector(".mini-box-name");
     if (nameEl) {
       nameEl.style.fontSize = `${sizes.miniBox.fontSize}px`;
+      nameEl.style.maxWidth = "100%";
+      nameEl.style.overflow = "hidden";
     }
     const priceEl = box.querySelector(".mini-box-price");
     if (priceEl) {
@@ -258,8 +263,11 @@ function applyBoxSizeStyles() {
     box.style.maxWidth = `${sizes.productBox.width}px`;
     box.style.minHeight = `${sizes.productBox.height}px`;
     box.style.height = "auto";
+    box.style.overflow = "hidden";
 
     applyInnerBoxColor(box, ".item-info", sizes.productBox.bgColor);
+    const infoEl = box.querySelector(".item-info");
+    if (infoEl) infoEl.style.overflow = "hidden";
 
     const img = box.querySelector("img");
     if (img) {
@@ -276,6 +284,8 @@ function applyBoxSizeStyles() {
     const nameEl = box.querySelector(".item-name");
     if (nameEl) {
       nameEl.style.fontSize = `${sizes.productBox.fontSize}px`;
+      nameEl.style.maxWidth = "100%";
+      nameEl.style.overflow = "hidden";
     }
     const priceEl = box.querySelector(".item-price");
     if (priceEl) {
@@ -429,10 +439,11 @@ function applyTextStyleToElement(el, rawStyle, defaults = {}) {
   el.style.textTransform = st.textTransform;
   el.style.color = st.color;
 
-  // केवल तभी नई लाइन ब्रेक हो जब यूज़र ने खुद Enter (\n) दबाया हो
+  // Enter (\n) न दबाने पर एक ही लाइन में आगे चलता रहेगा और दाएँ किनारे पर छिपेगा
   const hasExplicitLineBreak = String(el.textContent || "").includes("\n");
   el.style.whiteSpace = hasExplicitLineBreak ? "pre-line" : "pre";
   el.style.wordBreak = "normal";
+  el.style.overflow = "hidden";
 
   if (st.glowEnabled) {
     const gSize = Math.max(2, st.glowSize);
@@ -882,8 +893,8 @@ function renderSections() {
         };
         box.innerHTML = `
           ${imgMarkup(item.img, cleanItemName, true)}
-          <div class="mini-box-body" style="text-align:left;">
-            <div class="mini-box-name" style="text-align:left;"></div>
+          <div class="mini-box-body" style="text-align:left;overflow:hidden;">
+            <div class="mini-box-name" style="text-align:left;max-width:100%;overflow:hidden;"></div>
             <div class="mini-box-price" style="text-align:left;">${priceDisplay}</div>
           </div>
         `;
@@ -927,8 +938,8 @@ function renderSections() {
         };
         box.innerHTML = `
           ${imgMarkup(item.img, cleanItemName, false)}
-          <div class="item-info">
-            <div class="item-name"></div>
+          <div class="item-info" style="overflow:hidden;">
+            <div class="item-name" style="max-width:100%;overflow:hidden;"></div>
             <div class="item-price">${priceDisplay}</div>
           </div>
         `;
