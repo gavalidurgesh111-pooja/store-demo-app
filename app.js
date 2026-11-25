@@ -54,13 +54,21 @@ function createDefaultTextStyle(overrides = {}) {
     glowSize: 12,
     borderEnabled: false,
     borderColor: "#0f172a",
-    borderWidth: 1.5,
+    borderWidth: 0.8,
     bgEnabled: false,
     bgColor: "#0f172a",
     bgOpacity: 0.65,
     bgRadius: 8,
     ...overrides
   };
+}
+
+function getSafeThinBorderWidth(fontSize, requestedWidth) {
+  const size = Math.max(10, Number(fontSize) || 14);
+  const maxThinAllowed = Math.max(0.5, Math.min(1.6, Number((size * 0.06).toFixed(1))));
+  const req = Number(requestedWidth);
+  if (!Number.isFinite(req) || req <= 0) return 0.7;
+  return Number(Math.max(0.5, Math.min(maxThinAllowed, req)).toFixed(1));
 }
 
 function hexToRgba(hex, alpha = 1) {
@@ -79,13 +87,15 @@ function hexToRgba(hex, alpha = 1) {
 function normalizeTextStyle(raw, defaults = {}) {
   const base = createDefaultTextStyle(defaults);
   const s = raw && typeof raw === "object" ? raw : {};
+  const fontSize = Number.isFinite(Number(s.fontSize)) ? Number(s.fontSize) : base.fontSize;
+  const rawBorder = Number.isFinite(Number(s.borderWidth)) ? Number(s.borderWidth) : base.borderWidth;
   return {
     ...base,
     ...s,
-    fontSize: Number.isFinite(Number(s.fontSize)) ? Number(s.fontSize) : base.fontSize,
+    fontSize,
     fontWeight: Number.isFinite(Number(s.fontWeight)) ? Number(s.fontWeight) : base.fontWeight,
     glowSize: Number.isFinite(Number(s.glowSize)) ? Number(s.glowSize) : base.glowSize,
-    borderWidth: Number.isFinite(Number(s.borderWidth)) ? Number(s.borderWidth) : base.borderWidth,
+    borderWidth: getSafeThinBorderWidth(fontSize, rawBorder),
     bgOpacity: Number.isFinite(Number(s.bgOpacity)) ? Number(s.bgOpacity) : base.bgOpacity,
     bgRadius: Number.isFinite(Number(s.bgRadius)) ? Number(s.bgRadius) : base.bgRadius
   };
@@ -108,8 +118,9 @@ function applyTextStyleToElement(el, rawStyle, defaults = {}) {
     el.style.textShadow = "none";
   }
 
-  if (st.borderEnabled && st.borderWidth > 0) {
-    el.style.webkitTextStroke = `${st.borderWidth}px ${st.borderColor}`;
+  if (st.borderEnabled) {
+    const thinWidth = getSafeThinBorderWidth(st.fontSize, st.borderWidth);
+    el.style.webkitTextStroke = `${thinWidth}px ${st.borderColor}`;
   } else {
     el.style.webkitTextStroke = "0px transparent";
   }
@@ -136,11 +147,13 @@ function setOwnerEditMode(active) {
 }
 
 function getSectionTitleForView(rawTitle, index) {
-  const cleanName = String(rawTitle || "").trim() || "Name";
+  const baseName = rawTitle !== undefined && rawTitle !== null && String(rawTitle).length > 0
+    ? String(rawTitle)
+    : "Name";
   if (OWNER_EDIT_MODE) {
-    return `${index + 1}. ${cleanName}`;
+    return `${index + 1}. ${baseName}`;
   }
-  return cleanName;
+  return baseName;
 }
 
 function buildInitialData() {
@@ -424,7 +437,9 @@ function renderHeader() {
   }
   const titleEl = document.getElementById("storeTitle");
   if (!titleEl) return;
-  titleEl.textContent = data.storeTitle || "Store Name";
+  titleEl.textContent = data.storeTitle !== undefined && data.storeTitle !== null && String(data.storeTitle).length > 0
+    ? String(data.storeTitle)
+    : "Store Name";
   const subEl = document.getElementById("storeSubtitle");
   if (subEl) subEl.textContent = data.storeSubtitle || "";
 
@@ -506,8 +521,10 @@ function renderSections() {
 
     const stripEl = document.createElement("div");
     stripEl.className = "strip-bar";
-    stripEl.innerHTML = `<span class="strip-title">${displayTitle}</span>`;
-    const stripTitleEl = stripEl.querySelector(".strip-title");
+    const stripTitleEl = document.createElement("span");
+    stripTitleEl.className = "strip-title";
+    stripTitleEl.textContent = displayTitle;
+    stripEl.appendChild(stripTitleEl);
     applyTextStyleToElement(stripTitleEl, sec.titleStyle, {
       fontSize: 16,
       fontWeight: 700,
@@ -521,7 +538,9 @@ function renderSections() {
       const topRowLimit = Math.min(MAX_TOP_ROW_BOXES, maxBoxes);
 
       sec.items.slice(0, topRowLimit).forEach((item) => {
-        const cleanItemName = String(item.name || "").trim() || "Item";
+        const cleanItemName = item.name !== undefined && item.name !== null && String(item.name).length > 0
+          ? String(item.name)
+          : "Item";
         const amountVal = Number(item.price || 0);
         const priceDisplay = `₹${amountVal}`;
         const box = document.createElement("div");
@@ -533,11 +552,12 @@ function renderSections() {
         box.innerHTML = `
           ${imgMarkup(item.img, cleanItemName, true)}
           <div class="mini-box-body">
-            <div class="mini-box-name">${cleanItemName}</div>
+            <div class="mini-box-name"></div>
             <div class="mini-box-price">${priceDisplay}</div>
           </div>
         `;
         const miniNameEl = box.querySelector(".mini-box-name");
+        miniNameEl.textContent = cleanItemName;
         applyTextStyleToElement(miniNameEl, item.nameStyle, {
           fontSize: 12,
           fontWeight: 600,
@@ -563,7 +583,9 @@ function renderSections() {
       scrollEl.className = "scroll-row";
 
       sec.items.slice(0, maxBoxes).forEach((item) => {
-        const cleanItemName = String(item.name || "").trim() || "Item";
+        const cleanItemName = item.name !== undefined && item.name !== null && String(item.name).length > 0
+          ? String(item.name)
+          : "Item";
         const amountVal = Number(item.price || 0);
         const priceDisplay = `₹${amountVal}`;
         const box = document.createElement("div");
@@ -571,12 +593,14 @@ function renderSections() {
         box.innerHTML = `
           ${imgMarkup(item.img, cleanItemName, false)}
           <div class="item-info">
-            <div class="item-name" title="${cleanItemName}">${cleanItemName}</div>
+            <div class="item-name"></div>
             <div class="item-price">${priceDisplay}</div>
             <button type="button" class="buy-btn" onclick="if(!OWNER_EDIT_MODE)openOrderModal(${sIdx}, '${item.id}')">Order</button>
           </div>
         `;
         const itemNameEl = box.querySelector(".item-name");
+        itemNameEl.textContent = cleanItemName;
+        itemNameEl.title = cleanItemName;
         applyTextStyleToElement(itemNameEl, item.nameStyle, {
           fontSize: 14,
           fontWeight: 600,
@@ -598,7 +622,9 @@ function openOrderModal(sectionIdx, itemId) {
   if (!item) return;
   activeOrderItem = item;
   const amountVal = Number(item.price || 0);
-  document.getElementById("modalItemTitle").textContent = String(item.name || "").trim() || "Item";
+  document.getElementById("modalItemTitle").textContent = item.name !== undefined && item.name !== null && String(item.name).length > 0
+    ? String(item.name)
+    : "Item";
   document.getElementById("modalItemPrice").textContent = `Price: ₹${amountVal}`;
 
   const up = data.userProfile || {};
@@ -621,7 +647,9 @@ function confirmOrder() {
   const qty = Math.max(1, parseInt(document.getElementById("orderQty").value, 10) || 1);
   const unitPrice = Number(activeOrderItem.price || 0);
   const amount = unitPrice * qty;
-  const cleanItemName = String(activeOrderItem.name || "").trim() || "Item";
+  const cleanItemName = activeOrderItem.name !== undefined && activeOrderItem.name !== null && String(activeOrderItem.name).length > 0
+    ? String(activeOrderItem.name)
+    : "Item";
 
   storeData.orders.push({
     customer,
@@ -765,7 +793,7 @@ function renameFolderAt(idx) {
   const current = folder.name || "";
   const next = prompt("Enter Name:", current);
   if (next !== null) {
-    folder.name = next.trim() || "Name";
+    folder.name = next.length > 0 ? next : "Name";
     saveData();
     renderFolderGrid();
     const heading = document.getElementById("activeFolderHeading");
@@ -1039,7 +1067,7 @@ function addCustomFolderEntry() {
     return;
   }
   const input = document.getElementById("customEntryInput");
-  const val = input.value.trim() || "Item";
+  const val = input.value.length > 0 ? input.value : "Item";
   folder.entries.unshift(val);
   saveData();
   input.value = "";
