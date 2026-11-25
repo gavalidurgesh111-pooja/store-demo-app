@@ -200,7 +200,7 @@ body {
 }
 
 .item-box {
-  flex: 0 0 130px;
+  flex: 0 0 156px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -212,43 +212,45 @@ body {
 
 .item-box img {
   width: 100%;
-  height: 78px;
+  height: 68px;
   object-fit: cover;
   background: #e5e7eb;
   display: block;
 }
 
 .item-info {
-  padding: 7px 8px;
+  padding: 6px 8px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
   flex: 1;
 }
 
 .item-name {
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   font-weight: 600;
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .item-price {
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 700;
+  line-height: 1.2;
   color: var(--primary);
 }
 
 .buy-btn {
   margin-top: auto;
   width: 100%;
-  padding: 6px 8px;
+  padding: 5px 8px;
   border: none;
-  border-radius: 10px;
+  border-radius: 9px;
   background: var(--primary);
   color: #ffffff;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 600;
   cursor: pointer;
 }
