@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V9");
+console.log("OWNER_EDIT_COMPLETE_V10");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -472,7 +472,7 @@ function openCustomTextStylePopup(config) {
   let borderCtrl;
   let bgCtrl;
   let textColorTriggerBtn;
-  let fontSelectEl;
+  let renderFontScrollList;
 
   function syncAllControlsFromState() {
     if (textColorTriggerBtn) {
@@ -490,11 +490,8 @@ function openCustomTextStylePopup(config) {
       bgCtrl.chk.checked = Boolean(st.bgEnabled);
       bgCtrl.colorBtn.style.background = st.bgColor || "#0f172a";
     }
-    if (fontSelectEl) {
-      const matchedIdx = STORE_FONT_OPTIONS.findIndex(
-        (opt) => opt.value === st.fontFamily && (opt.italic ? "italic" : "normal") === st.fontStyle
-      );
-      if (matchedIdx >= 0) fontSelectEl.value = String(matchedIdx);
+    if (renderFontScrollList) {
+      renderFontScrollList();
     }
   }
 
@@ -598,46 +595,71 @@ function openCustomTextStylePopup(config) {
   mainColorRow.appendChild(mainColorLbl);
   mainColorRow.appendChild(textColorTriggerBtn);
 
+  // Font Style (100 single-line scrollable items)
   const fontWrap = document.createElement("div");
   fontWrap.style.cssText =
     "display:flex;flex-direction:column;gap:8px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;padding:10px 12px;";
 
-  const fontLbl = document.createElement("label");
+  const fontHeader = document.createElement("div");
+  fontHeader.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
+
+  const fontLbl = document.createElement("span");
   fontLbl.textContent = "Font Style (100)";
   fontLbl.style.cssText = "font-size:0.88rem;font-weight:700;color:#111827;";
 
-  fontSelectEl = document.createElement("select");
-  fontSelectEl.size = 6;
-  fontSelectEl.style.cssText =
-    "width:100%;max-height:150px;overflow-y:auto;padding:6px 8px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#111827;font-size:0.86rem;font-weight:600;cursor:pointer;white-space:nowrap;";
+  const toggleFontListBtn = document.createElement("button");
+  toggleFontListBtn.type = "button";
+  toggleFontListBtn.textContent = "Choose Font";
+  toggleFontListBtn.style.cssText =
+    `padding:4px 10px;min-height:32px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:${accentHex};font-size:0.78rem;font-weight:700;cursor:pointer;`;
 
-  STORE_FONT_OPTIONS.forEach((opt, idx) => {
-    const optionEl = document.createElement("option");
-    optionEl.value = String(idx);
-    optionEl.textContent = opt.label;
-    optionEl.style.fontFamily = opt.value;
-    optionEl.style.fontStyle = opt.italic ? "italic" : "normal";
-    optionEl.style.fontWeight = String(opt.weight || 600);
-    optionEl.style.letterSpacing = `${opt.letterSpacing || 0}px`;
-    optionEl.style.textTransform = opt.textTransform || "none";
-    optionEl.style.whiteSpace = "nowrap";
-    optionEl.style.padding = "5px 6px";
-    fontSelectEl.appendChild(optionEl);
-  });
+  fontHeader.appendChild(fontLbl);
+  fontHeader.appendChild(toggleFontListBtn);
 
-  fontSelectEl.onchange = () => {
-    const idx = Number(fontSelectEl.value);
-    const chosen = STORE_FONT_OPTIONS[idx] || STORE_FONT_OPTIONS[0];
-    st.fontFamily = chosen.value;
-    st.fontStyle = chosen.italic ? "italic" : "normal";
-    st.fontWeight = chosen.weight || st.fontWeight;
-    st.letterSpacing = chosen.letterSpacing ?? 0;
-    st.textTransform = chosen.textTransform || "none";
-    syncPreview();
+  const fontScrollBox = document.createElement("div");
+  fontScrollBox.style.cssText =
+    "display:flex;flex-direction:column;gap:4px;max-height:165px;overflow-y:auto;padding:6px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;";
+
+  toggleFontListBtn.onclick = () => {
+    const isHidden = fontScrollBox.style.display === "none";
+    fontScrollBox.style.display = isHidden ? "flex" : "none";
   };
 
-  fontWrap.appendChild(fontLbl);
-  fontWrap.appendChild(fontSelectEl);
+  const fontItemBtns = STORE_FONT_OPTIONS.map((opt, idx) => {
+    const itemBtn = document.createElement("button");
+    itemBtn.type = "button";
+    itemBtn.textContent = opt.label;
+    itemBtn.style.cssText =
+      `width:100%;text-align:left;padding:7px 9px;min-height:34px;border-radius:8px;border:1px solid #e2e8f0;font-family:${opt.value};font-style:${opt.italic ? "italic" : "normal"};font-weight:${opt.weight || 600};letter-spacing:${opt.letterSpacing || 0}px;text-transform:${opt.textTransform || "none"};font-size:0.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;flex-shrink:0;`;
+    itemBtn.onclick = () => {
+      st.fontFamily = opt.value;
+      st.fontStyle = opt.italic ? "italic" : "normal";
+      st.fontWeight = opt.weight || st.fontWeight;
+      st.letterSpacing = opt.letterSpacing ?? 0;
+      st.textTransform = opt.textTransform || "none";
+      renderFontScrollList();
+      syncPreview();
+    };
+    fontScrollBox.appendChild(itemBtn);
+    return itemBtn;
+  });
+
+  renderFontScrollList = () => {
+    fontItemBtns.forEach((b, idx) => {
+      const opt = STORE_FONT_OPTIONS[idx];
+      const active =
+        opt.value === st.fontFamily &&
+        (opt.italic ? "italic" : "normal") === st.fontStyle &&
+        Number(opt.weight) === Number(st.fontWeight) &&
+        Number(opt.letterSpacing) === Number(st.letterSpacing);
+      b.style.background = active ? accentHex : "#f8fafc";
+      b.style.color = active ? "#ffffff" : "#111827";
+      b.style.borderColor = active ? accentHex : "#e2e8f0";
+    });
+  };
+
+  fontWrap.appendChild(fontHeader);
+  fontWrap.appendChild(fontScrollBox);
 
   const sizeSlider = makeLabeledSlider("Size", minSize, maxSize, 1, st.fontSize, "px", accentHex, (val) => {
     st.fontSize = val;
@@ -1284,14 +1306,14 @@ function enableStoreNameDragOnCover(coverWrap, overlayEl, pencilBtn) {
     const boxRect = overlayEl.getBoundingClientRect();
     const wrapHeight = wrapRect.height || 1;
     const centerY = boxRect.top - wrapRect.top + boxRect.height / 2;
-    const isLowerHalf = centerY > wrapHeight * 0.52;
+    const isLowerHalf = centerY > wrapHeight * 0.5;
 
     if (isLowerHalf) {
-      pencilBtn.style.top = "-18px";
+      pencilBtn.style.top = "-16px";
       pencilBtn.style.bottom = "auto";
     } else {
       pencilBtn.style.top = "auto";
-      pencilBtn.style.bottom = "-18px";
+      pencilBtn.style.bottom = "-16px";
     }
   }
 
@@ -1419,7 +1441,7 @@ function attachOwnerStoreEditHandlers() {
       pencilBtn.textContent = "✎";
       pencilBtn.title = "Edit Store Name & Style";
       pencilBtn.style.cssText =
-        "position:absolute;left:0px;bottom:-18px;top:auto;z-index:25;padding:1px 5px;margin:0;border:1px solid #0f172a;border-radius:4px;background:rgba(255,255,255,0.92);color:#0f172a;font-size:0.72rem;font-weight:700;line-height:1;cursor:pointer;";
+        "position:absolute;left:0px;bottom:-16px;top:auto;z-index:25;padding:1px 5px;margin:0;border:1px solid #0f172a;border-radius:4px;background:rgba(255,255,255,0.92);color:#0f172a;font-size:0.72rem;font-weight:700;line-height:1;cursor:pointer;";
       pencilBtn.onclick = (e) => {
         e.stopPropagation();
         openStoreNameEditorPopup();
@@ -1527,14 +1549,19 @@ function attachOwnerStoreEditHandlers() {
       const nameEl = card.querySelector(".mini-box-name, .item-name");
       const priceEl = card.querySelector(".mini-box-price, .item-price");
 
-      if (nameEl) {
-        const nameRow = document.createElement("div");
-        nameRow.className = "owner-inline-edit-btn";
-        nameRow.style.cssText =
-          "display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:nowrap;width:100%;margin-top:2px;";
+      if (nameEl && !nameEl.parentElement.classList.contains("owner-item-inline-group")) {
+        const groupWrap = document.createElement("div");
+        groupWrap.className = "owner-item-inline-group";
+        groupWrap.style.cssText =
+          "display:flex;flex-direction:column;align-items:center;gap:3px;width:100%;margin-top:2px;";
+
+        const nameLine = document.createElement("div");
+        nameLine.style.cssText =
+          "display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:nowrap;width:100%;";
 
         const nameBtn = document.createElement("button");
         nameBtn.type = "button";
+        nameBtn.className = "owner-inline-edit-btn";
         nameBtn.textContent = "✎";
         nameBtn.title = "Edit Name & Style";
         nameBtn.style.cssText =
@@ -1552,17 +1579,19 @@ function attachOwnerStoreEditHandlers() {
 
         nameEl.style.marginTop = "0";
         nameEl.style.minWidth = "0";
-        nameRow.appendChild(nameEl);
-        nameRow.appendChild(nameBtn);
+        nameEl.parentNode.insertBefore(groupWrap, nameEl);
+        nameLine.appendChild(nameEl);
+        nameLine.appendChild(nameBtn);
+        groupWrap.appendChild(nameLine);
 
         if (priceEl) {
-          const priceRow = document.createElement("div");
-          priceRow.className = "owner-inline-edit-btn";
-          priceRow.style.cssText =
-            "display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:nowrap;width:100%;margin-top:2px;";
+          const priceLine = document.createElement("div");
+          priceLine.style.cssText =
+            "display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:nowrap;width:100%;";
 
           const pricePencilBtn = document.createElement("button");
           pricePencilBtn.type = "button";
+          pricePencilBtn.className = "owner-inline-edit-btn";
           pricePencilBtn.textContent = "✎";
           pricePencilBtn.title = "Set Amount";
           pricePencilBtn.style.cssText =
@@ -1582,12 +1611,10 @@ function attachOwnerStoreEditHandlers() {
 
           priceEl.style.marginTop = "0";
           priceEl.style.whiteSpace = "nowrap";
-          priceRow.appendChild(priceEl);
-          priceRow.appendChild(pricePencilBtn);
-          nameRow.insertAdjacentElement("afterend", priceRow);
+          priceLine.appendChild(priceEl);
+          priceLine.appendChild(pricePencilBtn);
+          groupWrap.appendChild(priceLine);
         }
-
-        nameEl.replaceWith(nameRow);
       }
     });
 
