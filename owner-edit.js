@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V13");
+console.log("OWNER_EDIT_COMPLETE_V14");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -446,8 +446,8 @@ function applyBoxSizePanelToDom(sizes) {
     box.style.width = `${mini.width}px`;
     box.style.minWidth = `${mini.width}px`;
     box.style.maxWidth = `${mini.width}px`;
-    box.style.height = `${mini.height}px`;
     box.style.minHeight = `${mini.height}px`;
+    box.style.height = "auto";
     box.style.setProperty("background", mini.bgColor || "#ffffff", "important");
     box.style.setProperty("background-color", mini.bgColor || "#ffffff", "important");
     const inner = box.querySelector(".mini-box-body");
@@ -463,6 +463,7 @@ function applyBoxSizePanelToDom(sizes) {
     box.style.minWidth = `${prod.width}px`;
     box.style.maxWidth = `${prod.width}px`;
     box.style.minHeight = `${prod.height}px`;
+    box.style.height = "auto";
     box.style.setProperty("background", prod.bgColor || "#ffffff", "important");
     box.style.setProperty("background-color", prod.bgColor || "#ffffff", "important");
     const inner = box.querySelector(".item-info");
@@ -892,19 +893,19 @@ function openCustomTextStylePopup(config) {
   topBar.appendChild(heading);
   topBar.appendChild(topCloseBtn);
 
-  const textInput = document.createElement("input");
-  textInput.type = "text";
+  const textInput = document.createElement("textarea");
+  textInput.rows = 2;
   textInput.value = currentText;
-  textInput.placeholder = "Paste or type name (no changes)";
+  textInput.placeholder = "नाम लिखें या नीचे दूसरी लाइन के लिए Enter दबाएँ";
   textInput.style.cssText =
-    "width:100%;min-height:40px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:0.96rem;color:#111827;box-sizing:border-box;";
+    "width:100%;min-height:56px;max-height:110px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:0.96rem;line-height:1.3;color:#111827;box-sizing:border-box;resize:vertical;font-family:inherit;";
 
   const previewBox = document.createElement("div");
   previewBox.style.cssText =
-    `padding:10px 12px;border-radius:10px;background:${isStore ? "#1e293b" : "#f1f5f9"};min-height:46px;max-height:92px;overflow:auto;display:flex;align-items:center;justify-content:center;`;
+    `padding:10px 12px;border-radius:10px;background:${isStore ? "#1e293b" : "#f1f5f9"};min-height:46px;max-height:110px;overflow:auto;display:flex;align-items:center;justify-content:center;text-align:center;`;
 
   const previewText = document.createElement("span");
-  previewText.style.cssText = "display:inline-block;line-height:0.92;white-space:nowrap;";
+  previewText.style.cssText = "display:inline-block;line-height:1.15;white-space:pre-wrap;word-break:break-word;";
   previewBox.appendChild(previewText);
 
   stickyHeader.appendChild(topBar);
@@ -943,7 +944,8 @@ function openCustomTextStylePopup(config) {
       ? textInput.value
       : (isStore ? "Store Name" : isSection ? "Name" : "Item");
     applyTextStyleToElement(previewText, st);
-    previewText.style.lineHeight = "0.92";
+    previewText.style.lineHeight = "1.15";
+    previewText.style.whiteSpace = "pre-wrap";
     if (!st.bgEnabled) {
       previewText.style.padding = "0px";
       previewText.style.borderRadius = "0px";
@@ -1685,6 +1687,7 @@ function addBoxToSection(sIdx) {
     id: `${sIdx}-${Date.now()}-${sec.items.length + 1}`,
     name: "Item",
     price: 0,
+    priceText: "0",
     img: "",
     nameStyle: null
   });
@@ -1716,7 +1719,7 @@ function addBottomStoreRow() {
   const rowNum = data.sections.length + 1;
   const items = [];
   for (let i = 1; i <= 5; i++) {
-    items.push({ id: `${rowNum}-${Date.now()}-${i}`, name: "Item", price: 0, img: "", nameStyle: null });
+    items.push({ id: `${rowNum}-${Date.now()}-${i}`, name: "Item", price: 0, priceText: "0", img: "", nameStyle: null });
   }
   data.sections.push({
     title: "Name",
@@ -2057,11 +2060,15 @@ function attachOwnerStoreEditHandlers() {
           pricePencilBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
-            const currentPrice = Number(item.price || 0);
-            const next = prompt("Set Amount (₹):", String(currentPrice));
+            const currentDisplay = item.priceText !== undefined && item.priceText !== null && String(item.priceText).trim() !== ""
+              ? String(item.priceText)
+              : String(item.price ?? 0);
+            const next = prompt("Set Amount (अंक, डॉट . या अन्य चिह्न लिखें):", currentDisplay);
             if (next !== null) {
-              const parsed = Number(next.replace(/[^\d.]/g, ""));
-              item.price = Number.isNaN(parsed) ? 0 : parsed;
+              const rawVal = next.trim();
+              item.priceText = rawVal.length > 0 ? rawVal : "0";
+              const numMatch = rawVal.match(/(\d+(?:\.\d+)?)/);
+              item.price = numMatch ? Number(numMatch[1]) : 0;
               renderSections();
               attachOwnerStoreEditHandlers();
             }
