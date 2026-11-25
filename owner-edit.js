@@ -1265,11 +1265,28 @@ function removeBottomStoreRow() {
   attachOwnerStoreEditHandlers();
 }
 
-function enableStoreNameDragOnCover(coverWrap, overlayEl) {
+function enableStoreNameDragOnCover(coverWrap, overlayEl, pencilBtn) {
   const data = getWorkingStoreData();
   if (!data.titlePos) data.titlePos = { x: 0, y: 0 };
   overlayEl.style.cursor = "move";
   overlayEl.style.touchAction = "none";
+
+  function syncPencilVerticalSide() {
+    if (!pencilBtn) return;
+    const wrapRect = coverWrap.getBoundingClientRect();
+    const boxRect = overlayEl.getBoundingClientRect();
+    const wrapHeight = wrapRect.height || 1;
+    const centerY = boxRect.top - wrapRect.top + boxRect.height / 2;
+    const isLowerHalf = centerY > wrapHeight * 0.52;
+
+    if (isLowerHalf) {
+      pencilBtn.style.top = "-18px";
+      pencilBtn.style.bottom = "auto";
+    } else {
+      pencilBtn.style.top = "auto";
+      pencilBtn.style.bottom = "-18px";
+    }
+  }
 
   let dragging = false;
   let startX = 0;
@@ -1282,6 +1299,7 @@ function enableStoreNameDragOnCover(coverWrap, overlayEl) {
     overlayEl.setPointerCapture(e.pointerId);
     startX = e.clientX - (Number(data.titlePos.x) || 0);
     startY = e.clientY - (Number(data.titlePos.y) || 0);
+    syncPencilVerticalSide();
   };
 
   overlayEl.onpointermove = (e) => {
@@ -1301,11 +1319,15 @@ function enableStoreNameDragOnCover(coverWrap, overlayEl) {
     data.titlePos = { x: rx, y: ry };
     overlayEl.style.left = `${rx}px`;
     overlayEl.style.top = `${ry}px`;
+    syncPencilVerticalSide();
   };
 
   overlayEl.onpointerup = () => {
     dragging = false;
+    syncPencilVerticalSide();
   };
+
+  syncPencilVerticalSide();
 }
 
 function attachOwnerStoreEditHandlers() {
@@ -1383,7 +1405,6 @@ function attachOwnerStoreEditHandlers() {
     const titleEl = document.getElementById("storeTitle");
     if (overlayEl && titleEl) {
       overlayEl.style.zIndex = "22";
-      enableStoreNameDragOnCover(coverWrap, overlayEl);
 
       const pencilBtn = document.createElement("button");
       pencilBtn.type = "button";
@@ -1391,13 +1412,14 @@ function attachOwnerStoreEditHandlers() {
       pencilBtn.textContent = "✎";
       pencilBtn.title = "Edit Store Name & Style";
       pencilBtn.style.cssText =
-        "position:static;transform:none;flex-shrink:0;padding:2px 6px;margin:0;border:1px solid #0f172a;border-radius:4px;background:rgba(255,255,255,0.92);color:#0f172a;font-size:0.75rem;font-weight:700;line-height:1;cursor:pointer;";
+        "position:absolute;left:0px;bottom:-18px;top:auto;z-index:25;padding:1px 5px;margin:0;border:1px solid #0f172a;border-radius:4px;background:rgba(255,255,255,0.92);color:#0f172a;font-size:0.72rem;font-weight:700;line-height:1;cursor:pointer;";
       pencilBtn.onclick = (e) => {
         e.stopPropagation();
         openStoreNameEditorPopup();
       };
 
       overlayEl.appendChild(pencilBtn);
+      enableStoreNameDragOnCover(coverWrap, overlayEl, pencilBtn);
     }
 
     const slides = coverWrap.querySelectorAll(".cover-slide-item");
