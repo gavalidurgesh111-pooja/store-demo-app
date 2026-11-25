@@ -156,6 +156,35 @@ function normalizeBoxSizes(raw) {
   };
 }
 
+function renderItemNameLines(containerEl, rawText, alignMode = "left") {
+  if (!containerEl) return;
+  const textStr = String(rawText ?? "");
+  const lines = textStr.split(/\r?\n/);
+
+  containerEl.innerHTML = "";
+  containerEl.style.setProperty("display", "block", "important");
+  containerEl.style.setProperty("width", "100%", "important");
+  containerEl.style.setProperty("max-width", "100%", "important");
+  containerEl.style.setProperty("min-width", "0", "important");
+  containerEl.style.setProperty("overflow", "hidden", "important");
+  containerEl.style.setProperty("text-align", alignMode, "important");
+
+  lines.forEach((lineStr) => {
+    const lineDiv = document.createElement("div");
+    lineDiv.textContent = lineStr.length > 0 ? lineStr : "\u00A0";
+    lineDiv.style.setProperty("display", "block", "important");
+    lineDiv.style.setProperty("width", "100%", "important");
+    lineDiv.style.setProperty("max-width", "100%", "important");
+    lineDiv.style.setProperty("white-space", "pre", "important");
+    lineDiv.style.setProperty("overflow", "hidden", "important");
+    lineDiv.style.setProperty("text-overflow", "clip", "important");
+    lineDiv.style.setProperty("word-break", "normal", "important");
+    lineDiv.style.setProperty("overflow-wrap", "normal", "important");
+    lineDiv.style.setProperty("text-align", alignMode, "important");
+    containerEl.appendChild(lineDiv);
+  });
+}
+
 function syncStripBarCornerDesign() {
   const data = getWorkingStoreData();
   const themeAccent = (data && data.themeColor) || "#0f766e";
@@ -230,7 +259,13 @@ function applyBoxSizeStyles() {
 
     applyInnerBoxColor(box, ".mini-box-body", sizes.miniBox.bgColor);
     const bodyEl = box.querySelector(".mini-box-body");
-    if (bodyEl) bodyEl.style.overflow = "hidden";
+    if (bodyEl) {
+      bodyEl.style.width = "100%";
+      bodyEl.style.maxWidth = "100%";
+      bodyEl.style.minWidth = "0";
+      bodyEl.style.overflow = "hidden";
+      bodyEl.style.boxSizing = "border-box";
+    }
 
     const img = box.querySelector("img");
     if (img) {
@@ -250,6 +285,7 @@ function applyBoxSizeStyles() {
       nameEl.style.display = "block";
       nameEl.style.width = "100%";
       nameEl.style.maxWidth = "100%";
+      nameEl.style.minWidth = "0";
       nameEl.style.overflow = "hidden";
     }
     const priceEl = box.querySelector(".mini-box-price");
@@ -269,7 +305,13 @@ function applyBoxSizeStyles() {
 
     applyInnerBoxColor(box, ".item-info", sizes.productBox.bgColor);
     const infoEl = box.querySelector(".item-info");
-    if (infoEl) infoEl.style.overflow = "hidden";
+    if (infoEl) {
+      infoEl.style.width = "100%";
+      infoEl.style.maxWidth = "100%";
+      infoEl.style.minWidth = "0";
+      infoEl.style.overflow = "hidden";
+      infoEl.style.boxSizing = "border-box";
+    }
 
     const img = box.querySelector("img");
     if (img) {
@@ -289,6 +331,7 @@ function applyBoxSizeStyles() {
       nameEl.style.display = "block";
       nameEl.style.width = "100%";
       nameEl.style.maxWidth = "100%";
+      nameEl.style.minWidth = "0";
       nameEl.style.overflow = "hidden";
     }
     const priceEl = box.querySelector(".item-price");
@@ -443,12 +486,13 @@ function applyTextStyleToElement(el, rawStyle, defaults = {}) {
   el.style.textTransform = st.textTransform;
   el.style.color = st.color;
 
-  // यूज़र्स व्यू में: बिना \n के एक लाइन में आगे चलता रहेगा और दाएँ किनारे पर छिपेगा; \n पर ही नई लाइन बनेगी
+  // स्पेस देने पर भी लाइन अपने आप नीचे न टूटे — केवल Enter (\n) पर ही अगली लाइन बने
   const hasExplicitLineBreak = String(el.textContent || "").includes("\n");
   el.style.setProperty("white-space", hasExplicitLineBreak ? "pre-line" : "pre", "important");
   el.style.setProperty("word-break", "normal", "important");
   el.style.setProperty("overflow-wrap", "normal", "important");
   el.style.setProperty("overflow", "hidden", "important");
+  el.style.setProperty("text-overflow", "clip", "important");
 
   if (st.glowEnabled) {
     const gSize = Math.max(2, st.glowSize);
@@ -898,13 +942,13 @@ function renderSections() {
         };
         box.innerHTML = `
           ${imgMarkup(item.img, cleanItemName, true)}
-          <div class="mini-box-body" style="text-align:left;overflow:hidden;">
-            <div class="mini-box-name" style="text-align:left;display:block;width:100%;max-width:100%;overflow:hidden;"></div>
+          <div class="mini-box-body" style="text-align:left;width:100%;max-width:100%;min-width:0;overflow:hidden;box-sizing:border-box;">
+            <div class="mini-box-name"></div>
             <div class="mini-box-price" style="text-align:left;">${priceDisplay}</div>
           </div>
         `;
         const miniNameEl = box.querySelector(".mini-box-name");
-        miniNameEl.textContent = cleanItemName;
+        renderItemNameLines(miniNameEl, cleanItemName, "left");
         applyTextStyleToElement(miniNameEl, item.nameStyle, {
           fontSize: boxSizes.miniBox.fontSize,
           fontWeight: 600,
@@ -943,14 +987,14 @@ function renderSections() {
         };
         box.innerHTML = `
           ${imgMarkup(item.img, cleanItemName, false)}
-          <div class="item-info" style="overflow:hidden;">
-            <div class="item-name" style="display:block;width:100%;max-width:100%;overflow:hidden;"></div>
+          <div class="item-info" style="width:100%;max-width:100%;min-width:0;overflow:hidden;box-sizing:border-box;">
+            <div class="item-name"></div>
             <div class="item-price">${priceDisplay}</div>
           </div>
         `;
         const itemNameEl = box.querySelector(".item-name");
-        itemNameEl.textContent = cleanItemName;
         itemNameEl.title = cleanItemName;
+        renderItemNameLines(itemNameEl, cleanItemName, "center");
         applyTextStyleToElement(itemNameEl, item.nameStyle, {
           fontSize: boxSizes.productBox.fontSize,
           fontWeight: 600,
