@@ -247,6 +247,8 @@ function applyBoxSizeStyles() {
     const nameEl = box.querySelector(".mini-box-name");
     if (nameEl) {
       nameEl.style.fontSize = `${sizes.miniBox.fontSize}px`;
+      nameEl.style.display = "block";
+      nameEl.style.width = "100%";
       nameEl.style.maxWidth = "100%";
       nameEl.style.overflow = "hidden";
     }
@@ -284,6 +286,8 @@ function applyBoxSizeStyles() {
     const nameEl = box.querySelector(".item-name");
     if (nameEl) {
       nameEl.style.fontSize = `${sizes.productBox.fontSize}px`;
+      nameEl.style.display = "block";
+      nameEl.style.width = "100%";
       nameEl.style.maxWidth = "100%";
       nameEl.style.overflow = "hidden";
     }
@@ -439,11 +443,12 @@ function applyTextStyleToElement(el, rawStyle, defaults = {}) {
   el.style.textTransform = st.textTransform;
   el.style.color = st.color;
 
-  // Enter (\n) न दबाने पर एक ही लाइन में आगे चलता रहेगा और दाएँ किनारे पर छिपेगा
+  // यूज़र्स व्यू में: बिना \n के एक लाइन में आगे चलता रहेगा और दाएँ किनारे पर छिपेगा; \n पर ही नई लाइन बनेगी
   const hasExplicitLineBreak = String(el.textContent || "").includes("\n");
-  el.style.whiteSpace = hasExplicitLineBreak ? "pre-line" : "pre";
-  el.style.wordBreak = "normal";
-  el.style.overflow = "hidden";
+  el.style.setProperty("white-space", hasExplicitLineBreak ? "pre-line" : "pre", "important");
+  el.style.setProperty("word-break", "normal", "important");
+  el.style.setProperty("overflow-wrap", "normal", "important");
+  el.style.setProperty("overflow", "hidden", "important");
 
   if (st.glowEnabled) {
     const gSize = Math.max(2, st.glowSize);
@@ -894,7 +899,7 @@ function renderSections() {
         box.innerHTML = `
           ${imgMarkup(item.img, cleanItemName, true)}
           <div class="mini-box-body" style="text-align:left;overflow:hidden;">
-            <div class="mini-box-name" style="text-align:left;max-width:100%;overflow:hidden;"></div>
+            <div class="mini-box-name" style="text-align:left;display:block;width:100%;max-width:100%;overflow:hidden;"></div>
             <div class="mini-box-price" style="text-align:left;">${priceDisplay}</div>
           </div>
         `;
@@ -939,7 +944,7 @@ function renderSections() {
         box.innerHTML = `
           ${imgMarkup(item.img, cleanItemName, false)}
           <div class="item-info" style="overflow:hidden;">
-            <div class="item-name" style="max-width:100%;overflow:hidden;"></div>
+            <div class="item-name" style="display:block;width:100%;max-width:100%;overflow:hidden;"></div>
             <div class="item-price">${priceDisplay}</div>
           </div>
         `;
