@@ -139,24 +139,49 @@ function normalizeBoxSizes(raw) {
 }
 
 function syncStripBarCornerDesign() {
+  const data = getWorkingStoreData();
+  const themeAccent = (data && data.themeColor) || "#0f766e";
+
   document.querySelectorAll(".strip-bar").forEach((stripEl) => {
     const cs = window.getComputedStyle(stripEl);
     const tl = cs.borderTopLeftRadius;
     const bl = cs.borderBottomLeftRadius;
-    if (tl && tl !== "0px") {
-      stripEl.style.borderTopRightRadius = tl;
-    }
-    if (bl && bl !== "0px") {
-      stripEl.style.borderBottomRightRadius = bl;
-    }
     const bwLeft = parseFloat(cs.borderLeftWidth) || 0;
-    const bwRight = parseFloat(cs.borderRightWidth) || 0;
-    if (bwLeft > 0 && bwRight === 0) {
-      stripEl.style.borderRightWidth = cs.borderLeftWidth;
-      stripEl.style.borderRightStyle = cs.borderLeftStyle;
-      stripEl.style.borderRightColor = cs.borderLeftColor;
+    const bStyleLeft = cs.borderLeftStyle && cs.borderLeftStyle !== "none" ? cs.borderLeftStyle : "solid";
+    const bColorLeft = cs.borderLeftColor && cs.borderLeftColor !== "rgba(0, 0, 0, 0)" ? cs.borderLeftColor : themeAccent;
+
+    const radiusTop = tl && tl !== "0px" ? tl : "10px";
+    const radiusBottom = bl && bl !== "0px" ? bl : "10px";
+    const sideWidth = bwLeft > 0 ? `${bwLeft}px` : "5px";
+
+    stripEl.style.setProperty("border-top-left-radius", radiusTop, "important");
+    stripEl.style.setProperty("border-bottom-left-radius", radiusBottom, "important");
+    stripEl.style.setProperty("border-top-right-radius", radiusTop, "important");
+    stripEl.style.setProperty("border-bottom-right-radius", radiusBottom, "important");
+
+    stripEl.style.setProperty("border-left-width", sideWidth, "important");
+    stripEl.style.setProperty("border-left-style", bStyleLeft, "important");
+    stripEl.style.setProperty("border-left-color", bColorLeft, "important");
+
+    stripEl.style.setProperty("border-right-width", sideWidth, "important");
+    stripEl.style.setProperty("border-right-style", bStyleLeft, "important");
+    stripEl.style.setProperty("border-right-color", bColorLeft, "important");
+
+    if (cs.paddingLeft && cs.paddingLeft !== "0px") {
+      stripEl.style.setProperty("padding-right", cs.paddingLeft, "important");
     }
   });
+}
+
+function applyInnerBoxColor(boxEl, innerSelector, colorHex) {
+  const safeColor = normalizeHexColor(colorHex, "#ffffff");
+  boxEl.style.setProperty("background", safeColor, "important");
+  boxEl.style.setProperty("background-color", safeColor, "important");
+  const innerEl = boxEl.querySelector(innerSelector);
+  if (innerEl) {
+    innerEl.style.setProperty("background", safeColor, "important");
+    innerEl.style.setProperty("background-color", safeColor, "important");
+  }
 }
 
 function applyBoxSizeStyles() {
@@ -183,7 +208,8 @@ function applyBoxSizeStyles() {
     box.style.maxWidth = `${sizes.miniBox.width}px`;
     box.style.height = `${sizes.miniBox.height}px`;
     box.style.minHeight = `${sizes.miniBox.height}px`;
-    box.style.backgroundColor = sizes.miniBox.bgColor;
+
+    applyInnerBoxColor(box, ".mini-box-body", sizes.miniBox.bgColor);
 
     const img = box.querySelector("img");
     if (img) {
@@ -213,7 +239,8 @@ function applyBoxSizeStyles() {
     box.style.minWidth = `${sizes.productBox.width}px`;
     box.style.maxWidth = `${sizes.productBox.width}px`;
     box.style.minHeight = `${sizes.productBox.height}px`;
-    box.style.backgroundColor = sizes.productBox.bgColor;
+
+    applyInnerBoxColor(box, ".item-info", sizes.productBox.bgColor);
 
     const img = box.querySelector("img");
     if (img) {
@@ -306,6 +333,7 @@ function resetBoxSizes({ persist = false } = {}) {
 window.updateBoxSizeSetting = updateBoxSizeSetting;
 window.resetBoxSizes = resetBoxSizes;
 window.applyBoxSizeStyles = applyBoxSizeStyles;
+window.syncStripBarCornerDesign = syncStripBarCornerDesign;
 
 function createDefaultTextStyle(overrides = {}) {
   return {
