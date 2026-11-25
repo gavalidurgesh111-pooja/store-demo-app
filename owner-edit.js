@@ -1,5 +1,7 @@
 console.log("OWNER_EDIT_COMPLETE_V9");
 
+let activeCoverEditIndex = 0;
+
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
 }
@@ -435,6 +437,25 @@ function peekNextCoverHint() {
   }, 650);
 }
 
+function scrollCoverToSlot(slotIdx) {
+  const data = getWorkingStoreData();
+  const slots = Array.isArray(data.coverSlots) && data.coverSlots.length > 0 ? data.coverSlots : [""];
+  const clampedIdx = Math.max(0, Math.min(slots.length - 1, Number(slotIdx) || 0));
+  activeCoverEditIndex = clampedIdx;
+
+  const track = document.getElementById("coverSliderTrack");
+  if (track) {
+    track.style.scrollBehavior = "auto";
+    track.scrollLeft = clampedIdx * (track.clientWidth || 0);
+    track.style.scrollBehavior = "smooth";
+  }
+
+  const counterEl = document.getElementById("ownerCoverCounterBadge");
+  if (counterEl) {
+    counterEl.textContent = `${clampedIdx + 1} / ${slots.length}`;
+  }
+}
+
 function ensureOwnerInlineFileInput() {
   let input = document.getElementById("ownerLivePhotoInput");
   if (!input) {
@@ -461,16 +482,11 @@ function ensureOwnerInlineFileInput() {
           const wasFirstEmpty = slotIdx === 0 && !data.coverSlots[0];
           data.coverSlots[slotIdx] = adjustedUrl;
           data.coverImg = data.coverSlots.find(Boolean) || adjustedUrl;
+          activeCoverEditIndex = slotIdx;
+
           renderHeader();
           attachOwnerStoreEditHandlers();
-
-          const track = document.getElementById("coverSliderTrack");
-          if (track) {
-            track.scrollTo({
-              left: slotIdx * track.clientWidth,
-              behavior: "smooth"
-            });
-          }
+          scrollCoverToSlot(slotIdx);
 
           if (wasFirstEmpty) {
             peekNextCoverHint();
@@ -495,6 +511,7 @@ function ensureOwnerInlineFileInput() {
         renderHeader();
         renderSections();
         attachOwnerStoreEditHandlers();
+        scrollCoverToSlot(activeCoverEditIndex);
       }
     });
     document.body.appendChild(input);
@@ -516,17 +533,11 @@ function addCoverInEditMode() {
 
   data.coverSlots.push("");
   const newSlotIdx = data.coverSlots.length - 1;
+  activeCoverEditIndex = newSlotIdx;
 
   renderHeader();
   attachOwnerStoreEditHandlers();
-
-  const track = document.getElementById("coverSliderTrack");
-  if (track) {
-    track.scrollTo({
-      left: newSlotIdx * track.clientWidth,
-      behavior: "smooth"
-    });
-  }
+  scrollCoverToSlot(newSlotIdx);
 
   pendingOwnerEditSlot = { type: "cover", slotIdx: newSlotIdx };
   const fileInput = ensureOwnerInlineFileInput();
@@ -543,14 +554,17 @@ function removeCoverSlotAt(slotIdx) {
   if (data.coverSlots.length <= 1) {
     data.coverSlots[0] = "";
     data.coverImg = "";
+    activeCoverEditIndex = 0;
   } else {
     const safeIdx = Math.max(0, Math.min(data.coverSlots.length - 1, slotIdx));
     data.coverSlots.splice(safeIdx, 1);
     data.coverImg = data.coverSlots.find(Boolean) || "";
+    activeCoverEditIndex = Math.max(0, Math.min(data.coverSlots.length - 1, safeIdx));
   }
 
   renderHeader();
   attachOwnerStoreEditHandlers();
+  scrollCoverToSlot(activeCoverEditIndex);
 }
 
 function addBoxToSection(sIdx) {
@@ -706,6 +720,7 @@ function attachOwnerStoreEditHandlers() {
     renderHeader();
     renderSections();
     attachOwnerStoreEditHandlers();
+    scrollCoverToSlot(activeCoverEditIndex);
     alert("Saved!");
   };
 
@@ -731,6 +746,9 @@ function attachOwnerStoreEditHandlers() {
   if (coverWrap) {
     coverWrap.style.position = "relative";
     coverWrap.style.overflow = "hidden";
+
+    const slots = Array.isArray(data.coverSlots) && data.coverSlots.length > 0 ? data.coverSlots : [""];
+    activeCoverEditIndex = Math.max(0, Math.min(slots.length - 1, activeCoverEditIndex));
 
     const overlayEl = coverWrap.querySelector(".cover-overlay");
     const titleEl = document.getElementById("storeTitle");
@@ -763,6 +781,7 @@ function attachOwnerStoreEditHandlers() {
         `position:absolute;top:10px;right:48px;z-index:20;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
       slidePhotoBtn.onclick = (e) => {
         e.stopPropagation();
+        activeCoverEditIndex = idx;
         pendingOwnerEditSlot = { type: "cover", slotIdx: idx };
         fileInput.value = "";
         fileInput.click();
@@ -795,7 +814,50 @@ function attachOwnerStoreEditHandlers() {
       addCoverInEditMode();
     };
 
+    const navBar = document.createElement("div");
+    navBar.className = "owner-inline-edit-btn";
+    navBar.style.cssText =
+      "position:absolute;bottom:10px;left:10px;z-index:30;display:flex;align-items:center;gap:6px;background:rgba(15,23,42,0.78);padding:4px 8px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.25);";
+
+    const prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.textContent = "‹";
+    prevBtn.title = "Previous Cover";
+    prevBtn.style.cssText =
+      "border:none;border-radius:6px;background:#ffffff;color:#0f172a;font-size:0.9rem;font-weight:700;width:24px;height:24px;line-height:1;cursor:pointer;";
+    prevBtn.onclick = (e) => {
+      e.stopPropagation();
+      const total = (getWorkingStoreData().coverSlots || [""]).length;
+      const nextIdx = (activeCoverEditIndex - 1 + total) % total;
+      scrollCoverToSlot(nextIdx);
+    };
+
+    const counterBadge = document.createElement("span");
+    counterBadge.id = "ownerCoverCounterBadge";
+    counterBadge.textContent = `${activeCoverEditIndex + 1} / ${slots.length}`;
+    counterBadge.style.cssText =
+      "color:#ffffff;font-size:0.76rem;font-weight:700;min-width:34px;text-align:center;";
+
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.textContent = "›";
+    nextBtn.title = "Next Cover";
+    nextBtn.style.cssText =
+      "border:none;border-radius:6px;background:#ffffff;color:#0f172a;font-size:0.9rem;font-weight:700;width:24px;height:24px;line-height:1;cursor:pointer;";
+    nextBtn.onclick = (e) => {
+      e.stopPropagation();
+      const total = (getWorkingStoreData().coverSlots || [""]).length;
+      const nextIdx = (activeCoverEditIndex + 1) % total;
+      scrollCoverToSlot(nextIdx);
+    };
+
+    navBar.appendChild(prevBtn);
+    navBar.appendChild(counterBadge);
+    navBar.appendChild(nextBtn);
+
     coverWrap.appendChild(addCoverBtn);
+    coverWrap.appendChild(navBar);
+    scrollCoverToSlot(activeCoverEditIndex);
   }
 
   const sectionEls = document.querySelectorAll("#sectionsContainer .row-section");
