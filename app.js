@@ -21,19 +21,42 @@ const BASE_FONT_FAMILIES = [
   "'Lucida Sans Unicode', 'Lucida Grande', sans-serif",
   "Garamond, Baskerville, 'Times New Roman', serif",
   "'Gill Sans', 'Gill Sans MT', Calibri, sans-serif",
-  "CenturyGothic, AppleGothic, sans-serif"
+  "'Century Gothic', 'AppleGothic', sans-serif",
+  "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif",
+  "'Lucida Console', Monaco, monospace",
+  "Cambria, Cochin, Georgia, Times, 'Times New Roman', serif",
+  "Candara, Calibri, Segoe, 'Segoe UI', Optima, sans-serif",
+  "Consolas, 'Andale Mono', 'Lucida Console', monospace"
+];
+
+const STYLE_TAG_WORDS = [
+  "Classic",
+  "Modern",
+  "Bold",
+  "Soft",
+  "Crisp",
+  "Retro",
+  "Tall",
+  "Wide",
+  "Script",
+  "Mono"
 ];
 
 const STORE_FONT_OPTIONS = Array.from({ length: 100 }, (_, idx) => {
   const num = idx + 1;
   const family = BASE_FONT_FAMILIES[idx % BASE_FONT_FAMILIES.length];
-  const isItalic = idx % 4 === 2 || idx % 9 === 5;
-  const weight = 300 + ((idx * 70) % 650);
+  const isItalic = idx % 3 === 1;
+  const weight = 300 + ((idx * 73) % 650);
+  const letterSpacing = Number((((idx % 7) - 2) * 0.35).toFixed(2));
+  const textTransform = idx % 5 === 0 ? "uppercase" : idx % 5 === 2 ? "capitalize" : "none";
+  const tagWord = STYLE_TAG_WORDS[idx % STYLE_TAG_WORDS.length];
   return {
-    label: `${num}. Font Style ${num}`,
+    label: `${num}. ${tagWord} ${family.split(",")[0].replace(/['"]/g, "")}`,
     value: family,
     italic: isItalic,
-    weight
+    weight,
+    letterSpacing,
+    textTransform
   };
 });
 
@@ -68,6 +91,8 @@ function createDefaultTextStyle(overrides = {}) {
     fontStyle: "normal",
     fontSize: 30,
     fontWeight: 700,
+    letterSpacing: 0,
+    textTransform: "none",
     color: "#ffffff",
     glowEnabled: false,
     glowColor: "#38bdf8",
@@ -114,6 +139,8 @@ function normalizeTextStyle(raw, defaults = {}) {
     ...s,
     fontSize,
     fontWeight: Number.isFinite(Number(s.fontWeight)) ? Number(s.fontWeight) : base.fontWeight,
+    letterSpacing: Number.isFinite(Number(s.letterSpacing)) ? Number(s.letterSpacing) : base.letterSpacing,
+    textTransform: s.textTransform || base.textTransform,
     glowSize: Number.isFinite(Number(s.glowSize)) ? Number(s.glowSize) : base.glowSize,
     borderWidth: getSafeThinBorderWidth(fontSize, rawBorder),
     bgOpacity: Number.isFinite(Number(s.bgOpacity)) ? Number(s.bgOpacity) : base.bgOpacity,
@@ -129,6 +156,8 @@ function applyTextStyleToElement(el, rawStyle, defaults = {}) {
   el.style.fontStyle = st.fontStyle;
   el.style.fontSize = `${st.fontSize}px`;
   el.style.fontWeight = String(st.fontWeight);
+  el.style.letterSpacing = `${st.letterSpacing}px`;
+  el.style.textTransform = st.textTransform;
   el.style.color = st.color;
 
   if (st.glowEnabled) {
