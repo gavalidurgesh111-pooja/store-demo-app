@@ -362,7 +362,7 @@ function openCustomTextStylePopup(config) {
   let currentStyleSource = null;
 
   if (isStore) {
-    currentText = data.storeTitle || "Store Name";
+    currentText = data.storeTitle !== undefined && data.storeTitle !== null ? String(data.storeTitle) : "Store Name";
     defaultSize = 30;
     minSize = 16;
     maxSize = 56;
@@ -374,14 +374,14 @@ function openCustomTextStylePopup(config) {
       color: data.titleColor
     };
   } else if (isSection && secObj) {
-    currentText = secObj.title || "Name";
+    currentText = secObj.title !== undefined && secObj.title !== null ? String(secObj.title) : "Name";
     defaultSize = 16;
     minSize = 12;
     maxSize = 30;
     defaultColor = "#111827";
     currentStyleSource = secObj.titleStyle;
   } else if (itemObj) {
-    currentText = itemObj.name || "Item";
+    currentText = itemObj.name !== undefined && itemObj.name !== null ? String(itemObj.name) : "Item";
     defaultSize = 13;
     minSize = 10;
     maxSize = 24;
@@ -397,6 +397,7 @@ function openCustomTextStylePopup(config) {
     color: defaultColor
   });
   st.fontSize = Math.max(minSize, Math.min(maxSize, st.fontSize));
+  st.borderWidth = getSafeThinBorderWidth(st.fontSize, st.borderWidth);
 
   const modal = document.createElement("div");
   modal.id = "ownerStoreNameModal";
@@ -427,7 +428,7 @@ function openCustomTextStylePopup(config) {
   const textInput = document.createElement("input");
   textInput.type = "text";
   textInput.value = currentText;
-  textInput.placeholder = "Enter name";
+  textInput.placeholder = "Paste or type name (no changes)";
   textInput.style.cssText =
     "width:100%;min-height:44px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;font-size:1rem;color:#111827;box-sizing:border-box;";
 
@@ -438,7 +439,6 @@ function openCustomTextStylePopup(config) {
   const previewText = document.createElement("span");
   previewBox.appendChild(previewText);
 
-  // Quick Touch Presets
   const presetWrap = document.createElement("div");
   presetWrap.style.cssText = "display:grid;grid-template-columns:repeat(2,1fr);gap:8px;";
 
@@ -463,11 +463,11 @@ function openCustomTextStylePopup(config) {
       }
     },
     {
-      label: "Bordered",
+      label: "Thin Border",
       apply: () => {
         st.borderEnabled = true;
         st.borderColor = "#0f172a";
-        st.borderWidth = 1.5;
+        st.borderWidth = getSafeThinBorderWidth(st.fontSize, 0.8);
         st.fontWeight = 800;
       }
     },
@@ -511,7 +511,9 @@ function openCustomTextStylePopup(config) {
   }
 
   function syncPreview() {
-    previewText.textContent = textInput.value.trim() || (isStore ? "Store Name" : isSection ? "Name" : "Item");
+    previewText.textContent = textInput.value.length > 0
+      ? textInput.value
+      : (isStore ? "Store Name" : isSection ? "Name" : "Item");
     applyTextStyleToElement(previewText, st);
   }
 
@@ -531,7 +533,6 @@ function openCustomTextStylePopup(config) {
 
   textInput.oninput = syncPreview;
 
-  // Main Color + Quick Swatches
   const mainColorWrap = document.createElement("div");
   mainColorWrap.style.cssText = "display:flex;flex-direction:column;gap:8px;";
 
@@ -585,9 +586,9 @@ function openCustomTextStylePopup(config) {
   mainColorWrap.appendChild(mainColorTop);
   mainColorWrap.appendChild(swatchRow);
 
-  // Size & Weight Sliders
   const sizeSlider = makeLabeledSlider("Size", minSize, maxSize, 1, st.fontSize, "px", accentHex, (val) => {
     st.fontSize = val;
+    st.borderWidth = getSafeThinBorderWidth(st.fontSize, st.borderWidth);
     syncPreview();
   });
 
@@ -596,7 +597,6 @@ function openCustomTextStylePopup(config) {
     syncPreview();
   });
 
-  // Font Family Chips
   const fontWrap = document.createElement("div");
   fontWrap.style.cssText = "display:flex;flex-direction:column;gap:8px;";
 
@@ -635,7 +635,6 @@ function openCustomTextStylePopup(config) {
   fontWrap.appendChild(fontLbl);
   fontWrap.appendChild(fontList);
 
-  // Glow Box
   glowCtrl = makeToggleColorBox(
     "Glow (चमक)",
     st.glowEnabled,
@@ -657,9 +656,9 @@ function openCustomTextStylePopup(config) {
     })
   );
 
-  // Border / Outline Box
+  const maxThinSlider = Math.max(0.7, Math.min(1.5, Number((st.fontSize * 0.06).toFixed(1))));
   borderCtrl = makeToggleColorBox(
-    "Border / Outline (बॉर्डर)",
+    "Thin Border (पतली बॉर्डर)",
     st.borderEnabled,
     st.borderColor,
     accentHex,
@@ -673,13 +672,12 @@ function openCustomTextStylePopup(config) {
     }
   );
   borderCtrl.extraWrap.appendChild(
-    makeLabeledSlider("Border Width", 0.5, 4, 0.5, st.borderWidth, "px", accentHex, (val) => {
-      st.borderWidth = val;
+    makeLabeledSlider("Border Width (Thin)", 0.5, maxThinSlider, 0.1, st.borderWidth, "px", accentHex, (val) => {
+      st.borderWidth = getSafeThinBorderWidth(st.fontSize, val);
       syncPreview();
     })
   );
 
-  // Background Box
   bgCtrl = makeToggleColorBox(
     "Background (बैकग्राउंड)",
     st.bgEnabled,
@@ -723,9 +721,14 @@ function openCustomTextStylePopup(config) {
   applyBtn.style.cssText =
     `flex:1;min-height:44px;padding:9px 16px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
   applyBtn.onclick = () => {
-    const cleanVal = textInput.value.trim();
+    const rawEnteredText = textInput.value;
+    const finalText = rawEnteredText.length > 0
+      ? rawEnteredText
+      : (isStore ? "Store Name" : isSection ? "Name" : "Item");
+    st.borderWidth = getSafeThinBorderWidth(st.fontSize, st.borderWidth);
+
     if (isStore) {
-      data.storeTitle = cleanVal || "Store Name";
+      data.storeTitle = finalText;
       data.titleStyle = { ...st };
       data.titleFont = st.fontFamily;
       data.titleFontStyle = st.fontStyle;
@@ -735,13 +738,13 @@ function openCustomTextStylePopup(config) {
       renderHeader();
       attachOwnerStoreEditHandlers();
     } else if (isSection && secObj) {
-      secObj.title = cleanVal || "Name";
+      secObj.title = finalText;
       secObj.titleStyle = { ...st };
       modal.remove();
       renderSections();
       attachOwnerStoreEditHandlers();
     } else if (itemObj) {
-      itemObj.name = cleanVal || "Item";
+      itemObj.name = finalText;
       itemObj.nameStyle = { ...st };
       modal.remove();
       renderSections();
