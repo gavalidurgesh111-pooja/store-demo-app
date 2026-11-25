@@ -11,13 +11,15 @@ const DEFAULT_BOX_SIZES = {
     width: 92,
     height: 122,
     imgHeight: 74,
-    fontSize: 12
+    fontSize: 12,
+    bgColor: "#ffffff"
   },
   productBox: {
     width: 150,
     height: 215,
     imgHeight: 125,
-    fontSize: 14
+    fontSize: 14,
+    bgColor: "#ffffff"
   }
 };
 
@@ -106,6 +108,13 @@ function clampNum(val, min, max, fallback) {
   return Math.max(min, Math.min(max, Math.round(n)));
 }
 
+function normalizeHexColor(val, fallback) {
+  if (typeof val === "string" && /^#[0-9a-fA-F]{6}$/.test(val.trim())) {
+    return val.trim();
+  }
+  return fallback;
+}
+
 function normalizeBoxSizes(raw) {
   const src = raw && typeof raw === "object" ? raw : {};
   const mini = src.miniBox && typeof src.miniBox === "object" ? src.miniBox : {};
@@ -116,15 +125,38 @@ function normalizeBoxSizes(raw) {
       width: clampNum(mini.width, 64, 180, DEFAULT_BOX_SIZES.miniBox.width),
       height: clampNum(mini.height, 90, 240, DEFAULT_BOX_SIZES.miniBox.height),
       imgHeight: clampNum(mini.imgHeight, 44, 160, DEFAULT_BOX_SIZES.miniBox.imgHeight),
-      fontSize: clampNum(mini.fontSize, 9, 26, DEFAULT_BOX_SIZES.miniBox.fontSize)
+      fontSize: clampNum(mini.fontSize, 9, 26, DEFAULT_BOX_SIZES.miniBox.fontSize),
+      bgColor: normalizeHexColor(mini.bgColor, DEFAULT_BOX_SIZES.miniBox.bgColor)
     },
     productBox: {
       width: clampNum(prod.width, 110, 320, DEFAULT_BOX_SIZES.productBox.width),
       height: clampNum(prod.height, 165, 420, DEFAULT_BOX_SIZES.productBox.height),
       imgHeight: clampNum(prod.imgHeight, 80, 260, DEFAULT_BOX_SIZES.productBox.imgHeight),
-      fontSize: clampNum(prod.fontSize, 10, 30, DEFAULT_BOX_SIZES.productBox.fontSize)
+      fontSize: clampNum(prod.fontSize, 10, 30, DEFAULT_BOX_SIZES.productBox.fontSize),
+      bgColor: normalizeHexColor(prod.bgColor, DEFAULT_BOX_SIZES.productBox.bgColor)
     }
   };
+}
+
+function syncStripBarCornerDesign() {
+  document.querySelectorAll(".strip-bar").forEach((stripEl) => {
+    const cs = window.getComputedStyle(stripEl);
+    const tl = cs.borderTopLeftRadius;
+    const bl = cs.borderBottomLeftRadius;
+    if (tl && tl !== "0px") {
+      stripEl.style.borderTopRightRadius = tl;
+    }
+    if (bl && bl !== "0px") {
+      stripEl.style.borderBottomRightRadius = bl;
+    }
+    const bwLeft = parseFloat(cs.borderLeftWidth) || 0;
+    const bwRight = parseFloat(cs.borderRightWidth) || 0;
+    if (bwLeft > 0 && bwRight === 0) {
+      stripEl.style.borderRightWidth = cs.borderLeftWidth;
+      stripEl.style.borderRightStyle = cs.borderLeftStyle;
+      stripEl.style.borderRightColor = cs.borderLeftColor;
+    }
+  });
 }
 
 function applyBoxSizeStyles() {
@@ -137,10 +169,12 @@ function applyBoxSizeStyles() {
   root.style.setProperty("--mini-box-h", `${sizes.miniBox.height}px`);
   root.style.setProperty("--mini-box-img-h", `${sizes.miniBox.imgHeight}px`);
   root.style.setProperty("--mini-box-font-sz", `${sizes.miniBox.fontSize}px`);
+  root.style.setProperty("--mini-box-bg", sizes.miniBox.bgColor);
   root.style.setProperty("--product-box-w", `${sizes.productBox.width}px`);
   root.style.setProperty("--product-box-h", `${sizes.productBox.height}px`);
   root.style.setProperty("--product-box-img-h", `${sizes.productBox.imgHeight}px`);
   root.style.setProperty("--product-box-font-sz", `${sizes.productBox.fontSize}px`);
+  root.style.setProperty("--product-box-bg", sizes.productBox.bgColor);
 
   document.querySelectorAll(".mini-box").forEach((box) => {
     box.style.flex = `0 0 ${sizes.miniBox.width}px`;
@@ -149,6 +183,7 @@ function applyBoxSizeStyles() {
     box.style.maxWidth = `${sizes.miniBox.width}px`;
     box.style.height = `${sizes.miniBox.height}px`;
     box.style.minHeight = `${sizes.miniBox.height}px`;
+    box.style.backgroundColor = sizes.miniBox.bgColor;
 
     const img = box.querySelector("img");
     if (img) {
@@ -178,6 +213,7 @@ function applyBoxSizeStyles() {
     box.style.minWidth = `${sizes.productBox.width}px`;
     box.style.maxWidth = `${sizes.productBox.width}px`;
     box.style.minHeight = `${sizes.productBox.height}px`;
+    box.style.backgroundColor = sizes.productBox.bgColor;
 
     const img = box.querySelector("img");
     if (img) {
@@ -200,6 +236,8 @@ function applyBoxSizeStyles() {
       priceEl.style.fontSize = `${Math.max(10, sizes.productBox.fontSize - 1)}px`;
     }
   });
+
+  syncStripBarCornerDesign();
 }
 
 function updateBoxSizeSetting(boxType, prop, value, { persist = false } = {}) {
@@ -219,6 +257,8 @@ function updateBoxSizeSetting(boxType, prop, value, { persist = false } = {}) {
       targetData.boxSizes.miniBox.imgHeight = clampNum(value, 44, 160, DEFAULT_BOX_SIZES.miniBox.imgHeight);
     } else if (prop === "fontSize") {
       targetData.boxSizes.miniBox.fontSize = clampNum(value, 9, 26, DEFAULT_BOX_SIZES.miniBox.fontSize);
+    } else if (prop === "bgColor") {
+      targetData.boxSizes.miniBox.bgColor = normalizeHexColor(value, DEFAULT_BOX_SIZES.miniBox.bgColor);
     }
   } else if (boxType === "product") {
     if (prop === "width") {
@@ -233,6 +273,8 @@ function updateBoxSizeSetting(boxType, prop, value, { persist = false } = {}) {
       targetData.boxSizes.productBox.imgHeight = clampNum(value, 80, 260, DEFAULT_BOX_SIZES.productBox.imgHeight);
     } else if (prop === "fontSize") {
       targetData.boxSizes.productBox.fontSize = clampNum(value, 10, 30, DEFAULT_BOX_SIZES.productBox.fontSize);
+    } else if (prop === "bgColor") {
+      targetData.boxSizes.productBox.bgColor = normalizeHexColor(value, DEFAULT_BOX_SIZES.productBox.bgColor);
     }
   }
 
