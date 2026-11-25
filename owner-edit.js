@@ -598,7 +598,6 @@ function openCustomTextStylePopup(config) {
   mainColorRow.appendChild(mainColorLbl);
   mainColorRow.appendChild(textColorTriggerBtn);
 
-  // Font Style (100 single-line numbered options, distinct styles)
   const fontWrap = document.createElement("div");
   fontWrap.style.cssText =
     "display:flex;flex-direction:column;gap:8px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;padding:10px 12px;";
@@ -1527,11 +1526,12 @@ function attachOwnerStoreEditHandlers() {
 
       const nameEl = card.querySelector(".mini-box-name, .item-name");
       const priceEl = card.querySelector(".mini-box-price, .item-price");
+
       if (nameEl) {
-        const inlineRow = document.createElement("div");
-        inlineRow.className = "owner-inline-edit-btn";
-        inlineRow.style.cssText =
-          "display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:nowrap;margin-top:2px;width:100%;";
+        const nameRow = document.createElement("div");
+        nameRow.className = "owner-inline-edit-btn";
+        nameRow.style.cssText =
+          "display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:nowrap;width:100%;margin-top:2px;";
 
         const nameBtn = document.createElement("button");
         nameBtn.type = "button";
@@ -1550,15 +1550,44 @@ function attachOwnerStoreEditHandlers() {
           });
         };
 
-        inlineRow.appendChild(nameBtn);
+        nameEl.style.marginTop = "0";
+        nameEl.style.minWidth = "0";
+        nameRow.appendChild(nameEl);
+        nameRow.appendChild(nameBtn);
 
         if (priceEl) {
+          const priceRow = document.createElement("div");
+          priceRow.className = "owner-inline-edit-btn";
+          priceRow.style.cssText =
+            "display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:nowrap;width:100%;margin-top:2px;";
+
+          const pricePencilBtn = document.createElement("button");
+          pricePencilBtn.type = "button";
+          pricePencilBtn.textContent = "✎";
+          pricePencilBtn.title = "Set Amount";
+          pricePencilBtn.style.cssText =
+            "padding:1px 5px;border:1px solid #cbd5e1;border-radius:5px;background:#fefce8;color:#854d0e;font-size:0.72rem;font-weight:700;line-height:1.1;cursor:pointer;flex-shrink:0;";
+          pricePencilBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const currentPrice = Number(item.price || 0);
+            const next = prompt("Set Amount (₹):", String(currentPrice));
+            if (next !== null) {
+              const parsed = Number(next.replace(/[^\d.]/g, ""));
+              item.price = Number.isNaN(parsed) ? 0 : parsed;
+              renderSections();
+              attachOwnerStoreEditHandlers();
+            }
+          };
+
           priceEl.style.marginTop = "0";
           priceEl.style.whiteSpace = "nowrap";
-          inlineRow.appendChild(priceEl);
+          priceRow.appendChild(priceEl);
+          priceRow.appendChild(pricePencilBtn);
+          nameRow.insertAdjacentElement("afterend", priceRow);
         }
 
-        nameEl.insertAdjacentElement("afterend", inlineRow);
+        nameEl.replaceWith(nameRow);
       }
     });
 
