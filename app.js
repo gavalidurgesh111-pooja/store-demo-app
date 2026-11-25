@@ -853,6 +853,7 @@ function renderSections() {
         const priceDisplay = `₹${amountVal}`;
         const box = document.createElement("div");
         box.className = "mini-box";
+        box.style.cursor = OWNER_EDIT_MODE ? "default" : "pointer";
         box.onclick = () => {
           if (OWNER_EDIT_MODE) return;
           openOrderModal(0, item.id);
@@ -898,12 +899,16 @@ function renderSections() {
         const priceDisplay = `₹${amountVal}`;
         const box = document.createElement("div");
         box.className = "item-box";
+        box.style.cursor = OWNER_EDIT_MODE ? "default" : "pointer";
+        box.onclick = () => {
+          if (OWNER_EDIT_MODE) return;
+          openOrderModal(sIdx, item.id);
+        };
         box.innerHTML = `
           ${imgMarkup(item.img, cleanItemName, false)}
           <div class="item-info">
             <div class="item-name"></div>
             <div class="item-price">${priceDisplay}</div>
-            <button type="button" class="buy-btn" onclick="if(!OWNER_EDIT_MODE)openOrderModal(${sIdx}, '${item.id}')">Order</button>
           </div>
         `;
         const itemNameEl = box.querySelector(".item-name");
