@@ -1,6 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V9");
-
-let activeCoverEditIndex = 0;
+Console.log("OWNER_EDIT_COMPLETE_V9");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -423,6 +421,297 @@ function openStoreNameEditorPopup() {
   syncPreview();
 }
 
+// ==================== COVER SIZE CROP POP-UP EDITOR (#screenPhotoEditor) ====================
+let rawImageObj = null;
+let posX = 0, posY = 0, imgScale = 1, minScale = 1, maxScale = 2.5;
+let baseLeft = 0, baseTop = 0;
+let isDraggingImg = false, startMouseX = 0, startMouseY = 0;
+let initialPinchDistance = null;
+let onCoverEditorDone = null;
+let coverEditorEventsBound = false;
+
+function ensureCoverEditorDOM() {
+  let screen = document.getElementById("screenPhotoEditor");
+  if (!screen) {
+    screen = document.createElement("div");
+    screen.id = "screenPhotoEditor";
+    screen.style.cssText =
+      "display:none;position:fixed;inset:0;background:rgba(15,23,42,0.72);z-index:99999;align-items:center;justify-content:center;padding:12px;";
+
+    screen.innerHTML = `
+      <div class="editor-popup-card" style="width:100%;max-width:344px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 12px 30px rgba(0,0,0,0.4);display:flex;flex-direction:column;">
+        <div class="editor-canvas-area" id="editorCanvasArea" style="width:100%;height:230px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;touch-action:none;background:#1e293b;">
+          <img id="editorImagePreview" src="" alt="Preview" style="position:absolute;transform-origin:0 0;cursor:grab;user-select:none;z-index:5;display:block;max-width:none;max-height:none;will-change:transform;transform:translate3d(0px, 0px, 0px);" />
+          <div class="crop-frame-box" id="cropFrameBox" style="width:290px;height:140px;border:2px solid #ffffff;box-shadow:0 0 0 9999px rgba(0, 0, 0, 0.52);position:relative;pointer-events:none;z-index:10;"></div>
+        </div>
+        <div class="editor-bottom-bar" style="width:100%;height:48px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:0 22px;z-index:25;border-top:1px solid #e2e8f0;">
+          <button type="button" class="editor-bottom-btn" onclick="cancelEditor()" title="Cancel" style="background:none;border:none;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#334155;font-weight:700;">✕</button>
+          <button type="button" class="editor-bottom-btn" onclick="confirmEditor()" title="Save" style="background:none;border:none;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#0f766e;font-weight:700;">✓</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(screen);
+    bindCoverEditorEvents();
+  }
+  return screen;
+}
+
+function setEditorZoomAroundCenter(nextScale) {
+  const preview = document.getElementById("editorImagePreview");
+  const area = document.getElementById("editorCanvasArea");
+  const box = document.getElementById("cropFrameBox");
+  if (!preview || !area || !box || !rawImageObj) return;
+
+  const clampedScale = Math.max(minScale, Math.min(maxScale, nextScale));
+  if (clampedScale === imgScale) return;
+
+  const areaRect = area.getBoundingClientRect();
+  const boxRect = box.getBoundingClientRect();
+  const boxCenterX = (boxRect.left + boxRect.right) / 2 - areaRect.left;
+  const boxCenterY = (boxRect.top + boxRect.bottom) / 2 - areaRect.top;
+
+  const oldW = rawImageObj.width * imgScale;
+  const oldH = rawImageObj.height * imgScale;
+  const oldLeft = baseLeft + posX;
+  const oldTop = baseTop + posY;
+
+  const ratioX = oldW ? (boxCenterX - oldLeft) / oldW : 0.5;
+  const ratioY = oldH ? (boxCenterY - oldTop) / oldH : 0.5;
+
+  imgScale = clampedScale;
+  const newW = rawImageObj.width * imgScale;
+  const newH = rawImageObj.height * imgScale;
+
+  preview.style.width = newW + "px";
+  preview.style.height = newH + "px";
+
+  posX = boxCenterX - ratioX * newW - baseLeft;
+  posY = boxCenterY - ratioY * newH - baseTop;
+
+  applySmartBoundaryAndSnap();
+}
+
+function applySmartBoundaryAndSnap() {
+  const preview = document.getElementById("editorImagePreview");
+  const area = document.getElementById("editorCanvasArea");
+  const box = document.getElementById("cropFrameBox");
+  if (!preview || !area || !box || !rawImageObj) return;
+
+  const areaRect = area.getBoundingClientRect();
+  const boxRect = box.getBoundingClientRect();
+
+  const boxLeftRel = boxRect.left - areaRect.left;
+  const boxTopRel = boxRect.top - areaRect.top;
+  const boxRightRel = boxRect.right - areaRect.left;
+  const boxBottomRel = boxRect.bottom - areaRect.top;
+
+  const renderW = rawImageObj.width * imgScale;
+  const renderH = rawImageObj.height * imgScale;
+
+  const currentLeftRel = baseLeft + posX;
+  const currentTopRel = baseTop + posY;
+
+  const minLeftRel = boxRightRel - renderW;
+  const maxLeftRel = boxLeftRel;
+  const minTopRel = boxBottomRel - renderH;
+  const maxTopRel = boxTopRel;
+
+  const clampedLeftRel = Math.max(minLeftRel, Math.min(maxLeftRel, currentLeftRel));
+  const clampedTopRel = Math.max(minTopRel, Math.min(maxTopRel, currentTopRel));
+
+  if (clampedLeftRel !== currentLeftRel || clampedTopRel !== currentTopRel) {
+    preview.style.transition = "transform 0.2s ease-out";
+    posX = clampedLeftRel - baseLeft;
+    posY = clampedTopRel - baseTop;
+  } else {
+    preview.style.transition = "none";
+  }
+  preview.style.transform = `translate3d(${posX}px, ${posY}px, 0px)`;
+}
+
+function bindCoverEditorEvents() {
+  if (coverEditorEventsBound) return;
+  coverEditorEventsBound = true;
+
+  const editorArea = document.getElementById("editorCanvasArea");
+  const preview = document.getElementById("editorImagePreview");
+  if (!editorArea || !preview) return;
+
+  editorArea.addEventListener("mousedown", (e) => {
+    if (!rawImageObj) return;
+    isDraggingImg = true;
+    startMouseX = e.clientX;
+    startMouseY = e.clientY;
+    preview.style.transition = "none";
+    e.preventDefault();
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!isDraggingImg || !rawImageObj) return;
+    posX += (e.clientX - startMouseX) * 1.25;
+    posY += (e.clientY - startMouseY) * 1.25;
+    startMouseX = e.clientX;
+    startMouseY = e.clientY;
+    preview.style.transform = `translate3d(${posX}px, ${posY}px, 0px)`;
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (isDraggingImg) {
+      isDraggingImg = false;
+      applySmartBoundaryAndSnap();
+    }
+  });
+
+  editorArea.addEventListener("wheel", (e) => {
+    if (!rawImageObj) return;
+    e.preventDefault();
+    const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+    setEditorZoomAroundCenter(imgScale * zoomFactor);
+  }, { passive: false });
+
+  editorArea.addEventListener("touchstart", (e) => {
+    if (!rawImageObj) return;
+    if (e.touches.length === 1) {
+      isDraggingImg = true;
+      startMouseX = e.touches[0].clientX;
+      startMouseY = e.touches[0].clientY;
+      initialPinchDistance = null;
+      preview.style.transition = "none";
+    } else if (e.touches.length === 2) {
+      isDraggingImg = false;
+      initialPinchDistance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+    }
+  }, { passive: true });
+
+  editorArea.addEventListener("touchmove", (e) => {
+    if (!rawImageObj) return;
+    if (e.touches.length === 1 && isDraggingImg) {
+      posX += (e.touches[0].clientX - startMouseX) * 1.25;
+      posY += (e.touches[0].clientY - startMouseY) * 1.25;
+      startMouseX = e.touches[0].clientX;
+      startMouseY = e.touches[0].clientY;
+      preview.style.transform = `translate3d(${posX}px, ${posY}px, 0px)`;
+      e.preventDefault();
+    } else if (e.touches.length === 2 && initialPinchDistance !== null && initialPinchDistance > 0) {
+      const currentPinchDistance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const zoomFactor = currentPinchDistance / initialPinchDistance;
+      setEditorZoomAroundCenter(imgScale * zoomFactor);
+      initialPinchDistance = currentPinchDistance;
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  editorArea.addEventListener("touchend", (e) => {
+    if (!rawImageObj) return;
+    if (e.touches.length < 2) initialPinchDistance = null;
+    if (e.touches.length === 0 && isDraggingImg) {
+      isDraggingImg = false;
+      applySmartBoundaryAndSnap();
+    }
+  });
+}
+
+function cancelEditor() {
+  const screen = document.getElementById("screenPhotoEditor");
+  const preview = document.getElementById("editorImagePreview");
+  if (preview) preview.src = "";
+  if (screen) screen.style.display = "none";
+  rawImageObj = null;
+  onCoverEditorDone = null;
+}
+
+function confirmEditor() {
+  const preview = document.getElementById("editorImagePreview");
+  const box = document.getElementById("cropFrameBox")?.getBoundingClientRect();
+  if (!rawImageObj || !preview || !box) return;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 1080;
+  canvas.height = 520;
+  const ctx = canvas.getContext("2d");
+
+  const previewRect = preview.getBoundingClientRect();
+  const renderedWidth = previewRect.width || (rawImageObj.width * imgScale);
+  const renderedHeight = previewRect.height || (rawImageObj.height * imgScale);
+
+  const sX = ((box.left - previewRect.left) / renderedWidth) * rawImageObj.width;
+  const sY = ((box.top - previewRect.top) / renderedHeight) * rawImageObj.height;
+  const sW = (box.width / renderedWidth) * rawImageObj.width;
+  const sH = (box.height / renderedHeight) * rawImageObj.height;
+
+  ctx.drawImage(rawImageObj, sX, sY, sW, sH, 0, 0, canvas.width, canvas.height);
+  const croppedUrl = canvas.toDataURL("image/jpeg", 0.88);
+
+  if (preview) preview.src = "";
+  const screen = document.getElementById("screenPhotoEditor");
+  if (screen) screen.style.display = "none";
+  rawImageObj = null;
+
+  if (onCoverEditorDone) {
+    const cb = onCoverEditorDone;
+    onCoverEditorDone = null;
+    cb(croppedUrl);
+  }
+}
+
+function openCoverPhotoEditor(file, onDone) {
+  if (!file || typeof onDone !== "function") return;
+  onCoverEditorDone = onDone;
+  ensureCoverEditorDOM();
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    rawImageObj = new Image();
+    const screen = document.getElementById("screenPhotoEditor");
+    const preview = document.getElementById("editorImagePreview");
+    if (screen) screen.style.display = "flex";
+    if (!preview) return;
+
+    preview.style.transition = "none";
+    preview.src = e.target.result;
+
+    rawImageObj.onload = function () {
+      requestAnimationFrame(() => {
+        const area = document.getElementById("editorCanvasArea");
+        const box = document.getElementById("cropFrameBox");
+        if (!area || !box || !rawImageObj) return;
+
+        const areaRect = area.getBoundingClientRect();
+        const boxRect = box.getBoundingClientRect();
+
+        minScale = Math.max(boxRect.width / rawImageObj.width, boxRect.height / rawImageObj.height);
+        maxScale = minScale * 2.5;
+        imgScale = minScale;
+
+        const renderW = rawImageObj.width * imgScale;
+        const renderH = rawImageObj.height * imgScale;
+        preview.style.width = renderW + "px";
+        preview.style.height = renderH + "px";
+
+        const centerXRel = (boxRect.left + boxRect.right) / 2 - areaRect.left;
+        const centerYRel = (boxRect.top + boxRect.bottom) / 2 - areaRect.top;
+
+        baseLeft = centerXRel - renderW / 2;
+        baseTop = centerYRel - renderH / 2;
+
+        preview.style.left = baseLeft + "px";
+        preview.style.top = baseTop + "px";
+        posX = 0;
+        posY = 0;
+        preview.style.transform = "translate3d(0px, 0px, 0px)";
+      });
+    };
+    rawImageObj.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 function peekNextCoverHint() {
   const track = document.getElementById("coverSliderTrack");
   if (!track || OWNER_EDIT_MODE) return;
@@ -437,25 +726,6 @@ function peekNextCoverHint() {
   }, 650);
 }
 
-function scrollCoverToSlot(slotIdx) {
-  const data = getWorkingStoreData();
-  const slots = Array.isArray(data.coverSlots) && data.coverSlots.length > 0 ? data.coverSlots : [""];
-  const clampedIdx = Math.max(0, Math.min(slots.length - 1, Number(slotIdx) || 0));
-  activeCoverEditIndex = clampedIdx;
-
-  const track = document.getElementById("coverSliderTrack");
-  if (track) {
-    track.style.scrollBehavior = "auto";
-    track.scrollLeft = clampedIdx * (track.clientWidth || 0);
-    track.style.scrollBehavior = "smooth";
-  }
-
-  const counterEl = document.getElementById("ownerCoverCounterBadge");
-  if (counterEl) {
-    counterEl.textContent = `${clampedIdx + 1} / ${slots.length}`;
-  }
-}
-
 function ensureOwnerInlineFileInput() {
   let input = document.getElementById("ownerLivePhotoInput");
   if (!input) {
@@ -466,39 +736,24 @@ function ensureOwnerInlineFileInput() {
     input.style.display = "none";
     input.addEventListener("change", async (e) => {
       const file = e.target.files && e.target.files[0];
-      const slotInfo = pendingOwnerEditSlot ? { ...pendingOwnerEditSlot } : null;
+      if (!file || !pendingOwnerEditSlot) return;
+
+      const slotInfo = pendingOwnerEditSlot;
       pendingOwnerEditSlot = null;
-      e.target.value = "";
-      if (!file || !slotInfo) return;
 
       if (slotInfo.type === "cover") {
-        const applyCoverUrl = (adjustedUrl) => {
+        openCoverPhotoEditor(file, (adjustedUrl) => {
           const data = getWorkingStoreData();
-          if (!Array.isArray(data.coverSlots)) data.coverSlots = [""];
           const slotIdx = Number.isInteger(slotInfo.slotIdx) ? slotInfo.slotIdx : 0;
-          while (data.coverSlots.length <= slotIdx) {
-            data.coverSlots.push("");
-          }
           const wasFirstEmpty = slotIdx === 0 && !data.coverSlots[0];
           data.coverSlots[slotIdx] = adjustedUrl;
-          data.coverImg = data.coverSlots.find(Boolean) || adjustedUrl;
-          activeCoverEditIndex = slotIdx;
-
+          data.coverImg = data.coverSlots[0] || adjustedUrl;
           renderHeader();
           attachOwnerStoreEditHandlers();
-          scrollCoverToSlot(slotIdx);
-
           if (wasFirstEmpty) {
             peekNextCoverHint();
           }
-        };
-
-        if (typeof openCoverPhotoEditor === "function") {
-          openCoverPhotoEditor(file, applyCoverUrl);
-        } else {
-          const fallbackUrl = await readImageAsDataURL(file, 900);
-          if (fallbackUrl) applyCoverUrl(fallbackUrl);
-        }
+        });
       } else if (slotInfo.type === "item") {
         const resizedUrl = await readImageAsDataURL(file, 500);
         if (!resizedUrl) return;
@@ -511,7 +766,6 @@ function ensureOwnerInlineFileInput() {
         renderHeader();
         renderSections();
         attachOwnerStoreEditHandlers();
-        scrollCoverToSlot(activeCoverEditIndex);
       }
     });
     document.body.appendChild(input);
@@ -530,19 +784,13 @@ function addCoverInEditMode() {
   if ((data.coverSlotsLimit || 1) < data.coverSlots.length + 1) {
     data.coverSlotsLimit = data.coverSlots.length + 1;
   }
-
   data.coverSlots.push("");
-  const newSlotIdx = data.coverSlots.length - 1;
-  activeCoverEditIndex = newSlotIdx;
-
   renderHeader();
   attachOwnerStoreEditHandlers();
-  scrollCoverToSlot(newSlotIdx);
-
-  pendingOwnerEditSlot = { type: "cover", slotIdx: newSlotIdx };
-  const fileInput = ensureOwnerInlineFileInput();
-  fileInput.value = "";
-  fileInput.click();
+  const track = document.getElementById("coverSliderTrack");
+  if (track) {
+    track.scrollTo({ left: track.scrollWidth, behavior: "smooth" });
+  }
 }
 
 function removeCoverSlotAt(slotIdx) {
@@ -554,17 +802,14 @@ function removeCoverSlotAt(slotIdx) {
   if (data.coverSlots.length <= 1) {
     data.coverSlots[0] = "";
     data.coverImg = "";
-    activeCoverEditIndex = 0;
   } else {
     const safeIdx = Math.max(0, Math.min(data.coverSlots.length - 1, slotIdx));
     data.coverSlots.splice(safeIdx, 1);
     data.coverImg = data.coverSlots.find(Boolean) || "";
-    activeCoverEditIndex = Math.max(0, Math.min(data.coverSlots.length - 1, safeIdx));
   }
 
   renderHeader();
   attachOwnerStoreEditHandlers();
-  scrollCoverToSlot(activeCoverEditIndex);
 }
 
 function addBoxToSection(sIdx) {
@@ -720,7 +965,6 @@ function attachOwnerStoreEditHandlers() {
     renderHeader();
     renderSections();
     attachOwnerStoreEditHandlers();
-    scrollCoverToSlot(activeCoverEditIndex);
     alert("Saved!");
   };
 
@@ -746,9 +990,6 @@ function attachOwnerStoreEditHandlers() {
   if (coverWrap) {
     coverWrap.style.position = "relative";
     coverWrap.style.overflow = "hidden";
-
-    const slots = Array.isArray(data.coverSlots) && data.coverSlots.length > 0 ? data.coverSlots : [""];
-    activeCoverEditIndex = Math.max(0, Math.min(slots.length - 1, activeCoverEditIndex));
 
     const overlayEl = coverWrap.querySelector(".cover-overlay");
     const titleEl = document.getElementById("storeTitle");
@@ -781,7 +1022,6 @@ function attachOwnerStoreEditHandlers() {
         `position:absolute;top:10px;right:48px;z-index:20;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
       slidePhotoBtn.onclick = (e) => {
         e.stopPropagation();
-        activeCoverEditIndex = idx;
         pendingOwnerEditSlot = { type: "cover", slotIdx: idx };
         fileInput.value = "";
         fileInput.click();
@@ -806,58 +1046,15 @@ function attachOwnerStoreEditHandlers() {
     const addCoverBtn = document.createElement("button");
     addCoverBtn.type = "button";
     addCoverBtn.className = "owner-inline-edit-btn";
-    addCoverBtn.textContent = "+ Add Cover";
+    addCoverBtn.textContent = "+ Cover";
     addCoverBtn.style.cssText =
-      `position:absolute;top:10px;left:10px;z-index:30;padding:6px 11px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
+      `position:absolute;bottom:10px;right:10px;z-index:20;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
     addCoverBtn.onclick = (e) => {
       e.stopPropagation();
       addCoverInEditMode();
     };
 
-    const navBar = document.createElement("div");
-    navBar.className = "owner-inline-edit-btn";
-    navBar.style.cssText =
-      "position:absolute;bottom:10px;left:10px;z-index:30;display:flex;align-items:center;gap:6px;background:rgba(15,23,42,0.78);padding:4px 8px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.25);";
-
-    const prevBtn = document.createElement("button");
-    prevBtn.type = "button";
-    prevBtn.textContent = "‹";
-    prevBtn.title = "Previous Cover";
-    prevBtn.style.cssText =
-      "border:none;border-radius:6px;background:#ffffff;color:#0f172a;font-size:0.9rem;font-weight:700;width:24px;height:24px;line-height:1;cursor:pointer;";
-    prevBtn.onclick = (e) => {
-      e.stopPropagation();
-      const total = (getWorkingStoreData().coverSlots || [""]).length;
-      const nextIdx = (activeCoverEditIndex - 1 + total) % total;
-      scrollCoverToSlot(nextIdx);
-    };
-
-    const counterBadge = document.createElement("span");
-    counterBadge.id = "ownerCoverCounterBadge";
-    counterBadge.textContent = `${activeCoverEditIndex + 1} / ${slots.length}`;
-    counterBadge.style.cssText =
-      "color:#ffffff;font-size:0.76rem;font-weight:700;min-width:34px;text-align:center;";
-
-    const nextBtn = document.createElement("button");
-    nextBtn.type = "button";
-    nextBtn.textContent = "›";
-    nextBtn.title = "Next Cover";
-    nextBtn.style.cssText =
-      "border:none;border-radius:6px;background:#ffffff;color:#0f172a;font-size:0.9rem;font-weight:700;width:24px;height:24px;line-height:1;cursor:pointer;";
-    nextBtn.onclick = (e) => {
-      e.stopPropagation();
-      const total = (getWorkingStoreData().coverSlots || [""]).length;
-      const nextIdx = (activeCoverEditIndex + 1) % total;
-      scrollCoverToSlot(nextIdx);
-    };
-
-    navBar.appendChild(prevBtn);
-    navBar.appendChild(counterBadge);
-    navBar.appendChild(nextBtn);
-
     coverWrap.appendChild(addCoverBtn);
-    coverWrap.appendChild(navBar);
-    scrollCoverToSlot(activeCoverEditIndex);
   }
 
   const sectionEls = document.querySelectorAll("#sectionsContainer .row-section");
