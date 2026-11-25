@@ -598,6 +598,7 @@ function openCustomTextStylePopup(config) {
   mainColorRow.appendChild(mainColorLbl);
   mainColorRow.appendChild(textColorTriggerBtn);
 
+  // Font Style (100 single-line numbered options, distinct styles)
   const fontWrap = document.createElement("div");
   fontWrap.style.cssText =
     "display:flex;flex-direction:column;gap:8px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;padding:10px 12px;";
@@ -609,7 +610,7 @@ function openCustomTextStylePopup(config) {
   fontSelectEl = document.createElement("select");
   fontSelectEl.size = 6;
   fontSelectEl.style.cssText =
-    "width:100%;max-height:150px;overflow-y:auto;padding:6px 8px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#111827;font-size:0.88rem;font-weight:600;cursor:pointer;";
+    "width:100%;max-height:150px;overflow-y:auto;padding:6px 8px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#111827;font-size:0.86rem;font-weight:600;cursor:pointer;white-space:nowrap;";
 
   STORE_FONT_OPTIONS.forEach((opt, idx) => {
     const optionEl = document.createElement("option");
@@ -617,6 +618,10 @@ function openCustomTextStylePopup(config) {
     optionEl.textContent = opt.label;
     optionEl.style.fontFamily = opt.value;
     optionEl.style.fontStyle = opt.italic ? "italic" : "normal";
+    optionEl.style.fontWeight = String(opt.weight || 600);
+    optionEl.style.letterSpacing = `${opt.letterSpacing || 0}px`;
+    optionEl.style.textTransform = opt.textTransform || "none";
+    optionEl.style.whiteSpace = "nowrap";
     optionEl.style.padding = "5px 6px";
     fontSelectEl.appendChild(optionEl);
   });
@@ -626,6 +631,9 @@ function openCustomTextStylePopup(config) {
     const chosen = STORE_FONT_OPTIONS[idx] || STORE_FONT_OPTIONS[0];
     st.fontFamily = chosen.value;
     st.fontStyle = chosen.italic ? "italic" : "normal";
+    st.fontWeight = chosen.weight || st.fontWeight;
+    st.letterSpacing = chosen.letterSpacing ?? 0;
+    st.textTransform = chosen.textTransform || "none";
     syncPreview();
   };
 
@@ -1518,14 +1526,19 @@ function attachOwnerStoreEditHandlers() {
       card.appendChild(photoBtn);
 
       const nameEl = card.querySelector(".mini-box-name, .item-name");
+      const priceEl = card.querySelector(".mini-box-price, .item-price");
       if (nameEl) {
+        const inlineRow = document.createElement("div");
+        inlineRow.className = "owner-inline-edit-btn";
+        inlineRow.style.cssText =
+          "display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:nowrap;margin-top:2px;width:100%;";
+
         const nameBtn = document.createElement("button");
         nameBtn.type = "button";
-        nameBtn.className = "owner-inline-edit-btn";
         nameBtn.textContent = "✎";
         nameBtn.title = "Edit Name & Style";
         nameBtn.style.cssText =
-          "margin-left:4px;padding:1px 6px;border:1px solid #cbd5e1;border-radius:5px;background:#f1f5f9;color:#111827;font-size:0.72rem;font-weight:700;cursor:pointer;";
+          "padding:1px 5px;border:1px solid #cbd5e1;border-radius:5px;background:#f1f5f9;color:#111827;font-size:0.72rem;font-weight:700;line-height:1.1;cursor:pointer;flex-shrink:0;";
         nameBtn.onclick = (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -1536,29 +1549,17 @@ function attachOwnerStoreEditHandlers() {
             modalTitle: "Item Name & Style"
           });
         };
-        nameEl.insertAdjacentElement("afterend", nameBtn);
-      }
 
-      const priceBtn = document.createElement("button");
-      priceBtn.type = "button";
-      priceBtn.className = "owner-inline-edit-btn";
-      priceBtn.textContent = "✎ ₹";
-      priceBtn.title = "Set Amount";
-      priceBtn.style.cssText =
-        "margin-left:4px;padding:1px 6px;border:1px solid #cbd5e1;border-radius:5px;background:#fefce8;color:#854d0e;font-size:0.72rem;font-weight:700;cursor:pointer;";
-      priceBtn.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const currentPrice = Number(item.price || 0);
-        const next = prompt("Set Amount (₹):", String(currentPrice));
-        if (next !== null) {
-          const parsed = Number(next.replace(/[^\d.]/g, ""));
-          item.price = Number.isNaN(parsed) ? 0 : parsed;
-          renderSections();
-          attachOwnerStoreEditHandlers();
+        inlineRow.appendChild(nameBtn);
+
+        if (priceEl) {
+          priceEl.style.marginTop = "0";
+          priceEl.style.whiteSpace = "nowrap";
+          inlineRow.appendChild(priceEl);
         }
-      };
-      card.appendChild(priceBtn);
+
+        nameEl.insertAdjacentElement("afterend", inlineRow);
+      }
     });
 
     const boxContainerEl = sIdx === 0 ? secEl.querySelector(".five-boxes-row") : secEl.querySelector(".scroll-row");
