@@ -10,6 +10,7 @@ function removeCustomPickerIfExists() {
 }
 
 function removeBoxSizePanelIfExists() {
+  clearBoxPreviewHighlights();
   const existing = document.getElementById("ownerBoxSizePanelModal");
   if (existing) existing.remove();
 }
@@ -288,8 +289,8 @@ function openCustomColourPickerModal() {
 
 // ==================== BOX SIZE PANEL (छोटा बॉक्स और प्रोडक्ट बॉक्स) ====================
 const FALLBACK_BOX_SIZES = {
-  miniBox: { width: 92, height: 122, imgHeight: 74 },
-  productBox: { width: 150, height: 215, imgHeight: 125 }
+  miniBox: { width: 92, height: 122, imgHeight: 74, fontSize: 12 },
+  productBox: { width: 150, height: 215, imgHeight: 125, fontSize: 14 }
 };
 
 function getCurrentBoxSizesForEdit() {
@@ -306,6 +307,22 @@ function getCurrentBoxSizesForEdit() {
   return data.boxSizes;
 }
 
+function highlightBoxPreview(selector, widthPx, heightPx, accentHex) {
+  document.querySelectorAll(selector).forEach((box) => {
+    box.style.outline = `2px dashed ${accentHex}`;
+    box.style.outlineOffset = "2px";
+    box.dataset.previewSize = `${widthPx}×${heightPx}px`;
+  });
+}
+
+function clearBoxPreviewHighlights() {
+  document.querySelectorAll(".mini-box, .item-box").forEach((box) => {
+    box.style.outline = "";
+    box.style.outlineOffset = "";
+    delete box.dataset.previewSize;
+  });
+}
+
 function applyBoxSizePanelToDom(sizes) {
   const mini = sizes.miniBox;
   const prod = sizes.productBox;
@@ -318,9 +335,11 @@ function applyBoxSizePanelToDom(sizes) {
   document.documentElement.style.setProperty("--mini-box-w", `${mini.width}px`);
   document.documentElement.style.setProperty("--mini-box-h", `${mini.height}px`);
   document.documentElement.style.setProperty("--mini-box-img-h", `${mini.imgHeight}px`);
+  document.documentElement.style.setProperty("--mini-box-font-sz", `${mini.fontSize}px`);
   document.documentElement.style.setProperty("--product-box-w", `${prod.width}px`);
   document.documentElement.style.setProperty("--product-box-h", `${prod.height}px`);
   document.documentElement.style.setProperty("--product-box-img-h", `${prod.imgHeight}px`);
+  document.documentElement.style.setProperty("--product-box-font-sz", `${prod.fontSize}px`);
 
   document.querySelectorAll(".mini-box").forEach((box) => {
     box.style.flex = `0 0 ${mini.width}px`;
@@ -340,6 +359,14 @@ function applyBoxSizePanelToDom(sizes) {
     if (placeholder) {
       placeholder.style.height = `${mini.imgHeight}px`;
     }
+    const nameEl = box.querySelector(".mini-box-name");
+    if (nameEl) {
+      nameEl.style.fontSize = `${mini.fontSize}px`;
+    }
+    const priceEl = box.querySelector(".mini-box-price");
+    if (priceEl) {
+      priceEl.style.fontSize = `${Math.max(9, mini.fontSize - 1)}px`;
+    }
   });
 
   document.querySelectorAll(".item-box").forEach((box) => {
@@ -358,6 +385,14 @@ function applyBoxSizePanelToDom(sizes) {
     const placeholder = box.querySelector("[data-box-placeholder='product']");
     if (placeholder) {
       placeholder.style.height = `${prod.imgHeight}px`;
+    }
+    const nameEl = box.querySelector(".item-name");
+    if (nameEl) {
+      nameEl.style.fontSize = `${prod.fontSize}px`;
+    }
+    const priceEl = box.querySelector(".item-price");
+    if (priceEl) {
+      priceEl.style.fontSize = `${Math.max(10, prod.fontSize - 1)}px`;
     }
   });
 }
@@ -394,6 +429,7 @@ function openBoxSizePanelModal() {
     "border:none;background:#f1f5f9;border-radius:8px;min-width:34px;min-height:34px;font-size:1rem;font-weight:700;color:#334155;cursor:pointer;";
 
   const restoreSnapshot = () => {
+    clearBoxPreviewHighlights();
     data.boxSizes = JSON.parse(JSON.stringify(snapshot));
     applyBoxSizePanelToDom(data.boxSizes);
     modal.remove();
@@ -403,7 +439,7 @@ function openBoxSizePanelModal() {
   header.appendChild(title);
   header.appendChild(closeBtn);
 
-  function buildBoxSection(sectionLabel, targetObj, limits) {
+  function buildBoxSection(sectionLabel, targetObj, selector, limits) {
     const secWrap = document.createElement("div");
     secWrap.style.cssText =
       "border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;padding:11px;display:flex;flex-direction:column;gap:10px;";
@@ -419,7 +455,7 @@ function openBoxSizePanelModal() {
     badge.style.cssText = "font-size:0.78rem;font-weight:700;color:#475569;";
 
     const updateBadge = () => {
-      badge.textContent = `${targetObj.width}×${targetObj.height}px`;
+      badge.textContent = `${targetObj.width}×${targetObj.height}px • Text ${targetObj.fontSize}px`;
     };
     updateBadge();
 
@@ -466,6 +502,7 @@ function openBoxSizePanelModal() {
         numInput.value = String(clamped);
         updateBadge();
         applyBoxSizePanelToDom(sizes);
+        highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex);
       };
 
       slider.oninput = () => applyValue(slider.value);
@@ -477,36 +514,44 @@ function openBoxSizePanelModal() {
       row.appendChild(slider);
       secWrap.appendChild(row);
 
-      rows.push({ propKey, sync: () => {
-        slider.value = String(targetObj[propKey]);
-        numInput.value = String(targetObj[propKey]);
-        updateBadge();
-      } });
+      rows.push({
+        propKey,
+        sync: () => {
+          slider.value = String(targetObj[propKey]);
+          numInput.value = String(targetObj[propKey]);
+          updateBadge();
+        }
+      });
     };
 
     addControlRow("चौड़ाई (Width)", "width", limits.wMin, limits.wMax, 1);
     addControlRow("ऊँचाई (Height)", "height", limits.hMin, limits.hMax, 1);
     addControlRow("फ़ोटो ऊँचाई (Image Height)", "imgHeight", limits.imgMin, limits.imgMax, 1);
+    addControlRow("टेक्स्ट फ़ॉन्ट साइज़ (Text Font Size)", "fontSize", limits.fontMin, limits.fontMax, 1);
 
     return { secWrap, syncAll: () => rows.forEach((r) => r.sync()) };
   }
 
-  const miniSec = buildBoxSection("छोटा बॉक्स (.mini-box)", sizes.miniBox, {
+  const miniSec = buildBoxSection("छोटा बॉक्स (.mini-box)", sizes.miniBox, ".mini-box", {
     wMin: 64,
     wMax: 180,
     hMin: 90,
     hMax: 240,
     imgMin: 44,
-    imgMax: 160
+    imgMax: 160,
+    fontMin: 9,
+    fontMax: 26
   });
 
-  const prodSec = buildBoxSection("प्रोडक्ट बॉक्स (.item-box)", sizes.productBox, {
+  const prodSec = buildBoxSection("प्रोडक्ट बॉक्स (.item-box)", sizes.productBox, ".item-box", {
     wMin: 110,
     wMax: 320,
     hMin: 165,
     hMax: 420,
     imgMin: 80,
-    imgMax: 260
+    imgMax: 260,
+    fontMin: 10,
+    fontMax: 30
   });
 
   const resetBtn = document.createElement("button");
@@ -520,6 +565,8 @@ function openBoxSizePanelModal() {
     miniSec.syncAll();
     prodSec.syncAll();
     applyBoxSizePanelToDom(sizes);
+    highlightBoxPreview(".mini-box", sizes.miniBox.width, sizes.miniBox.height, accentHex);
+    highlightBoxPreview(".item-box", sizes.productBox.width, sizes.productBox.height, accentHex);
   };
 
   const footer = document.createElement("div");
@@ -542,6 +589,7 @@ function openBoxSizePanelModal() {
       miniBox: { ...sizes.miniBox },
       productBox: { ...sizes.productBox }
     };
+    clearBoxPreviewHighlights();
     modal.remove();
     renderSections();
     attachOwnerStoreEditHandlers();
