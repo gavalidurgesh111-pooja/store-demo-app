@@ -9,6 +9,11 @@ function removeCustomPickerIfExists() {
   if (existing) existing.remove();
 }
 
+function removeBoxSizePanelIfExists() {
+  const existing = document.getElementById("ownerBoxSizePanelModal");
+  if (existing) existing.remove();
+}
+
 function removeOwnerStoreEditUI() {
   const bar = document.getElementById("ownerLiveSaveBar");
   if (bar) bar.remove();
@@ -22,6 +27,7 @@ function removeOwnerStoreEditUI() {
     coverEditorEventsBound = false;
   }
   removeCustomPickerIfExists();
+  removeBoxSizePanelIfExists();
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
 }
 
@@ -278,6 +284,279 @@ function openCustomColourPickerModal() {
       applyDraftThemeColor(restoreHex);
     }
   );
+}
+
+// ==================== BOX SIZE PANEL (छोटा बॉक्स और प्रोडक्ट बॉक्स) ====================
+const FALLBACK_BOX_SIZES = {
+  miniBox: { width: 92, height: 122, imgHeight: 74 },
+  productBox: { width: 150, height: 215, imgHeight: 125 }
+};
+
+function getCurrentBoxSizesForEdit() {
+  const data = getWorkingStoreData();
+  if (typeof normalizeBoxSizes === "function") {
+    data.boxSizes = normalizeBoxSizes(data.boxSizes);
+    return data.boxSizes;
+  }
+  if (!data.boxSizes || typeof data.boxSizes !== "object") {
+    data.boxSizes = JSON.parse(JSON.stringify(FALLBACK_BOX_SIZES));
+  }
+  data.boxSizes.miniBox = { ...FALLBACK_BOX_SIZES.miniBox, ...(data.boxSizes.miniBox || {}) };
+  data.boxSizes.productBox = { ...FALLBACK_BOX_SIZES.productBox, ...(data.boxSizes.productBox || {}) };
+  return data.boxSizes;
+}
+
+function applyBoxSizePanelToDom(sizes) {
+  const mini = sizes.miniBox;
+  const prod = sizes.productBox;
+
+  if (typeof window.applyBoxSizeStyles === "function") {
+    window.applyBoxSizeStyles();
+    return;
+  }
+
+  document.documentElement.style.setProperty("--mini-box-w", `${mini.width}px`);
+  document.documentElement.style.setProperty("--mini-box-h", `${mini.height}px`);
+  document.documentElement.style.setProperty("--mini-box-img-h", `${mini.imgHeight}px`);
+  document.documentElement.style.setProperty("--product-box-w", `${prod.width}px`);
+  document.documentElement.style.setProperty("--product-box-h", `${prod.height}px`);
+  document.documentElement.style.setProperty("--product-box-img-h", `${prod.imgHeight}px`);
+
+  document.querySelectorAll(".mini-box").forEach((box) => {
+    box.style.flex = `0 0 ${mini.width}px`;
+    box.style.width = `${mini.width}px`;
+    box.style.minWidth = `${mini.width}px`;
+    box.style.maxWidth = `${mini.width}px`;
+    box.style.height = `${mini.height}px`;
+    box.style.minHeight = `${mini.height}px`;
+
+    const img = box.querySelector("img");
+    if (img) {
+      img.style.width = "100%";
+      img.style.height = `${mini.imgHeight}px`;
+      img.style.objectFit = "cover";
+    }
+    const placeholder = box.querySelector("[data-box-placeholder='mini']");
+    if (placeholder) {
+      placeholder.style.height = `${mini.imgHeight}px`;
+    }
+  });
+
+  document.querySelectorAll(".item-box").forEach((box) => {
+    box.style.flex = `0 0 ${prod.width}px`;
+    box.style.width = `${prod.width}px`;
+    box.style.minWidth = `${prod.width}px`;
+    box.style.maxWidth = `${prod.width}px`;
+    box.style.minHeight = `${prod.height}px`;
+
+    const img = box.querySelector("img");
+    if (img) {
+      img.style.width = "100%";
+      img.style.height = `${prod.imgHeight}px`;
+      img.style.objectFit = "cover";
+    }
+    const placeholder = box.querySelector("[data-box-placeholder='product']");
+    if (placeholder) {
+      placeholder.style.height = `${prod.imgHeight}px`;
+    }
+  });
+}
+
+function openBoxSizePanelModal() {
+  removeBoxSizePanelIfExists();
+
+  const data = getWorkingStoreData();
+  const accentHex = data.themeColor || "#0f766e";
+  const sizes = getCurrentBoxSizesForEdit();
+  const snapshot = JSON.parse(JSON.stringify(sizes));
+
+  const modal = document.createElement("div");
+  modal.id = "ownerBoxSizePanelModal";
+  modal.style.cssText =
+    "position:fixed;inset:0;z-index:135;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;padding:12px;overflow-y:auto;";
+
+  const card = document.createElement("div");
+  card.style.cssText =
+    "width:100%;max-width:420px;background:#ffffff;border-radius:14px;padding:14px 16px;box-shadow:0 14px 34px rgba(0,0,0,0.35);display:flex;flex-direction:column;gap:12px;color:#0f172a;max-height:90vh;overflow-y:auto;";
+
+  const header = document.createElement("div");
+  header.style.cssText =
+    "display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #e2e8f0;";
+
+  const title = document.createElement("span");
+  title.textContent = "Box Size Panel";
+  title.style.cssText = "font-size:1.05rem;font-weight:800;color:#111827;";
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.textContent = "✕";
+  closeBtn.style.cssText =
+    "border:none;background:#f1f5f9;border-radius:8px;min-width:34px;min-height:34px;font-size:1rem;font-weight:700;color:#334155;cursor:pointer;";
+
+  const restoreSnapshot = () => {
+    data.boxSizes = JSON.parse(JSON.stringify(snapshot));
+    applyBoxSizePanelToDom(data.boxSizes);
+    modal.remove();
+  };
+
+  closeBtn.onclick = restoreSnapshot;
+  header.appendChild(title);
+  header.appendChild(closeBtn);
+
+  function buildBoxSection(sectionLabel, targetObj, limits) {
+    const secWrap = document.createElement("div");
+    secWrap.style.cssText =
+      "border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;padding:11px;display:flex;flex-direction:column;gap:10px;";
+
+    const secHead = document.createElement("div");
+    secHead.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
+
+    const secTitle = document.createElement("span");
+    secTitle.textContent = sectionLabel;
+    secTitle.style.cssText = `font-size:0.9rem;font-weight:800;color:${accentHex};`;
+
+    const badge = document.createElement("span");
+    badge.style.cssText = "font-size:0.78rem;font-weight:700;color:#475569;";
+
+    const updateBadge = () => {
+      badge.textContent = `${targetObj.width}×${targetObj.height}px`;
+    };
+    updateBadge();
+
+    secHead.appendChild(secTitle);
+    secHead.appendChild(badge);
+    secWrap.appendChild(secHead);
+
+    const rows = [];
+
+    const addControlRow = (labelTxt, propKey, minV, maxV, stepV) => {
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;flex-direction:column;gap:4px;";
+
+      const topLine = document.createElement("div");
+      topLine.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
+
+      const lbl = document.createElement("span");
+      lbl.textContent = labelTxt;
+      lbl.style.cssText = "font-size:0.8rem;font-weight:700;color:#334155;";
+
+      const numInput = document.createElement("input");
+      numInput.type = "number";
+      numInput.min = String(minV);
+      numInput.max = String(maxV);
+      numInput.step = String(stepV);
+      numInput.value = String(targetObj[propKey]);
+      numInput.style.cssText =
+        "width:68px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:7px;font-size:0.82rem;font-weight:700;color:#111827;text-align:right;background:#ffffff;";
+
+      const slider = document.createElement("input");
+      slider.type = "range";
+      slider.min = String(minV);
+      slider.max = String(maxV);
+      slider.step = String(stepV);
+      slider.value = String(targetObj[propKey]);
+      slider.style.cssText = "width:100%;height:24px;cursor:pointer;touch-action:pan-y;";
+
+      const applyValue = (rawVal) => {
+        const parsed = Number(rawVal);
+        if (!Number.isFinite(parsed)) return;
+        const clamped = Math.max(minV, Math.min(maxV, Math.round(parsed)));
+        targetObj[propKey] = clamped;
+        slider.value = String(clamped);
+        numInput.value = String(clamped);
+        updateBadge();
+        applyBoxSizePanelToDom(sizes);
+      };
+
+      slider.oninput = () => applyValue(slider.value);
+      numInput.onchange = () => applyValue(numInput.value);
+
+      topLine.appendChild(lbl);
+      topLine.appendChild(numInput);
+      row.appendChild(topLine);
+      row.appendChild(slider);
+      secWrap.appendChild(row);
+
+      rows.push({ propKey, sync: () => {
+        slider.value = String(targetObj[propKey]);
+        numInput.value = String(targetObj[propKey]);
+        updateBadge();
+      } });
+    };
+
+    addControlRow("चौड़ाई (Width)", "width", limits.wMin, limits.wMax, 1);
+    addControlRow("ऊँचाई (Height)", "height", limits.hMin, limits.hMax, 1);
+    addControlRow("फ़ोटो ऊँचाई (Image Height)", "imgHeight", limits.imgMin, limits.imgMax, 1);
+
+    return { secWrap, syncAll: () => rows.forEach((r) => r.sync()) };
+  }
+
+  const miniSec = buildBoxSection("छोटा बॉक्स (.mini-box)", sizes.miniBox, {
+    wMin: 64,
+    wMax: 180,
+    hMin: 90,
+    hMax: 240,
+    imgMin: 44,
+    imgMax: 160
+  });
+
+  const prodSec = buildBoxSection("प्रोडक्ट बॉक्स (.item-box)", sizes.productBox, {
+    wMin: 110,
+    wMax: 320,
+    hMin: 165,
+    hMax: 420,
+    imgMin: 80,
+    imgMax: 260
+  });
+
+  const resetBtn = document.createElement("button");
+  resetBtn.type = "button";
+  resetBtn.textContent = "Reset Default";
+  resetBtn.style.cssText =
+    "min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-size:0.84rem;font-weight:700;cursor:pointer;";
+  resetBtn.onclick = () => {
+    sizes.miniBox = { ...FALLBACK_BOX_SIZES.miniBox };
+    sizes.productBox = { ...FALLBACK_BOX_SIZES.productBox };
+    miniSec.syncAll();
+    prodSec.syncAll();
+    applyBoxSizePanelToDom(sizes);
+  };
+
+  const footer = document.createElement("div");
+  footer.style.cssText = "display:flex;gap:8px;margin-top:2px;";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.style.cssText =
+    "flex:1;min-height:42px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-weight:700;cursor:pointer;";
+  cancelBtn.onclick = restoreSnapshot;
+
+  const applyBtn = document.createElement("button");
+  applyBtn.type = "button";
+  applyBtn.textContent = "Apply";
+  applyBtn.style.cssText =
+    `flex:1;min-height:42px;padding:8px 14px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
+  applyBtn.onclick = () => {
+    data.boxSizes = {
+      miniBox: { ...sizes.miniBox },
+      productBox: { ...sizes.productBox }
+    };
+    modal.remove();
+    renderSections();
+    attachOwnerStoreEditHandlers();
+  };
+
+  footer.appendChild(resetBtn);
+  footer.appendChild(cancelBtn);
+  footer.appendChild(applyBtn);
+
+  card.appendChild(header);
+  card.appendChild(miniSec.secWrap);
+  card.appendChild(prodSec.secWrap);
+  card.appendChild(footer);
+  modal.appendChild(card);
+  document.body.appendChild(modal);
 }
 
 function makeLabeledSlider(labelText, min, max, step, initialVal, unitSuffix, accentHex, onChange) {
@@ -1378,7 +1657,17 @@ function attachOwnerStoreEditHandlers() {
   info.style.cssText = "font-size:0.8rem;font-weight:600;";
 
   const actions = document.createElement("div");
-  actions.style.cssText = "display:flex;gap:6px;align-items:center;";
+  actions.style.cssText = "display:flex;gap:6px;align-items:center;flex-wrap:wrap;";
+
+  const boxSizeBtn = document.createElement("button");
+  boxSizeBtn.type = "button";
+  boxSizeBtn.textContent = "Box Size";
+  boxSizeBtn.style.cssText =
+    "padding:6px 10px;border:1px solid rgba(255,255,255,0.65);border-radius:8px;background:rgba(255,255,255,0.16);color:#ffffff;font-size:0.78rem;font-weight:700;cursor:pointer;";
+  boxSizeBtn.onclick = (e) => {
+    e.stopPropagation();
+    openBoxSizePanelModal();
+  };
 
   const colorBtn = document.createElement("button");
   colorBtn.type = "button";
@@ -1417,6 +1706,7 @@ function attachOwnerStoreEditHandlers() {
     window.location.href = "index.html";
   };
 
+  actions.appendChild(boxSizeBtn);
   actions.appendChild(colorBtn);
   actions.appendChild(saveBtn);
   actions.appendChild(backBtn);
