@@ -102,6 +102,24 @@ const CARTOON_AVATARS = [
 
 const DEFAULT_SECTION_TITLES = Array.from({ length: 15 }, () => "Name");
 
+function formatItemPriceDisplay(item) {
+  if (!item) return "₹0";
+  if (item.priceText !== undefined && item.priceText !== null && String(item.priceText).trim() !== "") {
+    const raw = String(item.priceText).trim();
+    return raw.startsWith("₹") ? raw : `₹${raw}`;
+  }
+  const numVal = Number(item.price || 0);
+  return `₹${Number.isFinite(numVal) ? numVal : 0}`;
+}
+
+function getNumericItemPrice(item) {
+  if (!item) return 0;
+  if (typeof item.price === "number" && Number.isFinite(item.price)) return item.price;
+  const source = item.priceText !== undefined && item.priceText !== null ? String(item.priceText) : String(item.price || "0");
+  const match = source.match(/(\d+(?:\.\d+)?)/);
+  return match ? Number(match[1]) : 0;
+}
+
 function clampNum(val, min, max, fallback) {
   const n = Number(val);
   if (!Number.isFinite(n)) return fallback;
@@ -206,8 +224,8 @@ function applyBoxSizeStyles() {
     box.style.width = `${sizes.miniBox.width}px`;
     box.style.minWidth = `${sizes.miniBox.width}px`;
     box.style.maxWidth = `${sizes.miniBox.width}px`;
-    box.style.height = `${sizes.miniBox.height}px`;
     box.style.minHeight = `${sizes.miniBox.height}px`;
+    box.style.height = "auto";
 
     applyInnerBoxColor(box, ".mini-box-body", sizes.miniBox.bgColor);
 
@@ -239,6 +257,7 @@ function applyBoxSizeStyles() {
     box.style.minWidth = `${sizes.productBox.width}px`;
     box.style.maxWidth = `${sizes.productBox.width}px`;
     box.style.minHeight = `${sizes.productBox.height}px`;
+    box.style.height = "auto";
 
     applyInnerBoxColor(box, ".item-info", sizes.productBox.bgColor);
 
@@ -351,7 +370,7 @@ function createDefaultTextStyle(overrides = {}) {
     borderColor: "#0f172a",
     borderWidth: 0.8,
     bgEnabled: false,
-    bgColor: "#0f172a",
+    bgColor: "#0f766e",
     bgOpacity: 0.65,
     bgRadius: 8,
     ...overrides
@@ -409,6 +428,8 @@ function applyTextStyleToElement(el, rawStyle, defaults = {}) {
   el.style.letterSpacing = `${st.letterSpacing}px`;
   el.style.textTransform = st.textTransform;
   el.style.color = st.color;
+  el.style.whiteSpace = "pre-wrap";
+  el.style.wordBreak = "break-word";
 
   if (st.glowEnabled) {
     const gSize = Math.max(2, st.glowSize);
@@ -460,7 +481,7 @@ function buildInitialData() {
     const count = idx === 0 ? 4 : 5;
     const items = [];
     for (let i = 1; i <= count; i++) {
-      items.push({ id: `${idx}-${i}`, name: "Item", price: 0, img: "", nameStyle: null });
+      items.push({ id: `${idx}-${i}`, name: "Item", price: 0, priceText: "0", img: "", nameStyle: null });
     }
     return { title, items, titleStyle: null };
   });
@@ -719,8 +740,7 @@ function applyTitlePositionStyle() {
   if (titleEl) {
     titleEl.style.display = "inline-block";
     titleEl.style.margin = "0";
-    titleEl.style.lineHeight = "0.92";
-    titleEl.style.whiteSpace = "nowrap";
+    titleEl.style.lineHeight = "1.05";
     titleEl.style.overflow = "visible";
 
     const st = normalizeTextStyle(data.titleStyle, {
@@ -849,8 +869,7 @@ function renderSections() {
         const cleanItemName = item.name !== undefined && item.name !== null && String(item.name).length > 0
           ? String(item.name)
           : "Item";
-        const amountVal = Number(item.price || 0);
-        const priceDisplay = `₹${amountVal}`;
+        const priceDisplay = formatItemPriceDisplay(item);
         const box = document.createElement("div");
         box.className = "mini-box";
         box.style.cursor = OWNER_EDIT_MODE ? "default" : "pointer";
@@ -895,8 +914,7 @@ function renderSections() {
         const cleanItemName = item.name !== undefined && item.name !== null && String(item.name).length > 0
           ? String(item.name)
           : "Item";
-        const amountVal = Number(item.price || 0);
-        const priceDisplay = `₹${amountVal}`;
+        const priceDisplay = formatItemPriceDisplay(item);
         const box = document.createElement("div");
         box.className = "item-box";
         box.style.cursor = OWNER_EDIT_MODE ? "default" : "pointer";
@@ -936,11 +954,11 @@ function openOrderModal(sectionIdx, itemId) {
   const item = data.sections[sectionIdx]?.items.find((i) => i.id === itemId);
   if (!item) return;
   activeOrderItem = item;
-  const amountVal = Number(item.price || 0);
+  const priceDisplay = formatItemPriceDisplay(item);
   document.getElementById("modalItemTitle").textContent = item.name !== undefined && item.name !== null && String(item.name).length > 0
     ? String(item.name)
     : "Item";
-  document.getElementById("modalItemPrice").textContent = `Price: ₹${amountVal}`;
+  document.getElementById("modalItemPrice").textContent = `Price: ${priceDisplay}`;
 
   const up = data.userProfile || {};
   const fullName = [up.firstName, up.surname].filter(Boolean).join(" ");
@@ -960,8 +978,8 @@ function confirmOrder() {
   const defaultName = [up.firstName, up.surname].filter(Boolean).join(" ") || "Customer";
   const customer = document.getElementById("orderCustomer").value.trim() || defaultName;
   const qty = Math.max(1, parseInt(document.getElementById("orderQty").value, 10) || 1);
-  const unitPrice = Number(activeOrderItem.price || 0);
-  const amount = unitPrice * qty;
+  const unitPrice = getNumericItemPrice(activeOrderItem);
+  const amount = Number((unitPrice * qty).toFixed(2));
   const cleanItemName = activeOrderItem.name !== undefined && activeOrderItem.name !== null && String(activeOrderItem.name).length > 0
     ? String(activeOrderItem.name)
     : "Item";
@@ -973,6 +991,7 @@ function confirmOrder() {
     itemId: activeOrderItem.id,
     itemName: cleanItemName,
     itemPrice: unitPrice,
+    itemPriceText: formatItemPriceDisplay(activeOrderItem),
     itemImg: activeOrderItem.img || "",
     qty,
     amount
