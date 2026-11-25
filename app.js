@@ -224,7 +224,7 @@ function imgMarkup(src, altText, isMini = false) {
   if (src) {
     return `<img src="${src}" alt="${altText}" />`;
   }
-  const h = isMini ? "74px" : "68px";
+  const h = isMini ? "74px" : "125px";
   return `<div style="width:100%;height:${h};background:#e5e7eb;"></div>`;
 }
 
@@ -2314,7 +2314,7 @@ function attachOwnerStoreEditHandlers() {
       photoBtn.textContent = "✎";
       photoBtn.title = "Edit Photo";
       photoBtn.style.cssText =
-        `position:absolute;top:5px;right:5px;z-index:4;width:22px;height:22px;border:none;border-radius:6px;background:${data.themeColor || "#0f766e"};color:#ffffff;font-size:0.72rem;font-weight:700;cursor:pointer;`;
+        `position:absolute;top:6px;right:6px;z-index:4;width:24px;height:24px;border:none;border-radius:6px;background:${data.themeColor || "#0f766e"};color:#ffffff;font-size:0.75rem;font-weight:700;cursor:pointer;`;
       photoBtn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -2326,18 +2326,13 @@ function attachOwnerStoreEditHandlers() {
 
       const nameEl = card.querySelector(".mini-box-name, .item-name");
       if (nameEl) {
-        const nameRow = document.createElement("div");
-        nameRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:2px;min-width:0;";
-        nameEl.parentNode.insertBefore(nameRow, nameEl);
-        nameRow.appendChild(nameEl);
-
         const nameBtn = document.createElement("button");
         nameBtn.type = "button";
         nameBtn.className = "owner-inline-edit-btn";
         nameBtn.textContent = "✎";
         nameBtn.title = "Edit Name";
         nameBtn.style.cssText =
-          "flex-shrink:0;padding:0 4px;border:1px solid #cbd5e1;border-radius:4px;background:#f1f5f9;color:#111827;font-size:0.65rem;font-weight:700;line-height:1.1;cursor:pointer;";
+          "margin-left:4px;padding:1px 6px;border:1px solid #cbd5e1;border-radius:5px;background:#f1f5f9;color:#111827;font-size:0.72rem;font-weight:700;cursor:pointer;";
         nameBtn.onclick = (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -2348,17 +2343,16 @@ function attachOwnerStoreEditHandlers() {
             attachOwnerStoreEditHandlers();
           }
         };
-        nameRow.appendChild(nameBtn);
+        nameEl.insertAdjacentElement("afterend", nameBtn);
       }
 
-      const priceEl = card.querySelector(".mini-box-price, .item-price");
       const priceBtn = document.createElement("button");
       priceBtn.type = "button";
       priceBtn.className = "owner-inline-edit-btn";
       priceBtn.textContent = "✎ ₹";
       priceBtn.title = "Set Amount";
       priceBtn.style.cssText =
-        "flex-shrink:0;padding:0 4px;border:1px solid #cbd5e1;border-radius:4px;background:#fefce8;color:#854d0e;font-size:0.65rem;font-weight:700;line-height:1.1;cursor:pointer;";
+        "margin-left:4px;padding:1px 6px;border:1px solid #cbd5e1;border-radius:5px;background:#fefce8;color:#854d0e;font-size:0.72rem;font-weight:700;cursor:pointer;";
       priceBtn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -2371,16 +2365,7 @@ function attachOwnerStoreEditHandlers() {
           attachOwnerStoreEditHandlers();
         }
       };
-
-      if (priceEl) {
-        const priceRow = document.createElement("div");
-        priceRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:2px;min-width:0;";
-        priceEl.parentNode.insertBefore(priceRow, priceEl);
-        priceRow.appendChild(priceEl);
-        priceRow.appendChild(priceBtn);
-      } else {
-        card.appendChild(priceBtn);
-      }
+      card.appendChild(priceBtn);
     });
 
     const boxContainerEl = sIdx === 0 ? secEl.querySelector(".five-boxes-row") : secEl.querySelector(".scroll-row");
