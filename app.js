@@ -413,22 +413,23 @@ function applyTitlePositionStyle() {
   overlayEl.style.top = `${pos.y}px`;
   overlayEl.style.right = "auto";
   overlayEl.style.bottom = "auto";
-  overlayEl.style.width = "fit-content";
-  overlayEl.style.height = "fit-content";
-  overlayEl.style.maxWidth = "100%";
+  overlayEl.style.width = "max-content";
+  overlayEl.style.height = "max-content";
+  overlayEl.style.maxWidth = "calc(100% - 8px)";
   overlayEl.style.margin = "0";
   overlayEl.style.padding = "0";
-  overlayEl.style.display = "inline-block";
+  overlayEl.style.display = "inline-flex";
+  overlayEl.style.alignItems = "center";
+  overlayEl.style.gap = "4px";
   overlayEl.style.boxSizing = "border-box";
   overlayEl.style.zIndex = "15";
 
   if (titleEl) {
     titleEl.style.display = "inline-block";
     titleEl.style.margin = "0";
-    titleEl.style.lineHeight = "1.12";
-    titleEl.style.whiteSpace = "normal";
-    titleEl.style.overflowWrap = "anywhere";
-    titleEl.style.wordBreak = "break-word";
+    titleEl.style.lineHeight = "1.02";
+    titleEl.style.whiteSpace = "nowrap";
+    titleEl.style.overflow = "visible";
 
     const st = normalizeTextStyle(data.titleStyle, {
       fontFamily: data.titleFont || STORE_FONT_OPTIONS[0].value,
@@ -437,12 +438,16 @@ function applyTitlePositionStyle() {
       color: data.titleColor || STORE_NAME_COLORS[0]
     });
     applyTextStyleToElement(titleEl, st);
+    if (!st.bgEnabled) {
+      titleEl.style.padding = "0px";
+      titleEl.style.borderRadius = "0px";
+    }
   }
 
   if (OWNER_EDIT_MODE) {
-    overlayEl.style.border = "1px solid #ffffff";
-    overlayEl.style.borderRadius = "0px";
-    overlayEl.style.background = "rgba(15, 23, 42, 0.45)";
+    overlayEl.style.border = "1px dashed rgba(255, 255, 255, 0.85)";
+    overlayEl.style.borderRadius = "2px";
+    overlayEl.style.background = "transparent";
   } else {
     overlayEl.style.border = "none";
     overlayEl.style.borderRadius = "0px";
