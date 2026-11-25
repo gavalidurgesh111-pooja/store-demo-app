@@ -428,8 +428,11 @@ function applyTextStyleToElement(el, rawStyle, defaults = {}) {
   el.style.letterSpacing = `${st.letterSpacing}px`;
   el.style.textTransform = st.textTransform;
   el.style.color = st.color;
-  el.style.whiteSpace = "pre-wrap";
-  el.style.wordBreak = "break-word";
+
+  // केवल तभी नई लाइन ब्रेक हो जब यूज़र ने खुद Enter (\n) दबाया हो
+  const hasExplicitLineBreak = String(el.textContent || "").includes("\n");
+  el.style.whiteSpace = hasExplicitLineBreak ? "pre-line" : "pre";
+  el.style.wordBreak = "normal";
 
   if (st.glowEnabled) {
     const gSize = Math.max(2, st.glowSize);
