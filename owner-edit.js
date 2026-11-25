@@ -595,7 +595,6 @@ function openCustomTextStylePopup(config) {
   mainColorRow.appendChild(mainColorLbl);
   mainColorRow.appendChild(textColorTriggerBtn);
 
-  // Font Style (100 single-line scrollable items)
   const fontWrap = document.createElement("div");
   fontWrap.style.cssText =
     "display:flex;flex-direction:column;gap:8px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;padding:10px 12px;";
@@ -1528,6 +1527,7 @@ function attachOwnerStoreEditHandlers() {
       const item = sIdx === 0 ? sec.items.slice(0, topRowLimit)[idx] : sec.items[idx];
       if (!item) return;
 
+      const isMiniBox = card.classList.contains("mini-box");
       card.style.position = "relative";
 
       const photoBtn = document.createElement("button");
@@ -1550,14 +1550,17 @@ function attachOwnerStoreEditHandlers() {
       const priceEl = card.querySelector(".mini-box-price, .item-price");
 
       if (nameEl && !nameEl.parentElement.classList.contains("owner-item-inline-group")) {
+        const alignItemsVal = isMiniBox ? "flex-start" : "center";
+        const justifyVal = isMiniBox ? "flex-start" : "center";
+
         const groupWrap = document.createElement("div");
         groupWrap.className = "owner-item-inline-group";
         groupWrap.style.cssText =
-          "display:flex;flex-direction:column;align-items:center;gap:3px;width:100%;margin-top:2px;";
+          `display:flex;flex-direction:column;align-items:${alignItemsVal};gap:3px;width:100%;margin-top:2px;`;
 
         const nameLine = document.createElement("div");
         nameLine.style.cssText =
-          "display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:nowrap;width:100%;";
+          `display:flex;align-items:center;justify-content:${justifyVal};gap:4px;flex-wrap:nowrap;width:100%;`;
 
         const nameBtn = document.createElement("button");
         nameBtn.type = "button";
@@ -1579,6 +1582,7 @@ function attachOwnerStoreEditHandlers() {
 
         nameEl.style.marginTop = "0";
         nameEl.style.minWidth = "0";
+        if (isMiniBox) nameEl.style.textAlign = "left";
         nameEl.parentNode.insertBefore(groupWrap, nameEl);
         nameLine.appendChild(nameEl);
         nameLine.appendChild(nameBtn);
@@ -1587,7 +1591,7 @@ function attachOwnerStoreEditHandlers() {
         if (priceEl) {
           const priceLine = document.createElement("div");
           priceLine.style.cssText =
-            "display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:nowrap;width:100%;";
+            `display:flex;align-items:center;justify-content:${justifyVal};gap:4px;flex-wrap:nowrap;width:100%;`;
 
           const pricePencilBtn = document.createElement("button");
           pricePencilBtn.type = "button";
@@ -1611,6 +1615,7 @@ function attachOwnerStoreEditHandlers() {
 
           priceEl.style.marginTop = "0";
           priceEl.style.whiteSpace = "nowrap";
+          if (isMiniBox) priceEl.style.textAlign = "left";
           priceLine.appendChild(priceEl);
           priceLine.appendChild(pricePencilBtn);
           groupWrap.appendChild(priceLine);
