@@ -408,25 +408,35 @@ function openBoxSizePanelModal() {
   const modal = document.createElement("div");
   modal.id = "ownerBoxSizePanelModal";
   modal.style.cssText =
-    "position:fixed;inset:0;z-index:135;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;padding:12px;overflow-y:auto;";
+    "position:fixed;inset:0;z-index:135;background:transparent;display:flex;align-items:flex-end;justify-content:center;padding:0;pointer-events:none;";
 
   const card = document.createElement("div");
   card.style.cssText =
-    "width:100%;max-width:420px;background:#ffffff;border-radius:14px;padding:14px 16px;box-shadow:0 14px 34px rgba(0,0,0,0.35);display:flex;flex-direction:column;gap:12px;color:#0f172a;max-height:90vh;overflow-y:auto;";
+    "width:100%;max-width:480px;height:48vh;max-height:50vh;background:#ffffff;border-top:2px solid #cbd5e1;border-radius:16px 16px 0 0;padding:10px 14px 18px;box-shadow:0 -10px 28px rgba(15,23,42,0.28);display:flex;flex-direction:column;gap:10px;color:#0f172a;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;pointer-events:auto;";
 
   const header = document.createElement("div");
   header.style.cssText =
-    "display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #e2e8f0;";
+    "position:sticky;top:-10px;z-index:5;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:6px 0 8px;border-bottom:1px solid #e2e8f0;";
+
+  const titleWrap = document.createElement("div");
+  titleWrap.style.cssText = "display:flex;align-items:center;gap:8px;";
+
+  const dragHandle = document.createElement("span");
+  dragHandle.style.cssText =
+    "display:inline-block;width:28px;height:4px;border-radius:999px;background:#cbd5e1;";
 
   const title = document.createElement("span");
-  title.textContent = "Box Size Panel";
-  title.style.cssText = "font-size:1.05rem;font-weight:800;color:#111827;";
+  title.textContent = "Box Size Panel (Scroll ↓)";
+  title.style.cssText = "font-size:0.96rem;font-weight:800;color:#111827;";
+
+  titleWrap.appendChild(dragHandle);
+  titleWrap.appendChild(title);
 
   const closeBtn = document.createElement("button");
   closeBtn.type = "button";
   closeBtn.textContent = "✕";
   closeBtn.style.cssText =
-    "border:none;background:#f1f5f9;border-radius:8px;min-width:34px;min-height:34px;font-size:1rem;font-weight:700;color:#334155;cursor:pointer;";
+    "border:none;background:#f1f5f9;border-radius:8px;min-width:32px;min-height:32px;font-size:0.95rem;font-weight:700;color:#334155;cursor:pointer;";
 
   const restoreSnapshot = () => {
     clearBoxPreviewHighlights();
@@ -436,23 +446,23 @@ function openBoxSizePanelModal() {
   };
 
   closeBtn.onclick = restoreSnapshot;
-  header.appendChild(title);
+  header.appendChild(titleWrap);
   header.appendChild(closeBtn);
 
   function buildBoxSection(sectionLabel, targetObj, selector, limits) {
     const secWrap = document.createElement("div");
     secWrap.style.cssText =
-      "border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;padding:11px;display:flex;flex-direction:column;gap:10px;";
+      "border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;flex-shrink:0;";
 
     const secHead = document.createElement("div");
     secHead.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
 
     const secTitle = document.createElement("span");
     secTitle.textContent = sectionLabel;
-    secTitle.style.cssText = `font-size:0.9rem;font-weight:800;color:${accentHex};`;
+    secTitle.style.cssText = `font-size:0.86rem;font-weight:800;color:${accentHex};`;
 
     const badge = document.createElement("span");
-    badge.style.cssText = "font-size:0.78rem;font-weight:700;color:#475569;";
+    badge.style.cssText = "font-size:0.74rem;font-weight:700;color:#475569;";
 
     const updateBadge = () => {
       badge.textContent = `${targetObj.width}×${targetObj.height}px • Text ${targetObj.fontSize}px`;
@@ -467,14 +477,14 @@ function openBoxSizePanelModal() {
 
     const addControlRow = (labelTxt, propKey, minV, maxV, stepV) => {
       const row = document.createElement("div");
-      row.style.cssText = "display:flex;flex-direction:column;gap:4px;";
+      row.style.cssText = "display:flex;flex-direction:column;gap:3px;";
 
       const topLine = document.createElement("div");
       topLine.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
 
       const lbl = document.createElement("span");
       lbl.textContent = labelTxt;
-      lbl.style.cssText = "font-size:0.8rem;font-weight:700;color:#334155;";
+      lbl.style.cssText = "font-size:0.78rem;font-weight:700;color:#334155;";
 
       const numInput = document.createElement("input");
       numInput.type = "number";
@@ -483,7 +493,7 @@ function openBoxSizePanelModal() {
       numInput.step = String(stepV);
       numInput.value = String(targetObj[propKey]);
       numInput.style.cssText =
-        "width:68px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:7px;font-size:0.82rem;font-weight:700;color:#111827;text-align:right;background:#ffffff;";
+        "width:64px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:7px;font-size:0.8rem;font-weight:700;color:#111827;text-align:right;background:#ffffff;";
 
       const slider = document.createElement("input");
       slider.type = "range";
@@ -491,7 +501,7 @@ function openBoxSizePanelModal() {
       slider.max = String(maxV);
       slider.step = String(stepV);
       slider.value = String(targetObj[propKey]);
-      slider.style.cssText = "width:100%;height:24px;cursor:pointer;touch-action:pan-y;";
+      slider.style.cssText = "width:100%;height:24px;cursor:pointer;touch-action:none;";
 
       const applyValue = (rawVal) => {
         const parsed = Number(rawVal);
@@ -558,7 +568,7 @@ function openBoxSizePanelModal() {
   resetBtn.type = "button";
   resetBtn.textContent = "Reset Default";
   resetBtn.style.cssText =
-    "min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-size:0.84rem;font-weight:700;cursor:pointer;";
+    "min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-size:0.84rem;font-weight:700;cursor:pointer;flex-shrink:0;";
   resetBtn.onclick = () => {
     sizes.miniBox = { ...FALLBACK_BOX_SIZES.miniBox };
     sizes.productBox = { ...FALLBACK_BOX_SIZES.productBox };
@@ -570,7 +580,7 @@ function openBoxSizePanelModal() {
   };
 
   const footer = document.createElement("div");
-  footer.style.cssText = "display:flex;gap:8px;margin-top:2px;";
+  footer.style.cssText = "display:flex;gap:8px;margin-top:2px;flex-shrink:0;";
 
   const cancelBtn = document.createElement("button");
   cancelBtn.type = "button";
