@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V14");
+console.log("OWNER_EDIT_COMPLETE_V15");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -894,18 +894,18 @@ function openCustomTextStylePopup(config) {
   topBar.appendChild(topCloseBtn);
 
   const textInput = document.createElement("textarea");
-  textInput.rows = 2;
+  textInput.rows = 3;
   textInput.value = currentText;
-  textInput.placeholder = "नाम लिखें या नीचे दूसरी लाइन के लिए Enter दबाएँ";
+  textInput.placeholder = "नाम लिखें (Enter दबाकर दूसरी लाइन में लिख सकते हैं)";
   textInput.style.cssText =
-    "width:100%;min-height:56px;max-height:110px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:0.96rem;line-height:1.3;color:#111827;box-sizing:border-box;resize:vertical;font-family:inherit;";
+    "width:100%;min-height:68px;max-height:140px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:0.96rem;line-height:1.35;color:#111827;box-sizing:border-box;resize:vertical;overflow:auto;font-family:inherit;";
 
   const previewBox = document.createElement("div");
   previewBox.style.cssText =
-    `padding:10px 12px;border-radius:10px;background:${isStore ? "#1e293b" : "#f1f5f9"};min-height:46px;max-height:110px;overflow:auto;display:flex;align-items:center;justify-content:center;text-align:center;`;
+    `padding:10px 12px;border-radius:10px;background:${isStore ? "#1e293b" : "#f1f5f9"};min-height:48px;max-height:120px;overflow:auto;display:flex;align-items:flex-start;justify-content:flex-start;text-align:left;`;
 
   const previewText = document.createElement("span");
-  previewText.style.cssText = "display:inline-block;line-height:1.15;white-space:pre-wrap;word-break:break-word;";
+  previewText.style.cssText = "display:inline-block;line-height:1.2;white-space:pre-line;word-break:normal;";
   previewBox.appendChild(previewText);
 
   stickyHeader.appendChild(topBar);
@@ -944,8 +944,9 @@ function openCustomTextStylePopup(config) {
       ? textInput.value
       : (isStore ? "Store Name" : isSection ? "Name" : "Item");
     applyTextStyleToElement(previewText, st);
-    previewText.style.lineHeight = "1.15";
-    previewText.style.whiteSpace = "pre-wrap";
+    previewText.style.lineHeight = "1.2";
+    previewText.style.whiteSpace = "pre-line";
+    previewText.style.overflow = "visible";
     if (!st.bgEnabled) {
       previewText.style.padding = "0px";
       previewText.style.borderRadius = "0px";
