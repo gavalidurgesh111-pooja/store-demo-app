@@ -1,4 +1,4 @@
-Console.log("OWNER_EDIT_COMPLETE_V9");
+console.log("OWNER_EDIT_COMPLETE_V9");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -785,12 +785,17 @@ function addCoverInEditMode() {
     data.coverSlotsLimit = data.coverSlots.length + 1;
   }
   data.coverSlots.push("");
+  const newSlotIdx = data.coverSlots.length - 1;
   renderHeader();
   attachOwnerStoreEditHandlers();
   const track = document.getElementById("coverSliderTrack");
   if (track) {
     track.scrollTo({ left: track.scrollWidth, behavior: "smooth" });
   }
+  pendingOwnerEditSlot = { type: "cover", slotIdx: newSlotIdx };
+  const fileInput = ensureOwnerInlineFileInput();
+  fileInput.value = "";
+  fileInput.click();
 }
 
 function removeCoverSlotAt(slotIdx) {
