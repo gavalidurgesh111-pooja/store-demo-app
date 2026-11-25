@@ -2327,7 +2327,7 @@ function attachOwnerStoreEditHandlers() {
       const nameEl = card.querySelector(".mini-box-name, .item-name");
       if (nameEl) {
         const nameRow = document.createElement("div");
-        nameRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:4px;";
+        nameRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:2px;min-width:0;";
         nameEl.parentNode.insertBefore(nameRow, nameEl);
         nameRow.appendChild(nameEl);
 
@@ -2337,7 +2337,7 @@ function attachOwnerStoreEditHandlers() {
         nameBtn.textContent = "✎";
         nameBtn.title = "Edit Name";
         nameBtn.style.cssText =
-          "flex-shrink:0;padding:1px 5px;border:1px solid #cbd5e1;border-radius:4px;background:#f1f5f9;color:#111827;font-size:0.68rem;font-weight:700;line-height:1.1;cursor:pointer;";
+          "flex-shrink:0;padding:0 4px;border:1px solid #cbd5e1;border-radius:4px;background:#f1f5f9;color:#111827;font-size:0.65rem;font-weight:700;line-height:1.1;cursor:pointer;";
         nameBtn.onclick = (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -2358,7 +2358,7 @@ function attachOwnerStoreEditHandlers() {
       priceBtn.textContent = "✎ ₹";
       priceBtn.title = "Set Amount";
       priceBtn.style.cssText =
-        "flex-shrink:0;padding:1px 5px;border:1px solid #cbd5e1;border-radius:4px;background:#fefce8;color:#854d0e;font-size:0.68rem;font-weight:700;line-height:1.1;cursor:pointer;";
+        "flex-shrink:0;padding:0 4px;border:1px solid #cbd5e1;border-radius:4px;background:#fefce8;color:#854d0e;font-size:0.65rem;font-weight:700;line-height:1.1;cursor:pointer;";
       priceBtn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -2374,7 +2374,7 @@ function attachOwnerStoreEditHandlers() {
 
       if (priceEl) {
         const priceRow = document.createElement("div");
-        priceRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:4px;";
+        priceRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:2px;min-width:0;";
         priceEl.parentNode.insertBefore(priceRow, priceEl);
         priceRow.appendChild(priceEl);
         priceRow.appendChild(priceBtn);
