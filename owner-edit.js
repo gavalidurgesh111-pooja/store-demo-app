@@ -1,4 +1,4 @@
-lconsole.log("OWNER_EDIT_COMPLETE_V12");
+console.log("OWNER_EDIT_COMPLETE_V13");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -41,6 +41,9 @@ function applyDraftThemeColor(hexColor) {
   if (bar) bar.style.background = hexColor;
   const saveBtn = document.getElementById("ownerLiveSaveBtn");
   if (saveBtn) saveBtn.style.color = hexColor;
+  if (typeof syncStripBarCornerDesign === "function") {
+    syncStripBarCornerDesign();
+  }
 }
 
 function hsvToHex(h, s, v) {
@@ -430,24 +433,13 @@ function clearBoxPreviewHighlights() {
 }
 
 function applyBoxSizePanelToDom(sizes) {
-  const mini = sizes.miniBox;
-  const prod = sizes.productBox;
-
   if (typeof window.applyBoxSizeStyles === "function") {
     window.applyBoxSizeStyles();
     return;
   }
 
-  document.documentElement.style.setProperty("--mini-box-w", `${mini.width}px`);
-  document.documentElement.style.setProperty("--mini-box-h", `${mini.height}px`);
-  document.documentElement.style.setProperty("--mini-box-img-h", `${mini.imgHeight}px`);
-  document.documentElement.style.setProperty("--mini-box-font-sz", `${mini.fontSize}px`);
-  document.documentElement.style.setProperty("--mini-box-bg", mini.bgColor || "#ffffff");
-  document.documentElement.style.setProperty("--product-box-w", `${prod.width}px`);
-  document.documentElement.style.setProperty("--product-box-h", `${prod.height}px`);
-  document.documentElement.style.setProperty("--product-box-img-h", `${prod.imgHeight}px`);
-  document.documentElement.style.setProperty("--product-box-font-sz", `${prod.fontSize}px`);
-  document.documentElement.style.setProperty("--product-box-bg", prod.bgColor || "#ffffff");
+  const mini = sizes.miniBox;
+  const prod = sizes.productBox;
 
   document.querySelectorAll(".mini-box").forEach((box) => {
     box.style.flex = `0 0 ${mini.width}px`;
@@ -456,25 +448,12 @@ function applyBoxSizePanelToDom(sizes) {
     box.style.maxWidth = `${mini.width}px`;
     box.style.height = `${mini.height}px`;
     box.style.minHeight = `${mini.height}px`;
-    box.style.backgroundColor = mini.bgColor || "#ffffff";
-
-    const img = box.querySelector("img");
-    if (img) {
-      img.style.width = "100%";
-      img.style.height = `${mini.imgHeight}px`;
-      img.style.objectFit = "cover";
-    }
-    const placeholder = box.querySelector("[data-box-placeholder='mini']");
-    if (placeholder) {
-      placeholder.style.height = `${mini.imgHeight}px`;
-    }
-    const nameEl = box.querySelector(".mini-box-name");
-    if (nameEl) {
-      nameEl.style.fontSize = `${mini.fontSize}px`;
-    }
-    const priceEl = box.querySelector(".mini-box-price");
-    if (priceEl) {
-      priceEl.style.fontSize = `${Math.max(9, mini.fontSize - 1)}px`;
+    box.style.setProperty("background", mini.bgColor || "#ffffff", "important");
+    box.style.setProperty("background-color", mini.bgColor || "#ffffff", "important");
+    const inner = box.querySelector(".mini-box-body");
+    if (inner) {
+      inner.style.setProperty("background", mini.bgColor || "#ffffff", "important");
+      inner.style.setProperty("background-color", mini.bgColor || "#ffffff", "important");
     }
   });
 
@@ -484,31 +463,14 @@ function applyBoxSizePanelToDom(sizes) {
     box.style.minWidth = `${prod.width}px`;
     box.style.maxWidth = `${prod.width}px`;
     box.style.minHeight = `${prod.height}px`;
-    box.style.backgroundColor = prod.bgColor || "#ffffff";
-
-    const img = box.querySelector("img");
-    if (img) {
-      img.style.width = "100%";
-      img.style.height = `${prod.imgHeight}px`;
-      img.style.objectFit = "cover";
-    }
-    const placeholder = box.querySelector("[data-box-placeholder='product']");
-    if (placeholder) {
-      placeholder.style.height = `${prod.imgHeight}px`;
-    }
-    const nameEl = box.querySelector(".item-name");
-    if (nameEl) {
-      nameEl.style.fontSize = `${prod.fontSize}px`;
-    }
-    const priceEl = box.querySelector(".item-price");
-    if (priceEl) {
-      priceEl.style.fontSize = `${Math.max(10, prod.fontSize - 1)}px`;
+    box.style.setProperty("background", prod.bgColor || "#ffffff", "important");
+    box.style.setProperty("background-color", prod.bgColor || "#ffffff", "important");
+    const inner = box.querySelector(".item-info");
+    if (inner) {
+      inner.style.setProperty("background", prod.bgColor || "#ffffff", "important");
+      inner.style.setProperty("background-color", prod.bgColor || "#ffffff", "important");
     }
   });
-
-  if (typeof syncStripBarCornerDesign === "function") {
-    syncStripBarCornerDesign();
-  }
 }
 
 function openBoxSizePanelModal() {
