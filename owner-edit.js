@@ -428,7 +428,6 @@ function openCustomTextStylePopup(config) {
   card.style.cssText =
     "width:100%;max-width:100%;background:#ffffff;border-radius:14px;padding:12px 14px 16px;box-shadow:0 12px 32px rgba(0,0,0,0.38);display:flex;flex-direction:column;gap:12px;";
 
-  // Sticky Name & Live Preview Header so scrolling down never hides the name box
   const stickyHeader = document.createElement("div");
   stickyHeader.style.cssText =
     "position:sticky;top:0;z-index:20;background:#ffffff;padding-bottom:8px;border-bottom:1px solid #e2e8f0;display:flex;flex-direction:column;gap:8px;";
@@ -459,9 +458,10 @@ function openCustomTextStylePopup(config) {
 
   const previewBox = document.createElement("div");
   previewBox.style.cssText =
-    `padding:10px 12px;border-radius:10px;background:${isStore ? "#1e293b" : "#f1f5f9"};min-height:48px;max-height:92px;overflow:auto;display:flex;align-items:center;justify-content:center;overflow-wrap:anywhere;word-break:break-word;text-align:center;`;
+    `padding:10px 12px;border-radius:10px;background:${isStore ? "#1e293b" : "#f1f5f9"};min-height:46px;max-height:92px;overflow:auto;display:flex;align-items:center;justify-content:center;`;
 
   const previewText = document.createElement("span");
+  previewText.style.cssText = "display:inline-block;line-height:0.92;white-space:nowrap;";
   previewBox.appendChild(previewText);
 
   stickyHeader.appendChild(topBar);
@@ -503,6 +503,11 @@ function openCustomTextStylePopup(config) {
       ? textInput.value
       : (isStore ? "Store Name" : isSection ? "Name" : "Item");
     applyTextStyleToElement(previewText, st);
+    previewText.style.lineHeight = "0.92";
+    if (!st.bgEnabled) {
+      previewText.style.padding = "0px";
+      previewText.style.borderRadius = "0px";
+    }
   }
 
   const presetWrap = document.createElement("div");
@@ -565,7 +570,6 @@ function openCustomTextStylePopup(config) {
 
   textInput.oninput = syncPreview;
 
-  // Text Colour Button -> Opens Colour Picker Modal
   const mainColorRow = document.createElement("div");
   mainColorRow.style.cssText =
     "display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;padding:10px 12px;";
@@ -594,7 +598,6 @@ function openCustomTextStylePopup(config) {
   mainColorRow.appendChild(mainColorLbl);
   mainColorRow.appendChild(textColorTriggerBtn);
 
-  // Font Style (100 options scrollable list)
   const fontWrap = document.createElement("div");
   fontWrap.style.cssText =
     "display:flex;flex-direction:column;gap:8px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;padding:10px 12px;";
@@ -629,7 +632,6 @@ function openCustomTextStylePopup(config) {
   fontWrap.appendChild(fontLbl);
   fontWrap.appendChild(fontSelectEl);
 
-  // Size & Weight Sliders
   const sizeSlider = makeLabeledSlider("Size", minSize, maxSize, 1, st.fontSize, "px", accentHex, (val) => {
     st.fontSize = val;
     st.borderWidth = getSafeThinBorderWidth(st.fontSize, st.borderWidth);
@@ -641,7 +643,6 @@ function openCustomTextStylePopup(config) {
     syncPreview();
   });
 
-  // Glow Box
   glowCtrl = makeToggleColorBox(
     "Glow (चमक)",
     st.glowEnabled,
@@ -663,7 +664,6 @@ function openCustomTextStylePopup(config) {
     })
   );
 
-  // Thin Border Box
   const maxThinSlider = Math.max(0.7, Math.min(1.5, Number((st.fontSize * 0.06).toFixed(1))));
   borderCtrl = makeToggleColorBox(
     "Thin Border (पतली बॉर्डर)",
@@ -686,7 +686,6 @@ function openCustomTextStylePopup(config) {
     })
   );
 
-  // Background Box
   bgCtrl = makeToggleColorBox(
     "Background (बैकग्राउंड)",
     st.bgEnabled,
@@ -1392,7 +1391,7 @@ function attachOwnerStoreEditHandlers() {
       pencilBtn.textContent = "✎";
       pencilBtn.title = "Edit Store Name & Style";
       pencilBtn.style.cssText =
-        "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:25;padding:1px 5px;margin:0;border:1px solid #0f172a;border-radius:4px;background:rgba(255,255,255,0.92);color:#0f172a;font-size:0.75rem;font-weight:700;line-height:1;cursor:pointer;";
+        "position:static;transform:none;flex-shrink:0;padding:2px 6px;margin:0;border:1px solid #0f172a;border-radius:4px;background:rgba(255,255,255,0.92);color:#0f172a;font-size:0.75rem;font-weight:700;line-height:1;cursor:pointer;";
       pencilBtn.onclick = (e) => {
         e.stopPropagation();
         openStoreNameEditorPopup();
