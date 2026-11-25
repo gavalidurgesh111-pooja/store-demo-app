@@ -603,9 +603,9 @@ function renderSections() {
         };
         box.innerHTML = `
           ${imgMarkup(item.img, cleanItemName, true)}
-          <div class="mini-box-body">
-            <div class="mini-box-name"></div>
-            <div class="mini-box-price">${priceDisplay}</div>
+          <div class="mini-box-body" style="text-align:left;">
+            <div class="mini-box-name" style="text-align:left;"></div>
+            <div class="mini-box-price" style="text-align:left;">${priceDisplay}</div>
           </div>
         `;
         const miniNameEl = box.querySelector(".mini-box-name");
