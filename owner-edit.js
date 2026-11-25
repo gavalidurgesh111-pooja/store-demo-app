@@ -65,10 +65,9 @@ function getColorNameFromHsv(h, s, v) {
   return base;
 }
 
-function openCustomColourPickerModal() {
+function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore) {
   removeCustomPickerIfExists();
-  const data = getWorkingStoreData();
-  const previousColor = data.themeColor || "#0f766e";
+  const previousColor = initialColor || "#0f766e";
   let hue = 0;
   let sat = 0.85;
   let val = 0.85;
@@ -76,11 +75,11 @@ function openCustomColourPickerModal() {
   const modal = document.createElement("div");
   modal.id = "ownerCustomColorPickerModal";
   modal.style.cssText =
-    "position:fixed;inset:0;z-index:120;background:rgba(15,23,42,0.55);display:flex;align-items:center;justify-content:center;padding:12px;";
+    "position:fixed;inset:0;z-index:160;background:rgba(15,23,42,0.62);display:flex;align-items:center;justify-content:center;padding:12px;";
 
   const card = document.createElement("div");
   card.style.cssText =
-    "width:100%;max-width:440px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,0.28);";
+    "width:100%;max-width:440px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,0.35);";
 
   const header = document.createElement("div");
   header.style.cssText =
@@ -102,7 +101,9 @@ function openCustomColourPickerModal() {
   leftHead.appendChild(colorNameBadge);
 
   const closeModalAndRestore = () => {
-    applyDraftThemeColor(previousColor);
+    if (typeof onCancelRestore === "function") {
+      onCancelRestore(previousColor);
+    }
     modal.remove();
   };
 
@@ -205,7 +206,7 @@ function openCustomColourPickerModal() {
     sat = rect.width ? x / rect.width : 0.85;
     val = rect.height ? 1 - y / rect.height : 0.85;
     const hex = syncColorUI();
-    applyDraftThemeColor(hex);
+    if (typeof onChooseColor === "function") onChooseColor(hex, false);
   }
 
   function updateHueFromPointer(clientX) {
@@ -213,7 +214,7 @@ function openCustomColourPickerModal() {
     const x = Math.min(Math.max(0, clientX - rect.left), rect.width || 1);
     hue = rect.width ? (x / rect.width) * 360 : 0;
     const hex = syncColorUI();
-    applyDraftThemeColor(hex);
+    if (typeof onChooseColor === "function") onChooseColor(hex, false);
   }
 
   let draggingShade = false;
@@ -244,9 +245,8 @@ function openCustomColourPickerModal() {
 
   applyBtn.onclick = () => {
     const finalHex = syncColorUI();
-    applyDraftThemeColor(finalHex);
+    if (typeof onChooseColor === "function") onChooseColor(finalHex, true);
     modal.remove();
-    attachOwnerStoreEditHandlers();
   };
 
   sliderWrap.appendChild(hueTrackWrap);
@@ -263,6 +263,21 @@ function openCustomColourPickerModal() {
   document.body.appendChild(modal);
 
   syncColorUI();
+}
+
+function openCustomColourPickerModal() {
+  const data = getWorkingStoreData();
+  const previousColor = data.themeColor || "#0f766e";
+  openStandaloneColorPicker(
+    previousColor,
+    (hex, isFinal) => {
+      applyDraftThemeColor(hex);
+      if (isFinal) attachOwnerStoreEditHandlers();
+    },
+    (restoreHex) => {
+      applyDraftThemeColor(restoreHex);
+    }
+  );
 }
 
 function makeLabeledSlider(labelText, min, max, step, initialVal, unitSuffix, accentHex, onChange) {
@@ -324,22 +339,27 @@ function makeToggleColorBox(titleText, enabledVal, colorVal, accentHex, onToggle
   toggleLabel.appendChild(chk);
   toggleLabel.appendChild(txt);
 
-  const colorPicker = document.createElement("input");
-  colorPicker.type = "color";
-  colorPicker.value = colorVal || "#38bdf8";
-  colorPicker.style.cssText =
-    "width:42px;height:34px;border:1px solid #cbd5e1;border-radius:8px;padding:2px;background:#ffffff;cursor:pointer;flex-shrink:0;";
-  colorPicker.oninput = () => onColorChange(colorPicker.value);
+  const colorBtn = document.createElement("button");
+  colorBtn.type = "button";
+  colorBtn.textContent = "Colour";
+  colorBtn.style.cssText =
+    `min-height:34px;padding:4px 10px;border:2px solid #cbd5e1;border-radius:8px;background:${colorVal || "#38bdf8"};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.75);font-size:0.78rem;font-weight:700;cursor:pointer;flex-shrink:0;`;
+  colorBtn.onclick = () => {
+    openStandaloneColorPicker(colorBtn.style.background || colorVal || "#38bdf8", (hex) => {
+      colorBtn.style.background = hex;
+      onColorChange(hex);
+    });
+  };
 
   head.appendChild(toggleLabel);
-  head.appendChild(colorPicker);
+  head.appendChild(colorBtn);
   box.appendChild(head);
 
   const extraWrap = document.createElement("div");
   extraWrap.style.cssText = "display:flex;flex-direction:column;gap:8px;";
   box.appendChild(extraWrap);
 
-  return { box, extraWrap, chk, colorPicker };
+  return { box, extraWrap, chk, colorBtn };
 }
 
 function openCustomTextStylePopup(config) {
@@ -402,24 +422,29 @@ function openCustomTextStylePopup(config) {
   const modal = document.createElement("div");
   modal.id = "ownerStoreNameModal";
   modal.style.cssText =
-    "position:fixed;inset:0;z-index:125;background:rgba(15,23,42,0.72);display:flex;align-items:center;justify-content:center;padding:8px;overflow-y:auto;";
+    "position:fixed;inset:0;z-index:125;background:rgba(15,23,42,0.72);display:flex;align-items:flex-start;justify-content:center;padding:8px;overflow-y:auto;";
 
   const card = document.createElement("div");
   card.style.cssText =
-    "width:100%;max-width:100%;max-height:94vh;overflow-y:auto;background:#ffffff;border-radius:14px;padding:14px;box-shadow:0 12px 32px rgba(0,0,0,0.38);display:flex;flex-direction:column;gap:12px;";
+    "width:100%;max-width:100%;background:#ffffff;border-radius:14px;padding:12px 14px 16px;box-shadow:0 12px 32px rgba(0,0,0,0.38);display:flex;flex-direction:column;gap:12px;";
+
+  // Sticky Name & Live Preview Header so scrolling down never hides the name box
+  const stickyHeader = document.createElement("div");
+  stickyHeader.style.cssText =
+    "position:sticky;top:0;z-index:20;background:#ffffff;padding-bottom:8px;border-bottom:1px solid #e2e8f0;display:flex;flex-direction:column;gap:8px;";
 
   const topBar = document.createElement("div");
   topBar.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:8px;";
 
   const heading = document.createElement("div");
   heading.textContent = config.modalTitle || "Name & Style";
-  heading.style.cssText = "font-size:1.05rem;font-weight:800;color:#111827;";
+  heading.style.cssText = "font-size:1.02rem;font-weight:800;color:#111827;";
 
   const topCloseBtn = document.createElement("button");
   topCloseBtn.type = "button";
   topCloseBtn.textContent = "✕";
   topCloseBtn.style.cssText =
-    "border:none;background:#f1f5f9;border-radius:8px;min-width:36px;min-height:36px;font-size:1rem;font-weight:700;color:#334155;cursor:pointer;";
+    "border:none;background:#f1f5f9;border-radius:8px;min-width:34px;min-height:34px;font-size:1rem;font-weight:700;color:#334155;cursor:pointer;";
   topCloseBtn.onclick = () => modal.remove();
 
   topBar.appendChild(heading);
@@ -430,14 +455,55 @@ function openCustomTextStylePopup(config) {
   textInput.value = currentText;
   textInput.placeholder = "Paste or type name (no changes)";
   textInput.style.cssText =
-    "width:100%;min-height:44px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;font-size:1rem;color:#111827;box-sizing:border-box;";
+    "width:100%;min-height:40px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:0.96rem;color:#111827;box-sizing:border-box;";
 
   const previewBox = document.createElement("div");
   previewBox.style.cssText =
-    `padding:16px 12px;border-radius:12px;background:${isStore ? "#1e293b" : "#f1f5f9"};min-height:66px;display:flex;align-items:center;justify-content:center;overflow-wrap:anywhere;word-break:break-word;text-align:center;`;
+    `padding:10px 12px;border-radius:10px;background:${isStore ? "#1e293b" : "#f1f5f9"};min-height:48px;max-height:92px;overflow:auto;display:flex;align-items:center;justify-content:center;overflow-wrap:anywhere;word-break:break-word;text-align:center;`;
 
   const previewText = document.createElement("span");
   previewBox.appendChild(previewText);
+
+  stickyHeader.appendChild(topBar);
+  stickyHeader.appendChild(textInput);
+  stickyHeader.appendChild(previewBox);
+
+  let glowCtrl;
+  let borderCtrl;
+  let bgCtrl;
+  let textColorTriggerBtn;
+  let fontSelectEl;
+
+  function syncAllControlsFromState() {
+    if (textColorTriggerBtn) {
+      textColorTriggerBtn.style.background = st.color || "#ffffff";
+    }
+    if (glowCtrl) {
+      glowCtrl.chk.checked = Boolean(st.glowEnabled);
+      glowCtrl.colorBtn.style.background = st.glowColor || "#38bdf8";
+    }
+    if (borderCtrl) {
+      borderCtrl.chk.checked = Boolean(st.borderEnabled);
+      borderCtrl.colorBtn.style.background = st.borderColor || "#0f172a";
+    }
+    if (bgCtrl) {
+      bgCtrl.chk.checked = Boolean(st.bgEnabled);
+      bgCtrl.colorBtn.style.background = st.bgColor || "#0f172a";
+    }
+    if (fontSelectEl) {
+      const matchedIdx = STORE_FONT_OPTIONS.findIndex(
+        (opt) => opt.value === st.fontFamily && (opt.italic ? "italic" : "normal") === st.fontStyle
+      );
+      if (matchedIdx >= 0) fontSelectEl.value = String(matchedIdx);
+    }
+  }
+
+  function syncPreview() {
+    previewText.textContent = textInput.value.length > 0
+      ? textInput.value
+      : (isStore ? "Store Name" : isSection ? "Name" : "Item");
+    applyTextStyleToElement(previewText, st);
+  }
 
   const presetWrap = document.createElement("div");
   presetWrap.style.cssText = "display:grid;grid-template-columns:repeat(2,1fr);gap:8px;";
@@ -483,40 +549,6 @@ function openCustomTextStylePopup(config) {
     }
   ];
 
-  let mainColorPicker;
-  let glowCtrl;
-  let borderCtrl;
-  let bgCtrl;
-  let renderSwatches;
-  let renderFontBtns;
-
-  function syncAllControlsFromState() {
-    if (mainColorPicker && /^#[0-9a-fA-F]{6}$/.test(st.color)) {
-      mainColorPicker.value = st.color;
-    }
-    if (glowCtrl) {
-      glowCtrl.chk.checked = Boolean(st.glowEnabled);
-      if (/^#[0-9a-fA-F]{6}$/.test(st.glowColor)) glowCtrl.colorPicker.value = st.glowColor;
-    }
-    if (borderCtrl) {
-      borderCtrl.chk.checked = Boolean(st.borderEnabled);
-      if (/^#[0-9a-fA-F]{6}$/.test(st.borderColor)) borderCtrl.colorPicker.value = st.borderColor;
-    }
-    if (bgCtrl) {
-      bgCtrl.chk.checked = Boolean(st.bgEnabled);
-      if (/^#[0-9a-fA-F]{6}$/.test(st.bgColor)) bgCtrl.colorPicker.value = st.bgColor;
-    }
-    if (renderSwatches) renderSwatches();
-    if (renderFontBtns) renderFontBtns();
-  }
-
-  function syncPreview() {
-    previewText.textContent = textInput.value.length > 0
-      ? textInput.value
-      : (isStore ? "Store Name" : isSection ? "Name" : "Item");
-    applyTextStyleToElement(previewText, st);
-  }
-
   presets.forEach((p) => {
     const pBtn = document.createElement("button");
     pBtn.type = "button";
@@ -533,59 +565,71 @@ function openCustomTextStylePopup(config) {
 
   textInput.oninput = syncPreview;
 
-  const mainColorWrap = document.createElement("div");
-  mainColorWrap.style.cssText = "display:flex;flex-direction:column;gap:8px;";
-
-  const mainColorTop = document.createElement("div");
-  mainColorTop.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
+  // Text Colour Button -> Opens Colour Picker Modal
+  const mainColorRow = document.createElement("div");
+  mainColorRow.style.cssText =
+    "display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;padding:10px 12px;";
 
   const mainColorLbl = document.createElement("span");
   mainColorLbl.textContent = "Text Colour";
-  mainColorLbl.style.cssText = "font-size:0.86rem;font-weight:700;color:#334155;";
+  mainColorLbl.style.cssText = "font-size:0.88rem;font-weight:700;color:#111827;cursor:pointer;flex:1;";
 
-  mainColorPicker = document.createElement("input");
-  mainColorPicker.type = "color";
-  mainColorPicker.value = /^#[0-9a-fA-F]{6}$/.test(st.color) ? st.color : "#ffffff";
-  mainColorPicker.style.cssText =
-    "width:44px;height:36px;border:1px solid #cbd5e1;border-radius:8px;padding:2px;background:#ffffff;cursor:pointer;";
-  mainColorPicker.oninput = () => {
-    st.color = mainColorPicker.value;
-    renderSwatches();
-    syncPreview();
-  };
+  textColorTriggerBtn = document.createElement("button");
+  textColorTriggerBtn.type = "button";
+  textColorTriggerBtn.textContent = "Pick Colour";
+  textColorTriggerBtn.style.cssText =
+    `min-height:36px;padding:6px 12px;border:2px solid #cbd5e1;border-radius:8px;background:${st.color || "#ffffff"};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.8);font-size:0.82rem;font-weight:700;cursor:pointer;`;
 
-  mainColorTop.appendChild(mainColorLbl);
-  mainColorTop.appendChild(mainColorPicker);
-
-  const swatchRow = document.createElement("div");
-  swatchRow.style.cssText = "display:flex;flex-wrap:wrap;gap:10px;align-items:center;";
-  const palette = Array.from(new Set([accentHex, ...STORE_NAME_COLORS, "#ef4444", "#38bdf8", "#a855f7"]));
-
-  palette.forEach((hex) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.style.cssText =
-      `width:32px;height:32px;border-radius:50%;background:${hex};border:2px solid #cbd5e1;cursor:pointer;padding:0;`;
-    b.onclick = () => {
+  const triggerTextColorPicker = () => {
+    openStandaloneColorPicker(st.color || "#ffffff", (hex) => {
       st.color = hex;
-      if (/^#[0-9a-fA-F]{6}$/.test(hex)) mainColorPicker.value = hex;
-      renderSwatches();
+      textColorTriggerBtn.style.background = hex;
       syncPreview();
-    };
-    swatchRow.appendChild(b);
-  });
-
-  renderSwatches = () => {
-    swatchRow.querySelectorAll("button").forEach((b, i) => {
-      const active = palette[i].toLowerCase() === String(st.color).toLowerCase();
-      b.style.outline = active ? "2.5px solid #0f172a" : "none";
-      b.style.outlineOffset = active ? "2px" : "0px";
     });
   };
 
-  mainColorWrap.appendChild(mainColorTop);
-  mainColorWrap.appendChild(swatchRow);
+  mainColorLbl.onclick = triggerTextColorPicker;
+  textColorTriggerBtn.onclick = triggerTextColorPicker;
 
+  mainColorRow.appendChild(mainColorLbl);
+  mainColorRow.appendChild(textColorTriggerBtn);
+
+  // Font Style (100 options scrollable list)
+  const fontWrap = document.createElement("div");
+  fontWrap.style.cssText =
+    "display:flex;flex-direction:column;gap:8px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;padding:10px 12px;";
+
+  const fontLbl = document.createElement("label");
+  fontLbl.textContent = "Font Style (100)";
+  fontLbl.style.cssText = "font-size:0.88rem;font-weight:700;color:#111827;";
+
+  fontSelectEl = document.createElement("select");
+  fontSelectEl.size = 6;
+  fontSelectEl.style.cssText =
+    "width:100%;max-height:150px;overflow-y:auto;padding:6px 8px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#111827;font-size:0.88rem;font-weight:600;cursor:pointer;";
+
+  STORE_FONT_OPTIONS.forEach((opt, idx) => {
+    const optionEl = document.createElement("option");
+    optionEl.value = String(idx);
+    optionEl.textContent = opt.label;
+    optionEl.style.fontFamily = opt.value;
+    optionEl.style.fontStyle = opt.italic ? "italic" : "normal";
+    optionEl.style.padding = "5px 6px";
+    fontSelectEl.appendChild(optionEl);
+  });
+
+  fontSelectEl.onchange = () => {
+    const idx = Number(fontSelectEl.value);
+    const chosen = STORE_FONT_OPTIONS[idx] || STORE_FONT_OPTIONS[0];
+    st.fontFamily = chosen.value;
+    st.fontStyle = chosen.italic ? "italic" : "normal";
+    syncPreview();
+  };
+
+  fontWrap.appendChild(fontLbl);
+  fontWrap.appendChild(fontSelectEl);
+
+  // Size & Weight Sliders
   const sizeSlider = makeLabeledSlider("Size", minSize, maxSize, 1, st.fontSize, "px", accentHex, (val) => {
     st.fontSize = val;
     st.borderWidth = getSafeThinBorderWidth(st.fontSize, st.borderWidth);
@@ -597,44 +641,7 @@ function openCustomTextStylePopup(config) {
     syncPreview();
   });
 
-  const fontWrap = document.createElement("div");
-  fontWrap.style.cssText = "display:flex;flex-direction:column;gap:8px;";
-
-  const fontLbl = document.createElement("span");
-  fontLbl.textContent = "Font Style";
-  fontLbl.style.cssText = "font-size:0.86rem;font-weight:700;color:#334155;";
-
-  const fontList = document.createElement("div");
-  fontList.style.cssText = "display:grid;grid-template-columns:repeat(2,1fr);gap:8px;";
-
-  STORE_FONT_OPTIONS.forEach((opt) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.textContent = opt.label;
-    btn.style.cssText =
-      `min-height:40px;padding:7px 10px;border-radius:8px;border:1px solid #cbd5e1;font-family:${opt.value};font-style:${opt.italic ? "italic" : "normal"};font-size:0.86rem;font-weight:700;cursor:pointer;`;
-    btn.onclick = () => {
-      st.fontFamily = opt.value;
-      st.fontStyle = opt.italic ? "italic" : "normal";
-      renderFontBtns();
-      syncPreview();
-    };
-    fontList.appendChild(btn);
-  });
-
-  renderFontBtns = () => {
-    fontList.querySelectorAll("button").forEach((b, i) => {
-      const opt = STORE_FONT_OPTIONS[i];
-      const active = opt.value === st.fontFamily && (opt.italic ? "italic" : "normal") === st.fontStyle;
-      b.style.background = active ? accentHex : "#f8fafc";
-      b.style.color = active ? "#ffffff" : "#111827";
-      b.style.borderColor = active ? accentHex : "#cbd5e1";
-    });
-  };
-
-  fontWrap.appendChild(fontLbl);
-  fontWrap.appendChild(fontList);
-
+  // Glow Box
   glowCtrl = makeToggleColorBox(
     "Glow (चमक)",
     st.glowEnabled,
@@ -656,6 +663,7 @@ function openCustomTextStylePopup(config) {
     })
   );
 
+  // Thin Border Box
   const maxThinSlider = Math.max(0.7, Math.min(1.5, Number((st.fontSize * 0.06).toFixed(1))));
   borderCtrl = makeToggleColorBox(
     "Thin Border (पतली बॉर्डर)",
@@ -678,6 +686,7 @@ function openCustomTextStylePopup(config) {
     })
   );
 
+  // Background Box
   bgCtrl = makeToggleColorBox(
     "Background (बैकग्राउंड)",
     st.bgEnabled,
@@ -755,14 +764,12 @@ function openCustomTextStylePopup(config) {
   footer.appendChild(cancelBtn);
   footer.appendChild(applyBtn);
 
-  card.appendChild(topBar);
-  card.appendChild(textInput);
-  card.appendChild(previewBox);
+  card.appendChild(stickyHeader);
   card.appendChild(presetWrap);
-  card.appendChild(mainColorWrap);
+  card.appendChild(mainColorRow);
+  card.appendChild(fontWrap);
   card.appendChild(sizeSlider);
   card.appendChild(weightSlider);
-  card.appendChild(fontWrap);
   card.appendChild(glowCtrl.box);
   card.appendChild(borderCtrl.box);
   card.appendChild(bgCtrl.box);
@@ -771,8 +778,7 @@ function openCustomTextStylePopup(config) {
   modal.appendChild(card);
   document.body.appendChild(modal);
 
-  renderSwatches();
-  renderFontBtns();
+  syncAllControlsFromState();
   syncPreview();
 }
 
