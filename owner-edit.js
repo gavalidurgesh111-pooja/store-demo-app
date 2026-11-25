@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V11");
+lconsole.log("OWNER_EDIT_COMPLETE_V12");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -395,8 +395,8 @@ function createBlueKnobSlider(min, max, step, initialVal, onValueChange) {
 
 // ==================== BOX SIZE PANEL (छोटा बॉक्स और प्रोडक्ट बॉक्स) ====================
 const FALLBACK_BOX_SIZES = {
-  miniBox: { width: 92, height: 122, imgHeight: 74, fontSize: 12 },
-  productBox: { width: 150, height: 215, imgHeight: 125, fontSize: 14 }
+  miniBox: { width: 92, height: 122, imgHeight: 74, fontSize: 12, bgColor: "#ffffff" },
+  productBox: { width: 150, height: 215, imgHeight: 125, fontSize: 14, bgColor: "#ffffff" }
 };
 
 function getCurrentBoxSizesForEdit() {
@@ -442,10 +442,12 @@ function applyBoxSizePanelToDom(sizes) {
   document.documentElement.style.setProperty("--mini-box-h", `${mini.height}px`);
   document.documentElement.style.setProperty("--mini-box-img-h", `${mini.imgHeight}px`);
   document.documentElement.style.setProperty("--mini-box-font-sz", `${mini.fontSize}px`);
+  document.documentElement.style.setProperty("--mini-box-bg", mini.bgColor || "#ffffff");
   document.documentElement.style.setProperty("--product-box-w", `${prod.width}px`);
   document.documentElement.style.setProperty("--product-box-h", `${prod.height}px`);
   document.documentElement.style.setProperty("--product-box-img-h", `${prod.imgHeight}px`);
   document.documentElement.style.setProperty("--product-box-font-sz", `${prod.fontSize}px`);
+  document.documentElement.style.setProperty("--product-box-bg", prod.bgColor || "#ffffff");
 
   document.querySelectorAll(".mini-box").forEach((box) => {
     box.style.flex = `0 0 ${mini.width}px`;
@@ -454,6 +456,7 @@ function applyBoxSizePanelToDom(sizes) {
     box.style.maxWidth = `${mini.width}px`;
     box.style.height = `${mini.height}px`;
     box.style.minHeight = `${mini.height}px`;
+    box.style.backgroundColor = mini.bgColor || "#ffffff";
 
     const img = box.querySelector("img");
     if (img) {
@@ -481,6 +484,7 @@ function applyBoxSizePanelToDom(sizes) {
     box.style.minWidth = `${prod.width}px`;
     box.style.maxWidth = `${prod.width}px`;
     box.style.minHeight = `${prod.height}px`;
+    box.style.backgroundColor = prod.bgColor || "#ffffff";
 
     const img = box.querySelector("img");
     if (img) {
@@ -501,6 +505,10 @@ function applyBoxSizePanelToDom(sizes) {
       priceEl.style.fontSize = `${Math.max(10, prod.fontSize - 1)}px`;
     }
   });
+
+  if (typeof syncStripBarCornerDesign === "function") {
+    syncStripBarCornerDesign();
+  }
 }
 
 function openBoxSizePanelModal() {
@@ -640,7 +648,50 @@ function openBoxSizePanelModal() {
     addControlRow("फ़ोटो ऊँचाई (Image Height)", "imgHeight", limits.imgMin, limits.imgMax, 1);
     addControlRow("टेक्स्ट फ़ॉन्ट साइज़ (Text Font Size)", "fontSize", limits.fontMin, limits.fontMax, 1);
 
-    return { secWrap, syncAll: () => rows.forEach((r) => r.sync()) };
+    const bgRow = document.createElement("div");
+    bgRow.style.cssText =
+      "display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:4px;border-top:1px dashed #cbd5e1;";
+
+    const bgLbl = document.createElement("span");
+    bgLbl.textContent = "बॉक्स का अंदरूनी रंग (Inner Colour)";
+    bgLbl.style.cssText = "font-size:0.78rem;font-weight:700;color:#334155;";
+
+    const bgColorBtn = document.createElement("button");
+    bgColorBtn.type = "button";
+    bgColorBtn.textContent = "रंग चुनें";
+
+    const syncBgBtnStyle = () => {
+      const hex = targetObj.bgColor || "#ffffff";
+      bgColorBtn.style.background = hex;
+      const isLight = hex.toLowerCase() === "#ffffff";
+      bgColorBtn.style.color = isLight ? "#111827" : "#ffffff";
+      bgColorBtn.style.border = isLight ? "1px solid #94a3b8" : "2px solid #cbd5e1";
+    };
+    syncBgBtnStyle();
+
+    bgColorBtn.style.cssText +=
+      "min-height:32px;padding:4px 10px;border-radius:8px;font-size:0.76rem;font-weight:700;cursor:pointer;";
+
+    bgColorBtn.onclick = () => {
+      openStandaloneColorPicker(targetObj.bgColor || "#ffffff", (hex) => {
+        targetObj.bgColor = hex;
+        syncBgBtnStyle();
+        applyBoxSizePanelToDom(sizes);
+        highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex);
+      });
+    };
+
+    bgRow.appendChild(bgLbl);
+    bgRow.appendChild(bgColorBtn);
+    secWrap.appendChild(bgRow);
+
+    return {
+      secWrap,
+      syncAll: () => {
+        rows.forEach((r) => r.sync());
+        syncBgBtnStyle();
+      }
+    };
   }
 
   const miniSec = buildBoxSection("छोटा बॉक्स (.mini-box)", sizes.miniBox, ".mini-box", {
@@ -2120,6 +2171,10 @@ function attachOwnerStoreEditHandlers() {
     bottomControls.appendChild(addRowBtn);
     bottomControls.appendChild(remRowBtn);
     sectionsContainer.insertAdjacentElement("afterend", bottomControls);
+  }
+
+  if (typeof syncStripBarCornerDesign === "function") {
+    syncStripBarCornerDesign();
   }
 }
 
