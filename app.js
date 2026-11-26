@@ -334,84 +334,109 @@ function applyStripBarStyle(stripEl, sec) {
   const topCol = sec && sec.barGradTop ? normalizeHexColor(sec.barGradTop, "") : "";
   const botCol = sec && sec.barGradBottom ? normalizeHexColor(sec.barGradBottom, "") : "";
   const customBg = sec && sec.barBgColor ? normalizeHexColor(sec.barBgColor, "") : "";
+  const data = getWorkingStoreData();
+  const accentColor = (data && data.themeColor) || "#0f766e";
 
-  if (topCol && botCol) {
-    const grad = `linear-gradient(to bottom, ${topCol} 0%, ${botCol} 100%)`;
-    stripEl.style.setProperty("background", grad, "important");
-    stripEl.style.setProperty("background-color", topCol, "important");
-  } else if (customBg) {
-    stripEl.style.setProperty("background", customBg, "important");
-    stripEl.style.setProperty("background-color", customBg, "important");
+  const fillBg = (topCol && botCol)
+    ? `linear-gradient(to bottom, ${topCol} 0%, ${botCol} 100%)`
+    : (customBg || "");
+
+  if (fillBg) {
+    stripEl.style.setProperty("background", fillBg, "important");
+    if (topCol || customBg) {
+      stripEl.style.setProperty("background-color", topCol || customBg, "important");
+    }
   }
 
   if (sec && Number.isFinite(Number(sec.barHeight)) && Number(sec.barHeight) > 0) {
     const h = clampNum(sec.barHeight, 24, 80, 36);
     stripEl.style.setProperty("min-height", `${h}px`, "important");
     stripEl.style.setProperty("height", `${h}px`, "important");
-    stripEl.style.setProperty("display", "flex", "important");
-    stripEl.style.setProperty("align-items", "center", "important");
   }
+  stripEl.style.setProperty("display", "flex", "important");
+  stripEl.style.setProperty("align-items", "center", "important");
+  stripEl.style.setProperty("position", "relative", "important");
+  stripEl.style.setProperty("box-sizing", "border-box", "important");
 
   const sp = sec && sec.barSpacing && typeof sec.barSpacing === "object" ? sec.barSpacing : null;
-  if (sp) {
-    if (Number.isFinite(Number(sp.top))) stripEl.style.setProperty("padding-top", `${clampNum(sp.top, 0, 30, 6)}px`, "important");
-    if (Number.isFinite(Number(sp.bottom))) stripEl.style.setProperty("padding-bottom", `${clampNum(sp.bottom, 0, 30, 6)}px`, "important");
-    if (Number.isFinite(Number(sp.left))) stripEl.style.setProperty("padding-left", `${clampNum(sp.left, 0, 36, 10)}px`, "important");
-    if (Number.isFinite(Number(sp.right))) stripEl.style.setProperty("padding-right", `${clampNum(sp.right, 0, 36, 10)}px`, "important");
-  }
+  const padTop = sp && Number.isFinite(Number(sp.top)) ? clampNum(sp.top, 0, 30, 6) : null;
+  const padBot = sp && Number.isFinite(Number(sp.bottom)) ? clampNum(sp.bottom, 0, 30, 6) : null;
+  const padLeft = sp && Number.isFinite(Number(sp.left)) ? clampNum(sp.left, 0, 36, 12) : null;
+  const padRight = sp && Number.isFinite(Number(sp.right)) ? clampNum(sp.right, 0, 36, 12) : null;
 
-  const cs = window.getComputedStyle(stripEl);
-  const bwLeft = parseFloat(cs.borderLeftWidth) || 0;
-  const sideW = bwLeft > 0 ? `${bwLeft}px` : "5px";
-  const sideStyle = cs.borderLeftStyle && cs.borderLeftStyle !== "none" ? cs.borderLeftStyle : "solid";
-  const sideCol = topCol || customBg || (cs.borderLeftColor && cs.borderLeftColor !== "rgba(0, 0, 0, 0)" ? cs.borderLeftColor : "#0f766e");
+  if (padTop !== null) stripEl.style.setProperty("padding-top", `${padTop}px`, "important");
+  if (padBot !== null) stripEl.style.setProperty("padding-bottom", `${padBot}px`, "important");
 
+  stripEl.querySelectorAll(".strip-side-edge-cap").forEach((el) => el.remove());
+  stripEl.style.removeProperty("clip-path");
+
+  const edgeColor = topCol || customBg || accentColor;
   const shapeMode = (sec && sec.barShape) || "default";
-  if (shapeMode === "round") {
+
+  if (shapeMode === "square") {
+    stripEl.style.setProperty("border-radius", "0px", "important");
+    stripEl.style.setProperty("border-top", "none", "important");
+    stripEl.style.setProperty("border-bottom", "none", "important");
+    stripEl.style.setProperty("border-left", `6px solid ${edgeColor}`, "important");
+    stripEl.style.setProperty("border-right", `6px solid ${edgeColor}`, "important");
+    stripEl.style.setProperty("padding-left", `${padLeft !== null ? padLeft : 12}px`, "important");
+    stripEl.style.setProperty("padding-right", `${padRight !== null ? padRight : 12}px`, "important");
+  } else if (shapeMode === "round") {
     stripEl.style.setProperty("border-radius", "999px", "important");
-    stripEl.style.setProperty("border-left-width", sideW, "important");
-    stripEl.style.setProperty("border-left-style", sideStyle, "important");
-    stripEl.style.setProperty("border-left-color", sideCol, "important");
-    stripEl.style.setProperty("border-right-width", sideW, "important");
-    stripEl.style.setProperty("border-right-style", sideStyle, "important");
-    stripEl.style.setProperty("border-right-color", sideCol, "important");
-  } else if (shapeMode === "square") {
-    stripEl.style.setProperty("border-radius", "0px", "important");
-    stripEl.style.setProperty("border-top-left-radius", "0px", "important");
-    stripEl.style.setProperty("border-top-right-radius", "0px", "important");
-    stripEl.style.setProperty("border-bottom-left-radius", "0px", "important");
-    stripEl.style.setProperty("border-bottom-right-radius", "0px", "important");
-    stripEl.style.setProperty("border-left-width", sideW, "important");
-    stripEl.style.setProperty("border-left-style", sideStyle, "important");
-    stripEl.style.setProperty("border-left-color", sideCol, "important");
-    stripEl.style.setProperty("border-right-width", sideW, "important");
-    stripEl.style.setProperty("border-right-style", sideStyle, "important");
-    stripEl.style.setProperty("border-right-color", sideCol, "important");
+    stripEl.style.setProperty("border-top", "none", "important");
+    stripEl.style.setProperty("border-bottom", "none", "important");
+    stripEl.style.setProperty("border-left", `6px solid ${edgeColor}`, "important");
+    stripEl.style.setProperty("border-right", `6px solid ${edgeColor}`, "important");
+    stripEl.style.setProperty("padding-left", `${padLeft !== null ? padLeft : 14}px`, "important");
+    stripEl.style.setProperty("padding-right", `${padRight !== null ? padRight : 14}px`, "important");
   } else if (shapeMode === "triangle") {
-    // तिकोने किनारे (Left & Right triangle notches) दोनों साइड पर रंग के साथ
-    const triCol = botCol || topCol || customBg || sideCol;
     stripEl.style.setProperty("border-radius", "0px", "important");
-    stripEl.style.setProperty("border-left", `14px solid ${triCol}`, "important");
-    stripEl.style.setProperty("border-right", `14px solid ${triCol}`, "important");
-    stripEl.style.setProperty("border-top", `2px solid ${topCol || triCol}`, "important");
-    stripEl.style.setProperty("border-bottom", `2px solid ${botCol || triCol}`, "important");
+    stripEl.style.setProperty("border", "none", "important");
+    stripEl.style.setProperty("padding-left", `${(padLeft !== null ? padLeft : 10) + 12}px`, "important");
+    stripEl.style.setProperty("padding-right", `${(padRight !== null ? padRight : 10) + 12}px`, "important");
+
+    const leftCap = document.createElement("span");
+    leftCap.className = "strip-side-edge-cap";
+    leftCap.style.cssText =
+      `position:absolute;left:0;top:0;bottom:0;width:14px;background:${edgeColor};clip-path:polygon(100% 0%, 0% 50%, 100% 100%);pointer-events:none;`;
+
+    const rightCap = document.createElement("span");
+    rightCap.className = "strip-side-edge-cap";
+    rightCap.style.cssText =
+      `position:absolute;right:0;top:0;bottom:0;width:14px;background:${edgeColor};clip-path:polygon(0% 0%, 100% 50%, 0% 100%);pointer-events:none;`;
+
+    stripEl.appendChild(leftCap);
+    stripEl.appendChild(rightCap);
   } else {
+    stripEl.style.removeProperty("border-top");
+    stripEl.style.removeProperty("border-bottom");
+    stripEl.style.removeProperty("border-left");
+    stripEl.style.removeProperty("border-right");
+    stripEl.style.removeProperty("border-radius");
+
+    const cs = window.getComputedStyle(stripEl);
     const tl = cs.borderTopLeftRadius;
     const bl = cs.borderBottomLeftRadius;
+    const bwLeft = parseFloat(cs.borderLeftWidth) || 0;
+    const sideW = bwLeft > 0 ? `${bwLeft}px` : "5px";
+    const sideStyle = cs.borderLeftStyle && cs.borderLeftStyle !== "none" ? cs.borderLeftStyle : "solid";
+    const sideCol = cs.borderLeftColor && cs.borderLeftColor !== "rgba(0, 0, 0, 0)" ? cs.borderLeftColor : edgeColor;
+
     if (tl && tl !== "0px") {
       stripEl.style.setProperty("border-top-right-radius", tl, "important");
     }
     if (bl && bl !== "0px") {
       stripEl.style.setProperty("border-bottom-right-radius", bl, "important");
     }
-    if (bwLeft > 0) {
-      stripEl.style.setProperty("border-right-width", `${bwLeft}px`, "important");
-      stripEl.style.setProperty("border-right-style", sideStyle, "important");
-      if (cs.borderLeftColor) {
-        stripEl.style.setProperty("border-right-color", cs.borderLeftColor, "important");
-      }
+    stripEl.style.setProperty("border-left", `${sideW} ${sideStyle} ${sideCol}`, "important");
+    stripEl.style.setProperty("border-right", `${sideW} ${sideStyle} ${sideCol}`, "important");
+
+    if (padLeft !== null) {
+      stripEl.style.setProperty("padding-left", `${padLeft}px`, "important");
     }
-    if ((!sp || !Number.isFinite(Number(sp.right))) && cs.paddingLeft && cs.paddingLeft !== "0px") {
+    if (padRight !== null) {
+      stripEl.style.setProperty("padding-right", `${padRight}px`, "important");
+    } else if (cs.paddingLeft && cs.paddingLeft !== "0px") {
       stripEl.style.setProperty("padding-right", cs.paddingLeft, "important");
     }
   }
