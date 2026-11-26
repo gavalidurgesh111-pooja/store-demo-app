@@ -126,11 +126,33 @@ function applyNoTapHighlightRule() {
       user-select: text !important;
       -webkit-touch-callout: default !important;
     }
+    @keyframes storeAdFloatAnim {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+    @keyframes storeAdMarqueeAnim {
+      0% { transform: translateX(65%); }
+      100% { transform: translateX(-65%); }
+    }
   `;
   (document.head || document.documentElement).appendChild(styleEl);
 }
 
 applyNoTapHighlightRule();
+
+function getEffectiveBoxSizesForSection(data, sIdx) {
+  const globalSizes = normalizeBoxSizes(data && data.boxSizes);
+  const sec = data && Array.isArray(data.sections) ? data.sections[sIdx] : null;
+  if (!sec || !sec.customBoxSizes || typeof sec.customBoxSizes !== "object") {
+    return globalSizes;
+  }
+  const cMini = sec.customBoxSizes.miniBox || {};
+  const cProd = sec.customBoxSizes.productBox || {};
+  return normalizeBoxSizes({
+    miniBox: { ...globalSizes.miniBox, ...cMini },
+    productBox: { ...globalSizes.productBox, ...cProd }
+  });
+}
 
 function syncNoBgCleanStyleTag(miniNoBg, prodNoBg) {
   const tagId = "storeBoxNoBgCleanOverrideStyle";
@@ -405,103 +427,114 @@ function applyInnerBoxColor(boxEl, innerSelector, boxCfg) {
 
 function applyBoxSizeStyles() {
   const data = getWorkingStoreData();
-  const sizes = normalizeBoxSizes(data.boxSizes);
-  data.boxSizes = sizes;
+  const baseSizes = normalizeBoxSizes(data.boxSizes);
+  data.boxSizes = baseSizes;
 
-  syncNoBgCleanStyleTag(sizes.miniBox.textBgTransparent, sizes.productBox.textBgTransparent);
+  const anyMiniNoBg = Boolean(
+    baseSizes.miniBox.textBgTransparent ||
+    (data.sections || []).some((s) => s && s.customBoxSizes && s.customBoxSizes.miniBox && s.customBoxSizes.miniBox.textBgTransparent)
+  );
+  const anyProdNoBg = Boolean(
+    baseSizes.productBox.textBgTransparent ||
+    (data.sections || []).some((s) => s && s.customBoxSizes && s.customBoxSizes.productBox && s.customBoxSizes.productBox.textBgTransparent)
+  );
+  syncNoBgCleanStyleTag(anyMiniNoBg, anyProdNoBg);
 
   const root = document.documentElement;
-  root.style.setProperty("--mini-box-w", `${sizes.miniBox.width}px`);
-  root.style.setProperty("--mini-box-h", `${sizes.miniBox.height}px`);
-  root.style.setProperty("--mini-box-img-h", `${sizes.miniBox.imgHeight}px`);
-  root.style.setProperty("--mini-box-font-sz", `${sizes.miniBox.fontSize}px`);
-  root.style.setProperty("--mini-box-bg", sizes.miniBox.textBgTransparent ? "transparent" : sizes.miniBox.bgColor);
-  root.style.setProperty("--mini-price-sz", `${sizes.miniBox.priceFontSize}px`);
-  root.style.setProperty("--mini-price-color", sizes.miniBox.priceColor);
+  root.style.setProperty("--mini-box-w", `${baseSizes.miniBox.width}px`);
+  root.style.setProperty("--mini-box-h", `${baseSizes.miniBox.height}px`);
+  root.style.setProperty("--mini-box-img-h", `${baseSizes.miniBox.imgHeight}px`);
+  root.style.setProperty("--mini-box-font-sz", `${baseSizes.miniBox.fontSize}px`);
+  root.style.setProperty("--mini-box-bg", baseSizes.miniBox.textBgTransparent ? "transparent" : baseSizes.miniBox.bgColor);
+  root.style.setProperty("--mini-price-sz", `${baseSizes.miniBox.priceFontSize}px`);
+  root.style.setProperty("--mini-price-color", baseSizes.miniBox.priceColor);
 
-  root.style.setProperty("--product-box-w", `${sizes.productBox.width}px`);
-  root.style.setProperty("--product-box-h", `${sizes.productBox.height}px`);
-  root.style.setProperty("--product-box-img-h", `${sizes.productBox.imgHeight}px`);
-  root.style.setProperty("--product-box-font-sz", `${sizes.productBox.fontSize}px`);
-  root.style.setProperty("--product-box-bg", sizes.productBox.textBgTransparent ? "transparent" : sizes.productBox.bgColor);
-  root.style.setProperty("--product-price-sz", `${sizes.productBox.priceFontSize}px`);
-  root.style.setProperty("--product-price-color", sizes.productBox.priceColor);
-
-  const topSecItems = (data.sections && data.sections[0] && Array.isArray(data.sections[0].items)) ? data.sections[0].items : [];
-
-  document.querySelectorAll(".mini-box:not(.user-photo-only-box)").forEach((box, idx) => {
-    const item = topSecItems[idx] || null;
-    box.style.flex = `0 0 ${sizes.miniBox.width}px`;
-    box.style.width = `${sizes.miniBox.width}px`;
-    box.style.minWidth = `${sizes.miniBox.width}px`;
-    box.style.maxWidth = `${sizes.miniBox.width}px`;
-    box.style.height = "auto";
-    if (sizes.miniBox.textBgTransparent) {
-      box.style.minHeight = "0px";
-    } else {
-      box.style.minHeight = `${sizes.miniBox.height}px`;
-    }
-
-    applyInnerBoxColor(box, ".mini-box-body", sizes.miniBox);
-    const bodyEl = box.querySelector(".mini-box-body");
-    if (bodyEl) {
-      bodyEl.style.width = "100%";
-      bodyEl.style.maxWidth = "100%";
-      bodyEl.style.minWidth = "0";
-      bodyEl.style.overflow = "hidden";
-      bodyEl.style.boxSizing = "border-box";
-    }
-
-    const img = box.querySelector("img");
-    if (img) {
-      img.style.width = "100%";
-      img.style.height = `${sizes.miniBox.imgHeight}px`;
-      img.style.objectFit = "cover";
-      img.style.borderRadius = sizes.miniBox.textBgTransparent ? "10px" : "0px";
-    }
-    const placeholder = box.querySelector("[data-box-placeholder='mini']");
-    if (placeholder) {
-      placeholder.style.width = "100%";
-      placeholder.style.height = `${sizes.miniBox.imgHeight}px`;
-      placeholder.style.borderRadius = sizes.miniBox.textBgTransparent ? "10px" : "0px";
-    }
-
-    const nameEl = box.querySelector(".mini-box-name");
-    if (nameEl) {
-      if (!item || !item.nameStyle) {
-        nameEl.style.fontSize = `${sizes.miniBox.fontSize}px`;
-      }
-      nameEl.style.display = "block";
-      nameEl.style.width = "100%";
-      nameEl.style.maxWidth = "100%";
-      nameEl.style.minWidth = "0";
-      nameEl.style.overflow = "hidden";
-      if (sizes.miniBox.textBgTransparent) {
-        nameEl.style.setProperty("background", "transparent", "important");
-        nameEl.style.setProperty("background-color", "transparent", "important");
-        nameEl.style.setProperty("border", "none", "important");
-        nameEl.style.setProperty("box-shadow", "none", "important");
-      }
-    }
-    const priceEl = box.querySelector(".mini-box-price");
-    if (priceEl) {
-      applyPriceVisualStyle(priceEl, item, sizes.miniBox);
-    }
-  });
-
-  const userProfileBox = document.querySelector(".mini-box.user-photo-only-box");
-  if (userProfileBox) {
-    userProfileBox.style.flex = `0 0 ${sizes.miniBox.width}px`;
-    userProfileBox.style.width = `${sizes.miniBox.width}px`;
-    userProfileBox.style.minWidth = `${sizes.miniBox.width}px`;
-    userProfileBox.style.maxWidth = `${sizes.miniBox.width}px`;
-    userProfileBox.style.minHeight = `${sizes.miniBox.height}px`;
-  }
+  root.style.setProperty("--product-box-w", `${baseSizes.productBox.width}px`);
+  root.style.setProperty("--product-box-h", `${baseSizes.productBox.height}px`);
+  root.style.setProperty("--product-box-img-h", `${baseSizes.productBox.imgHeight}px`);
+  root.style.setProperty("--product-box-font-sz", `${baseSizes.productBox.fontSize}px`);
+  root.style.setProperty("--product-box-bg", baseSizes.productBox.textBgTransparent ? "transparent" : baseSizes.productBox.bgColor);
+  root.style.setProperty("--product-price-sz", `${baseSizes.productBox.priceFontSize}px`);
+  root.style.setProperty("--product-price-color", baseSizes.productBox.priceColor);
 
   const sectionEls = document.querySelectorAll("#sectionsContainer .row-section");
   sectionEls.forEach((secEl, sIdx) => {
-    if (sIdx === 0) return;
-    const secItems = (data.sections && data.sections[sIdx] && Array.isArray(data.sections[sIdx].items)) ? data.sections[sIdx].items : [];
+    const sec = (data.sections && data.sections[sIdx]) || null;
+    const sizes = getEffectiveBoxSizesForSection(data, sIdx);
+    const secItems = (sec && Array.isArray(sec.items)) ? sec.items : [];
+
+    if (sIdx === 0) {
+      secEl.querySelectorAll(".mini-box:not(.user-photo-only-box)").forEach((box, idx) => {
+        const item = secItems[idx] || null;
+        box.style.flex = `0 0 ${sizes.miniBox.width}px`;
+        box.style.width = `${sizes.miniBox.width}px`;
+        box.style.minWidth = `${sizes.miniBox.width}px`;
+        box.style.maxWidth = `${sizes.miniBox.width}px`;
+        box.style.height = "auto";
+        if (sizes.miniBox.textBgTransparent) {
+          box.style.minHeight = "0px";
+        } else {
+          box.style.minHeight = `${sizes.miniBox.height}px`;
+        }
+
+        applyInnerBoxColor(box, ".mini-box-body", sizes.miniBox);
+        const bodyEl = box.querySelector(".mini-box-body");
+        if (bodyEl) {
+          bodyEl.style.width = "100%";
+          bodyEl.style.maxWidth = "100%";
+          bodyEl.style.minWidth = "0";
+          bodyEl.style.overflow = "hidden";
+          bodyEl.style.boxSizing = "border-box";
+        }
+
+        const img = box.querySelector("img");
+        if (img) {
+          img.style.width = "100%";
+          img.style.height = `${sizes.miniBox.imgHeight}px`;
+          img.style.objectFit = "cover";
+          img.style.borderRadius = sizes.miniBox.textBgTransparent ? "10px" : "0px";
+        }
+        const placeholder = box.querySelector("[data-box-placeholder='mini']");
+        if (placeholder) {
+          placeholder.style.width = "100%";
+          placeholder.style.height = `${sizes.miniBox.imgHeight}px`;
+          placeholder.style.borderRadius = sizes.miniBox.textBgTransparent ? "10px" : "0px";
+        }
+
+        const nameEl = box.querySelector(".mini-box-name");
+        if (nameEl) {
+          if (!item || !item.nameStyle) {
+            nameEl.style.fontSize = `${sizes.miniBox.fontSize}px`;
+          }
+          nameEl.style.display = "block";
+          nameEl.style.width = "100%";
+          nameEl.style.maxWidth = "100%";
+          nameEl.style.minWidth = "0";
+          nameEl.style.overflow = "hidden";
+          if (sizes.miniBox.textBgTransparent) {
+            nameEl.style.setProperty("background", "transparent", "important");
+            nameEl.style.setProperty("background-color", "transparent", "important");
+            nameEl.style.setProperty("border", "none", "important");
+            nameEl.style.setProperty("box-shadow", "none", "important");
+          }
+        }
+        const priceEl = box.querySelector(".mini-box-price");
+        if (priceEl) {
+          applyPriceVisualStyle(priceEl, item, sizes.miniBox);
+        }
+      });
+
+      const userProfileBox = secEl.querySelector(".mini-box.user-photo-only-box");
+      if (userProfileBox) {
+        userProfileBox.style.flex = `0 0 ${sizes.miniBox.width}px`;
+        userProfileBox.style.width = `${sizes.miniBox.width}px`;
+        userProfileBox.style.minWidth = `${sizes.miniBox.width}px`;
+        userProfileBox.style.maxWidth = `${sizes.miniBox.width}px`;
+        userProfileBox.style.minHeight = `${sizes.miniBox.height}px`;
+      }
+      return;
+    }
+
     secEl.querySelectorAll(".item-box").forEach((box, idx) => {
       const item = secItems[idx] || null;
       box.style.flex = `0 0 ${sizes.productBox.width}px`;
@@ -566,53 +599,66 @@ function applyBoxSizeStyles() {
   syncStripBarCornerDesign();
 }
 
-function updateBoxSizeSetting(boxType, prop, value, { persist = false } = {}) {
+function updateBoxSizeSetting(boxType, prop, value, { persist = false, sIdx = null } = {}) {
   const targetData = persist ? storeData : getWorkingStoreData();
   targetData.boxSizes = normalizeBoxSizes(targetData.boxSizes);
 
+  let targetObj;
+  if (typeof sIdx === "number" && targetData.sections && targetData.sections[sIdx]) {
+    const sec = targetData.sections[sIdx];
+    const effective = getEffectiveBoxSizesForSection(targetData, sIdx);
+    sec.customBoxSizes = {
+      miniBox: { ...effective.miniBox },
+      productBox: { ...effective.productBox }
+    };
+    targetObj = boxType === "mini" ? sec.customBoxSizes.miniBox : sec.customBoxSizes.productBox;
+  } else {
+    targetObj = boxType === "mini" ? targetData.boxSizes.miniBox : targetData.boxSizes.productBox;
+  }
+
   if (boxType === "mini") {
     if (prop === "width") {
-      targetData.boxSizes.miniBox.width = clampNum(value, 64, 180, DEFAULT_BOX_SIZES.miniBox.width);
+      targetObj.width = clampNum(value, 64, 180, DEFAULT_BOX_SIZES.miniBox.width);
     } else if (prop === "height") {
-      targetData.boxSizes.miniBox.height = clampNum(value, 90, 240, DEFAULT_BOX_SIZES.miniBox.height);
-      const maxImg = Math.max(44, targetData.boxSizes.miniBox.height - 42);
-      if (targetData.boxSizes.miniBox.imgHeight > maxImg) {
-        targetData.boxSizes.miniBox.imgHeight = maxImg;
+      targetObj.height = clampNum(value, 90, 240, DEFAULT_BOX_SIZES.miniBox.height);
+      const maxImg = Math.max(44, targetObj.height - 42);
+      if (targetObj.imgHeight > maxImg) {
+        targetObj.imgHeight = maxImg;
       }
     } else if (prop === "imgHeight") {
-      targetData.boxSizes.miniBox.imgHeight = clampNum(value, 44, 160, DEFAULT_BOX_SIZES.miniBox.imgHeight);
+      targetObj.imgHeight = clampNum(value, 44, 160, DEFAULT_BOX_SIZES.miniBox.imgHeight);
     } else if (prop === "fontSize") {
-      targetData.boxSizes.miniBox.fontSize = clampNum(value, 9, 26, DEFAULT_BOX_SIZES.miniBox.fontSize);
+      targetObj.fontSize = clampNum(value, 9, 26, DEFAULT_BOX_SIZES.miniBox.fontSize);
     } else if (prop === "bgColor") {
-      targetData.boxSizes.miniBox.bgColor = normalizeHexColor(value, DEFAULT_BOX_SIZES.miniBox.bgColor);
+      targetObj.bgColor = normalizeHexColor(value, DEFAULT_BOX_SIZES.miniBox.bgColor);
     } else if (prop === "priceFontSize") {
-      targetData.boxSizes.miniBox.priceFontSize = clampNum(value, 9, 26, DEFAULT_BOX_SIZES.miniBox.priceFontSize);
+      targetObj.priceFontSize = clampNum(value, 9, 26, DEFAULT_BOX_SIZES.miniBox.priceFontSize);
     } else if (prop === "priceColor") {
-      targetData.boxSizes.miniBox.priceColor = normalizeHexColor(value, DEFAULT_BOX_SIZES.miniBox.priceColor);
+      targetObj.priceColor = normalizeHexColor(value, DEFAULT_BOX_SIZES.miniBox.priceColor);
     } else if (prop === "textBgTransparent") {
-      targetData.boxSizes.miniBox.textBgTransparent = Boolean(value);
+      targetObj.textBgTransparent = Boolean(value);
     }
   } else if (boxType === "product") {
     if (prop === "width") {
-      targetData.boxSizes.productBox.width = clampNum(value, 110, 320, DEFAULT_BOX_SIZES.productBox.width);
+      targetObj.width = clampNum(value, 110, 320, DEFAULT_BOX_SIZES.productBox.width);
     } else if (prop === "height") {
-      targetData.boxSizes.productBox.height = clampNum(value, 165, 420, DEFAULT_BOX_SIZES.productBox.height);
-      const maxImg = Math.max(80, targetData.boxSizes.productBox.height - 82);
-      if (targetData.boxSizes.productBox.imgHeight > maxImg) {
-        targetData.boxSizes.productBox.imgHeight = maxImg;
+      targetObj.height = clampNum(value, 165, 420, DEFAULT_BOX_SIZES.productBox.height);
+      const maxImg = Math.max(80, targetObj.height - 82);
+      if (targetObj.imgHeight > maxImg) {
+        targetObj.imgHeight = maxImg;
       }
     } else if (prop === "imgHeight") {
-      targetData.boxSizes.productBox.imgHeight = clampNum(value, 80, 260, DEFAULT_BOX_SIZES.productBox.imgHeight);
+      targetObj.imgHeight = clampNum(value, 80, 260, DEFAULT_BOX_SIZES.productBox.imgHeight);
     } else if (prop === "fontSize") {
-      targetData.boxSizes.productBox.fontSize = clampNum(value, 10, 30, DEFAULT_BOX_SIZES.productBox.fontSize);
+      targetObj.fontSize = clampNum(value, 10, 30, DEFAULT_BOX_SIZES.productBox.fontSize);
     } else if (prop === "bgColor") {
-      targetData.boxSizes.productBox.bgColor = normalizeHexColor(value, DEFAULT_BOX_SIZES.productBox.bgColor);
+      targetObj.bgColor = normalizeHexColor(value, DEFAULT_BOX_SIZES.productBox.bgColor);
     } else if (prop === "priceFontSize") {
-      targetData.boxSizes.productBox.priceFontSize = clampNum(value, 10, 28, DEFAULT_BOX_SIZES.productBox.priceFontSize);
+      targetObj.priceFontSize = clampNum(value, 10, 28, DEFAULT_BOX_SIZES.productBox.priceFontSize);
     } else if (prop === "priceColor") {
-      targetData.boxSizes.productBox.priceColor = normalizeHexColor(value, DEFAULT_BOX_SIZES.productBox.priceColor);
+      targetObj.priceColor = normalizeHexColor(value, DEFAULT_BOX_SIZES.productBox.priceColor);
     } else if (prop === "textBgTransparent") {
-      targetData.boxSizes.productBox.textBgTransparent = Boolean(value);
+      targetObj.textBgTransparent = Boolean(value);
     }
   }
 
@@ -627,8 +673,18 @@ function updateBoxSizeSetting(boxType, prop, value, { persist = false } = {}) {
   applyBoxSizeStyles();
 }
 
-function resetBoxSizes({ persist = false } = {}) {
+function resetBoxSizes({ persist = false, sIdx = null } = {}) {
   const fresh = normalizeBoxSizes(DEFAULT_BOX_SIZES);
+  if (typeof sIdx === "number") {
+    const targetData = persist ? storeData : getWorkingStoreData();
+    if (targetData.sections && targetData.sections[sIdx]) {
+      delete targetData.sections[sIdx].customBoxSizes;
+    }
+    if (persist) saveData();
+    applyBoxSizeStyles();
+    return;
+  }
+
   if (persist) {
     storeData.boxSizes = JSON.parse(JSON.stringify(fresh));
     if (draftStoreData) draftStoreData.boxSizes = JSON.parse(JSON.stringify(fresh));
@@ -791,7 +847,16 @@ function buildInitialData() {
         nameStyle: null
       });
     }
-    return { title, items, titleStyle: null, barBgColor: "", barHidden: false, barHeight: 36 };
+    return {
+      title,
+      items,
+      titleStyle: null,
+      barBgColor: "",
+      barHidden: false,
+      barHeight: 36,
+      customBoxSizes: null,
+      customAd: null
+    };
   });
 
   const ownerFolders = [
@@ -1143,6 +1208,58 @@ function renderHeader() {
   startCoverAutoScroll(track, visibleSlots.length);
 }
 
+function renderCustomAdSlotElement(adCfg) {
+  if (!adCfg || (!adCfg.code && !adCfg.label)) return null;
+
+  const wVal = String(adCfg.width || "100%").trim();
+  const hVal = String(adCfg.height || "64px").trim();
+  const moveMode = adCfg.moveMode || "static";
+
+  const outerBox = document.createElement("div");
+  outerBox.className = "owner-custom-ad-slot";
+  outerBox.style.cssText =
+    `width:${wVal};max-width:100%;height:${hVal};margin:6px auto;border:1px dashed #94a3b8;border-radius:10px;background:#f8fafc;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;box-sizing:border-box;`;
+
+  const innerMover = document.createElement("div");
+  innerMover.style.cssText =
+    "width:100%;height:100%;display:flex;align-items:center;justify-content:center;box-sizing:border-box;";
+
+  if (moveMode === "float") {
+    innerMover.style.animation = "storeAdFloatAnim 2.4s ease-in-out infinite";
+  } else if (moveMode === "marquee") {
+    innerMover.style.animation = "storeAdMarqueeAnim 7s linear infinite";
+    innerMover.style.whiteSpace = "nowrap";
+  }
+
+  const rawCode = String(adCfg.code || "").trim();
+  if (/^https?:\/\//i.test(rawCode) && /\.(png|jpe?g|webp|gif)(\?.*)?$/i.test(rawCode)) {
+    const img = document.createElement("img");
+    img.src = rawCode;
+    img.alt = adCfg.label || "Ad";
+    img.style.cssText = "max-width:100%;max-height:100%;object-fit:contain;display:block;";
+    innerMover.appendChild(img);
+  } else if (rawCode) {
+    const htmlHolder = document.createElement("div");
+    htmlHolder.style.cssText = "width:100%;height:100%;display:flex;align-items:center;justify-content:center;";
+    htmlHolder.innerHTML = rawCode;
+    htmlHolder.querySelectorAll("script").forEach((oldScript) => {
+      const s = document.createElement("script");
+      Array.from(oldScript.attributes).forEach((attr) => s.setAttribute(attr.name, attr.value));
+      s.textContent = oldScript.textContent || "";
+      oldScript.replaceWith(s);
+    });
+    innerMover.appendChild(htmlHolder);
+  } else {
+    const badge = document.createElement("span");
+    badge.textContent = adCfg.label || "Ad";
+    badge.style.cssText = "font-size:0.82rem;font-weight:700;color:#334155;";
+    innerMover.appendChild(badge);
+  }
+
+  outerBox.appendChild(innerMover);
+  return outerBox;
+}
+
 function renderSections() {
   const data = getWorkingStoreData();
   const container = document.getElementById("sectionsContainer");
@@ -1150,13 +1267,13 @@ function renderSections() {
   container.innerHTML = "";
   const savedPhoto = data.userProfile?.photo || "";
   const maxBoxes = Math.min(MAX_INDEX_BOXES, Math.max(0, Number(data.indexBoxLimit ?? MAX_INDEX_BOXES)));
-  const boxSizes = normalizeBoxSizes(data.boxSizes);
 
   data.sections.forEach((sec, sIdx) => {
     const sectionEl = document.createElement("section");
     sectionEl.className = "row-section";
     sectionEl.dataset.sectionIndex = String(sIdx);
 
+    const boxSizes = getEffectiveBoxSizesForSection(data, sIdx);
     const isBarHidden = Boolean(sec && sec.barHidden);
 
     if (!isBarHidden) {
@@ -1174,6 +1291,9 @@ function renderSections() {
       });
       applyStripBarStyle(stripEl, sec);
       sectionEl.appendChild(stripEl);
+    } else if (sec && sec.customAd) {
+      const adEl = renderCustomAdSlotElement(sec.customAd);
+      if (adEl) sectionEl.appendChild(adEl);
     }
 
     if (sIdx === 0) {
