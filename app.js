@@ -12,14 +12,18 @@ const DEFAULT_BOX_SIZES = {
     height: 122,
     imgHeight: 74,
     fontSize: 12,
-    bgColor: "#ffffff"
+    bgColor: "#ffffff",
+    priceFontSize: 11,
+    priceColor: "#111827"
   },
   productBox: {
     width: 150,
     height: 215,
     imgHeight: 125,
     fontSize: 14,
-    bgColor: "#ffffff"
+    bgColor: "#ffffff",
+    priceFontSize: 13,
+    priceColor: "#111827"
   }
 };
 
@@ -144,14 +148,18 @@ function normalizeBoxSizes(raw) {
       height: clampNum(mini.height, 90, 240, DEFAULT_BOX_SIZES.miniBox.height),
       imgHeight: clampNum(mini.imgHeight, 44, 160, DEFAULT_BOX_SIZES.miniBox.imgHeight),
       fontSize: clampNum(mini.fontSize, 9, 26, DEFAULT_BOX_SIZES.miniBox.fontSize),
-      bgColor: normalizeHexColor(mini.bgColor, DEFAULT_BOX_SIZES.miniBox.bgColor)
+      bgColor: normalizeHexColor(mini.bgColor, DEFAULT_BOX_SIZES.miniBox.bgColor),
+      priceFontSize: clampNum(mini.priceFontSize, 9, 26, DEFAULT_BOX_SIZES.miniBox.priceFontSize),
+      priceColor: normalizeHexColor(mini.priceColor, DEFAULT_BOX_SIZES.miniBox.priceColor)
     },
     productBox: {
       width: clampNum(prod.width, 110, 320, DEFAULT_BOX_SIZES.productBox.width),
       height: clampNum(prod.height, 165, 420, DEFAULT_BOX_SIZES.productBox.height),
       imgHeight: clampNum(prod.imgHeight, 80, 260, DEFAULT_BOX_SIZES.productBox.imgHeight),
       fontSize: clampNum(prod.fontSize, 10, 30, DEFAULT_BOX_SIZES.productBox.fontSize),
-      bgColor: normalizeHexColor(prod.bgColor, DEFAULT_BOX_SIZES.productBox.bgColor)
+      bgColor: normalizeHexColor(prod.bgColor, DEFAULT_BOX_SIZES.productBox.bgColor),
+      priceFontSize: clampNum(prod.priceFontSize, 10, 28, DEFAULT_BOX_SIZES.productBox.priceFontSize),
+      priceColor: normalizeHexColor(prod.priceColor, DEFAULT_BOX_SIZES.productBox.priceColor)
     }
   };
 }
@@ -185,39 +193,73 @@ function renderItemNameLines(containerEl, rawText, alignMode = "left") {
   });
 }
 
-function syncStripBarCornerDesign() {
+function applyPriceVisualStyle(priceEl, item, defaultBoxPriceStyle) {
+  if (!priceEl) return;
+  const customSize = item && Number.isFinite(Number(item.priceFontSize)) && Number(item.priceFontSize) > 0
+    ? Number(item.priceFontSize)
+    : defaultBoxPriceStyle.priceFontSize;
+  const customColor = item && item.priceColor
+    ? normalizeHexColor(item.priceColor, defaultBoxPriceStyle.priceColor)
+    : defaultBoxPriceStyle.priceColor;
+
+  priceEl.style.setProperty("font-size", `${customSize}px`, "important");
+  priceEl.style.setProperty("color", customColor, "important");
+  priceEl.style.setProperty("font-weight", "700", "important");
+}
+
+function applyStripBarStyle(stripEl, sec) {
+  if (!stripEl) return;
   const data = getWorkingStoreData();
   const themeAccent = (data && data.themeColor) || "#0f766e";
+  const customBg = sec && sec.barBgColor ? normalizeHexColor(sec.barBgColor, "") : "";
 
-  document.querySelectorAll(".strip-bar").forEach((stripEl) => {
-    const cs = window.getComputedStyle(stripEl);
-    const tl = cs.borderTopLeftRadius;
-    const bl = cs.borderBottomLeftRadius;
-    const bwLeft = parseFloat(cs.borderLeftWidth) || 0;
-    const bStyleLeft = cs.borderLeftStyle && cs.borderLeftStyle !== "none" ? cs.borderLeftStyle : "solid";
-    const bColorLeft = cs.borderLeftColor && cs.borderLeftColor !== "rgba(0, 0, 0, 0)" ? cs.borderLeftColor : themeAccent;
+  if (customBg) {
+    stripEl.style.setProperty("background", customBg, "important");
+    stripEl.style.setProperty("background-color", customBg, "important");
+  }
 
-    const radiusTop = tl && tl !== "0px" ? tl : "10px";
-    const radiusBottom = bl && bl !== "0px" ? bl : "10px";
-    const sideWidth = bwLeft > 0 ? `${bwLeft}px` : "5px";
+  const cs = window.getComputedStyle(stripEl);
+  const tl = cs.borderTopLeftRadius;
+  const bl = cs.borderBottomLeftRadius;
+  const bwLeft = parseFloat(cs.borderLeftWidth) || 0;
+  const bStyleLeft = cs.borderLeftStyle && cs.borderLeftStyle !== "none" ? cs.borderLeftStyle : "solid";
+  const bColorLeft = cs.borderLeftColor && cs.borderLeftColor !== "rgba(0, 0, 0, 0)" ? cs.borderLeftColor : themeAccent;
 
-    stripEl.style.setProperty("border-top-left-radius", radiusTop, "important");
-    stripEl.style.setProperty("border-bottom-left-radius", radiusBottom, "important");
-    stripEl.style.setProperty("border-top-right-radius", radiusTop, "important");
-    stripEl.style.setProperty("border-bottom-right-radius", radiusBottom, "important");
+  const radiusTop = tl && tl !== "0px" ? tl : "10px";
+  const radiusBottom = bl && bl !== "0px" ? bl : "10px";
+  const sideWidth = bwLeft > 0 ? `${bwLeft}px` : "5px";
 
-    stripEl.style.setProperty("border-left-width", sideWidth, "important");
-    stripEl.style.setProperty("border-left-style", bStyleLeft, "important");
-    stripEl.style.setProperty("border-left-color", bColorLeft, "important");
+  stripEl.style.setProperty("border-top-left-radius", radiusTop, "important");
+  stripEl.style.setProperty("border-bottom-left-radius", radiusBottom, "important");
+  stripEl.style.setProperty("border-top-right-radius", radiusTop, "important");
+  stripEl.style.setProperty("border-bottom-right-radius", radiusBottom, "important");
 
-    stripEl.style.setProperty("border-right-width", sideWidth, "important");
-    stripEl.style.setProperty("border-right-style", bStyleLeft, "important");
-    stripEl.style.setProperty("border-right-color", bColorLeft, "important");
+  stripEl.style.setProperty("border-left-width", sideWidth, "important");
+  stripEl.style.setProperty("border-left-style", bStyleLeft, "important");
+  stripEl.style.setProperty("border-left-color", bColorLeft, "important");
 
-    if (cs.paddingLeft && cs.paddingLeft !== "0px") {
-      stripEl.style.setProperty("padding-right", cs.paddingLeft, "important");
-    }
-  });
+  stripEl.style.setProperty("border-right-width", sideWidth, "important");
+  stripEl.style.setProperty("border-right-style", bStyleLeft, "important");
+  stripEl.style.setProperty("border-right-color", bColorLeft, "important");
+
+  if (cs.paddingLeft && cs.paddingLeft !== "0px") {
+    stripEl.style.setProperty("padding-right", cs.paddingLeft, "important");
+  }
+}
+
+function syncStripBarCornerDesign() {
+  const data = getWorkingStoreData();
+  const stripEls = document.querySelectorAll("#sectionsContainer .strip-bar");
+  if (stripEls.length > 0) {
+    stripEls.forEach((stripEl, idx) => {
+      const sec = data.sections && data.sections[idx] ? data.sections[idx] : null;
+      applyStripBarStyle(stripEl, sec);
+    });
+  } else {
+    document.querySelectorAll(".strip-bar").forEach((stripEl) => {
+      applyStripBarStyle(stripEl, null);
+    });
+  }
 }
 
 function applyInnerBoxColor(boxEl, innerSelector, colorHex) {
@@ -242,13 +284,21 @@ function applyBoxSizeStyles() {
   root.style.setProperty("--mini-box-img-h", `${sizes.miniBox.imgHeight}px`);
   root.style.setProperty("--mini-box-font-sz", `${sizes.miniBox.fontSize}px`);
   root.style.setProperty("--mini-box-bg", sizes.miniBox.bgColor);
+  root.style.setProperty("--mini-price-sz", `${sizes.miniBox.priceFontSize}px`);
+  root.style.setProperty("--mini-price-color", sizes.miniBox.priceColor);
+
   root.style.setProperty("--product-box-w", `${sizes.productBox.width}px`);
   root.style.setProperty("--product-box-h", `${sizes.productBox.height}px`);
   root.style.setProperty("--product-box-img-h", `${sizes.productBox.imgHeight}px`);
   root.style.setProperty("--product-box-font-sz", `${sizes.productBox.fontSize}px`);
   root.style.setProperty("--product-box-bg", sizes.productBox.bgColor);
+  root.style.setProperty("--product-price-sz", `${sizes.productBox.priceFontSize}px`);
+  root.style.setProperty("--product-price-color", sizes.productBox.priceColor);
 
-  document.querySelectorAll(".mini-box").forEach((box) => {
+  const topSecItems = (data.sections && data.sections[0] && Array.isArray(data.sections[0].items)) ? data.sections[0].items : [];
+
+  document.querySelectorAll(".mini-box:not(.user-photo-only-box)").forEach((box, idx) => {
+    const item = topSecItems[idx] || null;
     box.style.flex = `0 0 ${sizes.miniBox.width}px`;
     box.style.width = `${sizes.miniBox.width}px`;
     box.style.minWidth = `${sizes.miniBox.width}px`;
@@ -281,7 +331,9 @@ function applyBoxSizeStyles() {
 
     const nameEl = box.querySelector(".mini-box-name");
     if (nameEl) {
-      nameEl.style.fontSize = `${sizes.miniBox.fontSize}px`;
+      if (!item || !item.nameStyle) {
+        nameEl.style.fontSize = `${sizes.miniBox.fontSize}px`;
+      }
       nameEl.style.display = "block";
       nameEl.style.width = "100%";
       nameEl.style.maxWidth = "100%";
@@ -290,54 +342,71 @@ function applyBoxSizeStyles() {
     }
     const priceEl = box.querySelector(".mini-box-price");
     if (priceEl) {
-      priceEl.style.fontSize = `${Math.max(9, sizes.miniBox.fontSize - 1)}px`;
+      applyPriceVisualStyle(priceEl, item, sizes.miniBox);
     }
   });
 
-  document.querySelectorAll(".item-box").forEach((box) => {
-    box.style.flex = `0 0 ${sizes.productBox.width}px`;
-    box.style.width = `${sizes.productBox.width}px`;
-    box.style.minWidth = `${sizes.productBox.width}px`;
-    box.style.maxWidth = `${sizes.productBox.width}px`;
-    box.style.minHeight = `${sizes.productBox.height}px`;
-    box.style.height = "auto";
-    box.style.overflow = "hidden";
+  const userProfileBox = document.querySelector(".mini-box.user-photo-only-box");
+  if (userProfileBox) {
+    userProfileBox.style.flex = `0 0 ${sizes.miniBox.width}px`;
+    userProfileBox.style.width = `${sizes.miniBox.width}px`;
+    userProfileBox.style.minWidth = `${sizes.miniBox.width}px`;
+    userProfileBox.style.maxWidth = `${sizes.miniBox.width}px`;
+    userProfileBox.style.minHeight = `${sizes.miniBox.height}px`;
+  }
 
-    applyInnerBoxColor(box, ".item-info", sizes.productBox.bgColor);
-    const infoEl = box.querySelector(".item-info");
-    if (infoEl) {
-      infoEl.style.width = "100%";
-      infoEl.style.maxWidth = "100%";
-      infoEl.style.minWidth = "0";
-      infoEl.style.overflow = "hidden";
-      infoEl.style.boxSizing = "border-box";
-    }
+  const sectionEls = document.querySelectorAll("#sectionsContainer .row-section");
+  sectionEls.forEach((secEl, sIdx) => {
+    if (sIdx === 0) return;
+    const secItems = (data.sections && data.sections[sIdx] && Array.isArray(data.sections[sIdx].items)) ? data.sections[sIdx].items : [];
+    secEl.querySelectorAll(".item-box").forEach((box, idx) => {
+      const item = secItems[idx] || null;
+      box.style.flex = `0 0 ${sizes.productBox.width}px`;
+      box.style.width = `${sizes.productBox.width}px`;
+      box.style.minWidth = `${sizes.productBox.width}px`;
+      box.style.maxWidth = `${sizes.productBox.width}px`;
+      box.style.minHeight = `${sizes.productBox.height}px`;
+      box.style.height = "auto";
+      box.style.overflow = "hidden";
 
-    const img = box.querySelector("img");
-    if (img) {
-      img.style.width = "100%";
-      img.style.height = `${sizes.productBox.imgHeight}px`;
-      img.style.objectFit = "cover";
-    }
-    const placeholder = box.querySelector("[data-box-placeholder='product']");
-    if (placeholder) {
-      placeholder.style.width = "100%";
-      placeholder.style.height = `${sizes.productBox.imgHeight}px`;
-    }
+      applyInnerBoxColor(box, ".item-info", sizes.productBox.bgColor);
+      const infoEl = box.querySelector(".item-info");
+      if (infoEl) {
+        infoEl.style.width = "100%";
+        infoEl.style.maxWidth = "100%";
+        infoEl.style.minWidth = "0";
+        infoEl.style.overflow = "hidden";
+        infoEl.style.boxSizing = "border-box";
+      }
 
-    const nameEl = box.querySelector(".item-name");
-    if (nameEl) {
-      nameEl.style.fontSize = `${sizes.productBox.fontSize}px`;
-      nameEl.style.display = "block";
-      nameEl.style.width = "100%";
-      nameEl.style.maxWidth = "100%";
-      nameEl.style.minWidth = "0";
-      nameEl.style.overflow = "hidden";
-    }
-    const priceEl = box.querySelector(".item-price");
-    if (priceEl) {
-      priceEl.style.fontSize = `${Math.max(10, sizes.productBox.fontSize - 1)}px`;
-    }
+      const img = box.querySelector("img");
+      if (img) {
+        img.style.width = "100%";
+        img.style.height = `${sizes.productBox.imgHeight}px`;
+        img.style.objectFit = "cover";
+      }
+      const placeholder = box.querySelector("[data-box-placeholder='product']");
+      if (placeholder) {
+        placeholder.style.width = "100%";
+        placeholder.style.height = `${sizes.productBox.imgHeight}px`;
+      }
+
+      const nameEl = box.querySelector(".item-name");
+      if (nameEl) {
+        if (!item || !item.nameStyle) {
+          nameEl.style.fontSize = `${sizes.productBox.fontSize}px`;
+        }
+        nameEl.style.display = "block";
+        nameEl.style.width = "100%";
+        nameEl.style.maxWidth = "100%";
+        nameEl.style.minWidth = "0";
+        nameEl.style.overflow = "hidden";
+      }
+      const priceEl = box.querySelector(".item-price");
+      if (priceEl) {
+        applyPriceVisualStyle(priceEl, item, sizes.productBox);
+      }
+    });
   });
 
   syncStripBarCornerDesign();
@@ -362,6 +431,10 @@ function updateBoxSizeSetting(boxType, prop, value, { persist = false } = {}) {
       targetData.boxSizes.miniBox.fontSize = clampNum(value, 9, 26, DEFAULT_BOX_SIZES.miniBox.fontSize);
     } else if (prop === "bgColor") {
       targetData.boxSizes.miniBox.bgColor = normalizeHexColor(value, DEFAULT_BOX_SIZES.miniBox.bgColor);
+    } else if (prop === "priceFontSize") {
+      targetData.boxSizes.miniBox.priceFontSize = clampNum(value, 9, 26, DEFAULT_BOX_SIZES.miniBox.priceFontSize);
+    } else if (prop === "priceColor") {
+      targetData.boxSizes.miniBox.priceColor = normalizeHexColor(value, DEFAULT_BOX_SIZES.miniBox.priceColor);
     }
   } else if (boxType === "product") {
     if (prop === "width") {
@@ -378,6 +451,10 @@ function updateBoxSizeSetting(boxType, prop, value, { persist = false } = {}) {
       targetData.boxSizes.productBox.fontSize = clampNum(value, 10, 30, DEFAULT_BOX_SIZES.productBox.fontSize);
     } else if (prop === "bgColor") {
       targetData.boxSizes.productBox.bgColor = normalizeHexColor(value, DEFAULT_BOX_SIZES.productBox.bgColor);
+    } else if (prop === "priceFontSize") {
+      targetData.boxSizes.productBox.priceFontSize = clampNum(value, 10, 28, DEFAULT_BOX_SIZES.productBox.priceFontSize);
+    } else if (prop === "priceColor") {
+      targetData.boxSizes.productBox.priceColor = normalizeHexColor(value, DEFAULT_BOX_SIZES.productBox.priceColor);
     }
   }
 
@@ -543,9 +620,18 @@ function buildInitialData() {
     const count = idx === 0 ? 4 : 5;
     const items = [];
     for (let i = 1; i <= count; i++) {
-      items.push({ id: `${idx}-${i}`, name: "Item", price: 0, priceText: "0", img: "", nameStyle: null });
+      items.push({
+        id: `${idx}-${i}`,
+        name: "Item",
+        price: 0,
+        priceText: "0",
+        priceFontSize: null,
+        priceColor: null,
+        img: "",
+        nameStyle: null
+      });
     }
-    return { title, items, titleStyle: null };
+    return { title, items, titleStyle: null, barBgColor: "" };
   });
 
   const ownerFolders = [
@@ -920,6 +1006,7 @@ function renderSections() {
       fontWeight: 700,
       color: "#111827"
     });
+    applyStripBarStyle(stripEl, sec);
     sectionEl.appendChild(stripEl);
 
     if (sIdx === 0) {
@@ -953,6 +1040,8 @@ function renderSections() {
           fontWeight: 600,
           color: "#111827"
         });
+        const miniPriceEl = box.querySelector(".mini-box-price");
+        applyPriceVisualStyle(miniPriceEl, item, boxSizes.miniBox);
         fiveRow.appendChild(box);
       });
 
@@ -999,6 +1088,8 @@ function renderSections() {
           fontWeight: 600,
           color: "#111827"
         });
+        const itemPriceEl = box.querySelector(".item-price");
+        applyPriceVisualStyle(itemPriceEl, item, boxSizes.productBox);
         scrollEl.appendChild(box);
       });
 
