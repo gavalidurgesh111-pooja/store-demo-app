@@ -216,7 +216,6 @@ function applyStripBarStyle(stripEl, sec) {
     stripEl.style.setProperty("background-color", customBg, "important");
   }
 
-  // पट्टी के बाएँ और दाएँ कॉर्नर व साइड बॉर्डर को स्वतंत्र रूप से समरूप रखें (नाम के रंग से अलग)
   const cs = window.getComputedStyle(stripEl);
   const tl = cs.borderTopLeftRadius;
   const bl = cs.borderBottomLeftRadius;
@@ -497,7 +496,7 @@ function createDefaultTextStyle(overrides = {}) {
     glowSize: 12,
     borderEnabled: false,
     borderColor: "#0f172a",
-    borderWidth: 0.8,
+    borderWidth: 1.2,
     bgEnabled: false,
     bgColor: "#0f766e",
     bgOpacity: 0.65,
@@ -508,10 +507,10 @@ function createDefaultTextStyle(overrides = {}) {
 
 function getSafeThinBorderWidth(fontSize, requestedWidth) {
   const size = Math.max(10, Number(fontSize) || 14);
-  const maxThinAllowed = Math.max(0.5, Math.min(1.6, Number((size * 0.06).toFixed(1))));
+  const maxClearAllowed = Math.max(1.0, Math.min(2.6, Number((size * 0.08).toFixed(1))));
   const req = Number(requestedWidth);
-  if (!Number.isFinite(req) || req <= 0) return 0.7;
-  return Number(Math.max(0.5, Math.min(maxThinAllowed, req)).toFixed(1));
+  if (!Number.isFinite(req) || req <= 0) return 1.2;
+  return Number(Math.max(0.8, Math.min(maxClearAllowed, req)).toFixed(1));
 }
 
 function hexToRgba(hex, alpha = 1) {
@@ -565,18 +564,20 @@ function applyTextStyleToElement(el, rawStyle, defaults = {}) {
   el.style.setProperty("overflow", "hidden", "important");
   el.style.setProperty("text-overflow", "clip", "important");
 
+  if (st.borderEnabled) {
+    const clearWidth = getSafeThinBorderWidth(st.fontSize, st.borderWidth);
+    el.style.webkitTextStroke = `${clearWidth}px ${st.borderColor}`;
+    el.style.setProperty("paint-order", "stroke fill");
+  } else {
+    el.style.webkitTextStroke = "0px transparent";
+    el.style.removeProperty("paint-order");
+  }
+
   if (st.glowEnabled) {
     const gSize = Math.max(2, st.glowSize);
     el.style.textShadow = `0 0 ${Math.round(gSize * 0.45)}px ${st.glowColor}, 0 0 ${gSize}px ${st.glowColor}`;
   } else {
     el.style.textShadow = "none";
-  }
-
-  if (st.borderEnabled) {
-    const thinWidth = getSafeThinBorderWidth(st.fontSize, st.borderWidth);
-    el.style.webkitTextStroke = `${thinWidth}px ${st.borderColor}`;
-  } else {
-    el.style.webkitTextStroke = "0px transparent";
   }
 
   if (st.bgEnabled) {
