@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V20");
+console.log("OWNER_EDIT_COMPLETE_V21");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -657,7 +657,7 @@ function openBoxSizePanelModal() {
     "display:inline-block;width:28px;height:4px;border-radius:999px;background:#cbd5e1;";
 
   const title = document.createElement("span");
-  title.textContent = "Box Size Panel (नीले गोल बटन से बदलें)";
+  title.textContent = "Box Size Panel";
   title.style.cssText = "font-size:0.94rem;font-weight:800;color:#111827;";
 
   titleWrap.appendChild(dragHandle);
@@ -679,6 +679,25 @@ function openBoxSizePanelModal() {
   closeBtn.onclick = restoreSnapshot;
   header.appendChild(titleWrap);
   header.appendChild(closeBtn);
+
+  // एक ही झटके में छोटे और बड़े दोनों बॉक्स पर No BG / Normal BG लगाने वाले बटन
+  const quickBulkRow = document.createElement("div");
+  quickBulkRow.style.cssText = "display:flex;gap:8px;flex-shrink:0;";
+
+  const quickNoBgAllBtn = document.createElement("button");
+  quickNoBgAllBtn.type = "button";
+  quickNoBgAllBtn.textContent = "No BG All Boxes (सब साफ)";
+  quickNoBgAllBtn.style.cssText =
+    "flex:1;min-height:36px;padding:6px 10px;border:none;border-radius:9px;background:#1d4ed8;color:#ffffff;font-size:0.78rem;font-weight:700;cursor:pointer;";
+
+  const quickNormalBgAllBtn = document.createElement("button");
+  quickNormalBgAllBtn.type = "button";
+  quickNormalBgAllBtn.textContent = "Normal BG All (बॉक्स रंग)";
+  quickNormalBgAllBtn.style.cssText =
+    "flex:1;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:9px;background:#f1f5f9;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
+
+  quickBulkRow.appendChild(quickNoBgAllBtn);
+  quickBulkRow.appendChild(quickNormalBgAllBtn);
 
   function buildBoxSection(sectionLabel, targetObj, selector, limits) {
     const secWrap = document.createElement("div");
@@ -903,6 +922,22 @@ function openBoxSizePanelModal() {
     priceMax: 28
   });
 
+  quickNoBgAllBtn.onclick = () => {
+    sizes.miniBox.textBgTransparent = true;
+    sizes.productBox.textBgTransparent = true;
+    miniSec.syncAll();
+    prodSec.syncAll();
+    applyBoxSizePanelToDom(sizes);
+  };
+
+  quickNormalBgAllBtn.onclick = () => {
+    sizes.miniBox.textBgTransparent = false;
+    sizes.productBox.textBgTransparent = false;
+    miniSec.syncAll();
+    prodSec.syncAll();
+    applyBoxSizePanelToDom(sizes);
+  };
+
   const resetBtn = document.createElement("button");
   resetBtn.type = "button";
   resetBtn.textContent = "Reset Default";
@@ -949,6 +984,7 @@ function openBoxSizePanelModal() {
   footer.appendChild(applyBtn);
 
   card.appendChild(header);
+  card.appendChild(quickBulkRow);
   card.appendChild(miniSec.secWrap);
   card.appendChild(prodSec.secWrap);
   card.appendChild(footer);
