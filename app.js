@@ -132,6 +132,71 @@ function applyNoTapHighlightRule() {
 
 applyNoTapHighlightRule();
 
+function syncNoBgCleanStyleTag(miniNoBg, prodNoBg) {
+  const tagId = "storeBoxNoBgCleanOverrideStyle";
+  let tagEl = document.getElementById(tagId);
+  if (!miniNoBg && !prodNoBg) {
+    if (tagEl) tagEl.remove();
+    return;
+  }
+  if (!tagEl) {
+    tagEl = document.createElement("style");
+    tagEl.id = tagId;
+    (document.head || document.documentElement).appendChild(tagEl);
+  }
+
+  const rules = [];
+  if (miniNoBg) {
+    rules.push(`
+      .mini-box:not(.user-photo-only-box),
+      .mini-box:not(.user-photo-only-box) .mini-box-body,
+      .mini-box:not(.user-photo-only-box) .mini-box-name,
+      .mini-box:not(.user-photo-only-box) .mini-box-price,
+      .mini-box:not(.user-photo-only-box) .owner-item-inline-group {
+        background: transparent !important;
+        background-color: transparent !important;
+        border: none !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+        outline: none !important;
+      }
+      .mini-box:not(.user-photo-only-box) {
+        padding: 0 !important;
+        min-height: 0 !important;
+        height: auto !important;
+      }
+      .mini-box:not(.user-photo-only-box) .mini-box-body {
+        padding: 4px 0 0 0 !important;
+      }
+    `);
+  }
+  if (prodNoBg) {
+    rules.push(`
+      .item-box,
+      .item-box .item-info,
+      .item-box .item-name,
+      .item-box .item-price,
+      .item-box .owner-item-inline-group {
+        background: transparent !important;
+        background-color: transparent !important;
+        border: none !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+        outline: none !important;
+      }
+      .item-box {
+        padding: 0 !important;
+        min-height: 0 !important;
+        height: auto !important;
+      }
+      .item-box .item-info {
+        padding: 4px 0 0 0 !important;
+      }
+    `);
+  }
+  tagEl.textContent = rules.join("\n");
+}
+
 function formatItemPriceDisplay(item) {
   if (!item) return "₹0";
   if (item.priceText !== undefined && item.priceText !== null && String(item.priceText).trim() !== "") {
@@ -236,6 +301,8 @@ function applyPriceVisualStyle(priceEl, item, defaultBoxPriceStyle) {
   if (defaultBoxPriceStyle && defaultBoxPriceStyle.textBgTransparent) {
     priceEl.style.setProperty("background", "transparent", "important");
     priceEl.style.setProperty("background-color", "transparent", "important");
+    priceEl.style.setProperty("border", "none", "important");
+    priceEl.style.setProperty("box-shadow", "none", "important");
   }
 }
 
@@ -333,6 +400,8 @@ function applyBoxSizeStyles() {
   const sizes = normalizeBoxSizes(data.boxSizes);
   data.boxSizes = sizes;
 
+  syncNoBgCleanStyleTag(sizes.miniBox.textBgTransparent, sizes.productBox.textBgTransparent);
+
   const root = document.documentElement;
   root.style.setProperty("--mini-box-w", `${sizes.miniBox.width}px`);
   root.style.setProperty("--mini-box-h", `${sizes.miniBox.height}px`);
@@ -402,6 +471,8 @@ function applyBoxSizeStyles() {
       if (sizes.miniBox.textBgTransparent) {
         nameEl.style.setProperty("background", "transparent", "important");
         nameEl.style.setProperty("background-color", "transparent", "important");
+        nameEl.style.setProperty("border", "none", "important");
+        nameEl.style.setProperty("box-shadow", "none", "important");
       }
     }
     const priceEl = box.querySelector(".mini-box-price");
@@ -473,6 +544,8 @@ function applyBoxSizeStyles() {
         if (sizes.productBox.textBgTransparent) {
           nameEl.style.setProperty("background", "transparent", "important");
           nameEl.style.setProperty("background-color", "transparent", "important");
+          nameEl.style.setProperty("border", "none", "important");
+          nameEl.style.setProperty("box-shadow", "none", "important");
         }
       }
       const priceEl = box.querySelector(".item-price");
