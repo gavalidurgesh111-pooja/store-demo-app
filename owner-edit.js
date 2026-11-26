@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V26");
+console.log("OWNER_EDIT_COMPLETE_V27");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -545,7 +545,7 @@ function openCoverHeightEditorModal() {
   document.body.appendChild(modal);
 }
 
-// ==================== STRIP STYLE POP-UP (4-SIDE SIZE, SHAPE, 2-COLOUR BLEND) ====================
+// ==================== STRIP STYLE POP-UP (BOTTOM SHEET + SCROLLABLE) ====================
 function openStripHeightEditorModal(sIdx, stripEl) {
   removeStripHeightModalIfExists();
   const data = getWorkingStoreData();
@@ -576,15 +576,15 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   const modal = document.createElement("div");
   modal.id = "ownerStripHeightEditorModal";
   modal.style.cssText =
-    "position:fixed;inset:0;z-index:145;background:rgba(15,23,42,0.58);display:flex;align-items:center;justify-content:center;padding:12px;overflow-y:auto;";
+    "position:fixed;inset:0;z-index:145;background:transparent;display:flex;align-items:flex-end;justify-content:center;padding:0;pointer-events:none;";
 
   const card = document.createElement("div");
   card.style.cssText =
-    "width:100%;max-width:380px;max-height:85vh;overflow-y:auto;background:#ffffff;border-radius:14px;padding:14px 16px;box-shadow:0 12px 30px rgba(0,0,0,0.35);display:flex;flex-direction:column;gap:10px;color:#111827;";
+    "width:100%;max-width:480px;height:46vh;max-height:48vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#ffffff;border-top:2px solid #cbd5e1;border-radius:16px 16px 0 0;padding:10px 14px 18px;box-shadow:0 -10px 28px rgba(15,23,42,0.28);display:flex;flex-direction:column;gap:10px;color:#111827;pointer-events:auto;";
 
   const header = document.createElement("div");
   header.style.cssText =
-    "display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #e2e8f0;";
+    "position:sticky;top:-10px;z-index:5;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:6px 0 8px;border-bottom:1px solid #e2e8f0;";
 
   const title = document.createElement("span");
   title.textContent = `Strip ${sIdx + 1} Style & Size`;
@@ -660,7 +660,7 @@ function openStripHeightEditorModal(sIdx, stripEl) {
     { id: "default", label: "Default" },
     { id: "round", label: "Round (Left-Right)" },
     { id: "square", label: "Square" },
-    { id: "triangle", label: "Triangle" }
+    { id: "triangle", label: "Triangle (Left-Right)" }
   ];
 
   const shapeBtns = shapes.map((sh) => {
@@ -806,6 +806,167 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   card.appendChild(shapeLabel);
   card.appendChild(shapeGrid);
   card.appendChild(twoColBox);
+  card.appendChild(footer);
+  modal.appendChild(card);
+  document.body.appendChild(modal);
+}
+
+// ==================== CUSTOM AD POP-UP (+ Ad) ====================
+function openCustomAdEditorModal(sIdx) {
+  removeCustomAdModalIfExists();
+  const data = getWorkingStoreData();
+  const sec = data.sections && data.sections[sIdx];
+  if (!sec) return;
+
+  const accentHex = data.themeColor || "#0f766e";
+  const existingAd = sec.customAd && typeof sec.customAd === "object" ? sec.customAd : {};
+
+  let draftWidth = existingAd.width || "100%";
+  let draftHeight = existingAd.height || "70px";
+  let draftMoveMode = existingAd.moveMode || "static";
+
+  const modal = document.createElement("div");
+  modal.id = "ownerCustomAdEditorModal";
+  modal.style.cssText =
+    "position:fixed;inset:0;z-index:150;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;padding:12px;";
+
+  const card = document.createElement("div");
+  card.style.cssText =
+    "width:100%;max-width:400px;background:#ffffff;border-radius:14px;padding:14px 16px;box-shadow:0 12px 30px rgba(0,0,0,0.35);display:flex;flex-direction:column;gap:10px;color:#111827;";
+
+  const header = document.createElement("div");
+  header.style.cssText =
+    "display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #e2e8f0;";
+
+  const title = document.createElement("span");
+  title.textContent = `Row ${sIdx + 1} Ad / Strip Slot`;
+  title.style.cssText = "font-size:0.96rem;font-weight:800;color:#111827;";
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.textContent = "✕";
+  closeBtn.style.cssText =
+    "border:none;background:#f1f5f9;border-radius:8px;min-width:32px;min-height:32px;font-weight:700;color:#334155;cursor:pointer;";
+  closeBtn.onclick = () => modal.remove();
+
+  header.appendChild(title);
+  header.appendChild(closeBtn);
+
+  const labelInput = document.createElement("input");
+  labelInput.type = "text";
+  labelInput.value = existingAd.label || "";
+  labelInput.placeholder = "Ad Label / Title (optional)";
+  labelInput.style.cssText =
+    "width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.88rem;color:#111827;box-sizing:border-box;";
+
+  const codeInput = document.createElement("textarea");
+  codeInput.rows = 4;
+  codeInput.value = existingAd.code || "";
+  codeInput.placeholder = "Paste Google Ad / HTML / Script or Image URL here";
+  codeInput.style.cssText =
+    "width:100%;min-height:80px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.84rem;color:#111827;box-sizing:border-box;font-family:monospace;";
+
+  const dimRow = document.createElement("div");
+  dimRow.style.cssText = "display:flex;gap:8px;";
+
+  const widthInput = document.createElement("input");
+  widthInput.type = "text";
+  widthInput.value = draftWidth;
+  widthInput.placeholder = "Width (e.g. 100% or 300px)";
+  widthInput.style.cssText =
+    "flex:1;min-height:36px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.84rem;color:#111827;box-sizing:border-box;";
+
+  const heightInput = document.createElement("input");
+  heightInput.type = "text";
+  heightInput.value = draftHeight;
+  heightInput.placeholder = "Height (e.g. 70px or 180px)";
+  heightInput.style.cssText =
+    "flex:1;min-height:36px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.84rem;color:#111827;box-sizing:border-box;";
+
+  dimRow.appendChild(widthInput);
+  dimRow.appendChild(heightInput);
+
+  const moveRow = document.createElement("div");
+  moveRow.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;";
+
+  const modes = [
+    { id: "static", label: "Fixed" },
+    { id: "marquee", label: "Sliding (Move)" },
+    { id: "float", label: "Floating" }
+  ];
+
+  const modeBtns = modes.map((m) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = m.label;
+    b.onclick = () => {
+      draftMoveMode = m.id;
+      modeBtns.forEach((btn, idx) => {
+        const active = modes[idx].id === draftMoveMode;
+        btn.style.cssText = active
+          ? `flex:1;min-height:34px;padding:5px 8px;border:2px solid ${accentHex};border-radius:8px;background:${accentHex};color:#ffffff;font-size:0.78rem;font-weight:800;cursor:pointer;`
+          : "flex:1;min-height:34px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
+      });
+    };
+    moveRow.appendChild(b);
+    return b;
+  });
+
+  modeBtns.forEach((btn, idx) => {
+    const active = modes[idx].id === draftMoveMode;
+    btn.style.cssText = active
+      ? `flex:1;min-height:34px;padding:5px 8px;border:2px solid ${accentHex};border-radius:8px;background:${accentHex};color:#ffffff;font-size:0.78rem;font-weight:800;cursor:pointer;`
+      : "flex:1;min-height:34px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
+  });
+
+  const footer = document.createElement("div");
+  footer.style.cssText = "display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;";
+
+  const clearAdBtn = document.createElement("button");
+  clearAdBtn.type = "button";
+  clearAdBtn.textContent = "Remove Ad";
+  clearAdBtn.style.cssText =
+    "min-height:38px;padding:7px 10px;border:1px solid #fecaca;border-radius:8px;background:#fee2e2;color:#dc2626;font-size:0.82rem;font-weight:700;cursor:pointer;";
+  clearAdBtn.onclick = () => {
+    sec.customAd = null;
+    modal.remove();
+    renderSections();
+    attachOwnerStoreEditHandlers();
+  };
+
+  const applyBtn = document.createElement("button");
+  applyBtn.type = "button";
+  applyBtn.textContent = "Apply Ad";
+  applyBtn.style.cssText =
+    `flex:1;min-height:38px;padding:7px 12px;border:none;border-radius:8px;background:${accentHex};color:#ffffff;font-size:0.84rem;font-weight:700;cursor:pointer;`;
+  applyBtn.onclick = () => {
+    const cleanCode = codeInput.value.trim();
+    const cleanLbl = labelInput.value.trim();
+    if (!cleanCode && !cleanLbl) {
+      sec.customAd = null;
+    } else {
+      sec.barHidden = true;
+      sec.customAd = {
+        label: cleanLbl || "Ad",
+        code: cleanCode,
+        width: (widthInput.value || "").trim() || "100%",
+        height: (heightInput.value || "").trim() || "70px",
+        moveMode: draftMoveMode
+      };
+    }
+    modal.remove();
+    renderSections();
+    attachOwnerStoreEditHandlers();
+  };
+
+  footer.appendChild(clearAdBtn);
+  footer.appendChild(applyBtn);
+
+  card.appendChild(header);
+  card.appendChild(labelInput);
+  card.appendChild(codeInput);
+  card.appendChild(dimRow);
+  card.appendChild(moveRow);
   card.appendChild(footer);
   modal.appendChild(card);
   document.body.appendChild(modal);
@@ -1037,6 +1198,14 @@ function applyBoxSizePanelToDom(sizes, targetRowIdx = null) {
       miniBox: { ...sizes.miniBox },
       productBox: { ...sizes.productBox }
     };
+    if (Array.isArray(data.sections)) {
+      data.sections.forEach((s) => {
+        if (s && s.customBoxSizes) {
+          s.customBoxSizes.miniBox.textBgTransparent = Boolean(sizes.miniBox.textBgTransparent);
+          s.customBoxSizes.productBox.textBgTransparent = Boolean(sizes.productBox.textBgTransparent);
+        }
+      });
+    }
   }
   if (typeof window.applyBoxSizeStyles === "function") {
     window.applyBoxSizeStyles();
@@ -3063,7 +3232,6 @@ function attachOwnerStoreEditHandlers() {
       boxContainerEl.appendChild(addBoxBtn);
       boxContainerEl.appendChild(remBoxBtn);
 
-      // हर बॉक्स लाइन के ठीक नीचे Left साइड में Box Size बटन
       const underRowBar = document.createElement("div");
       underRowBar.className = "owner-inline-edit-btn";
       underRowBar.style.cssText =
