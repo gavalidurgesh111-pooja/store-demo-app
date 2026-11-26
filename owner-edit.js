@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V29");
+console.log("OWNER_EDIT_COMPLETE_V30");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -2747,11 +2747,11 @@ function enableStoreNameDragOnCover(coverWrap, overlayEl, pencilBtn) {
     const isLowerHalf = centerY > wrapHeight * 0.5;
 
     if (isLowerHalf) {
-      pencilBtn.style.top = "-16px";
+      pencilBtn.style.top = "-22px";
       pencilBtn.style.bottom = "auto";
     } else {
       pencilBtn.style.top = "auto";
-      pencilBtn.style.bottom = "-16px";
+      pencilBtn.style.bottom = "-22px";
     }
   }
 
@@ -2819,6 +2819,16 @@ function attachOwnerStoreEditHandlers() {
   const actions = document.createElement("div");
   actions.style.cssText = "display:flex;gap:6px;align-items:center;flex-wrap:wrap;";
 
+  const topStoreNameBtn = document.createElement("button");
+  topStoreNameBtn.type = "button";
+  topStoreNameBtn.textContent = "Store Name";
+  topStoreNameBtn.style.cssText =
+    "padding:6px 10px;border:1px solid rgba(255,255,255,0.65);border-radius:8px;background:rgba(255,255,255,0.16);color:#ffffff;font-size:0.78rem;font-weight:700;cursor:pointer;";
+  topStoreNameBtn.onclick = (e) => {
+    e.stopPropagation();
+    openStoreNameEditorPopup();
+  };
+
   const allStripsHidden = Array.isArray(data.sections) && data.sections.length > 0 && data.sections.every((s) => Boolean(s.barHidden));
   const toggleAllStripsBtn = document.createElement("button");
   toggleAllStripsBtn.type = "button";
@@ -2883,6 +2893,7 @@ function attachOwnerStoreEditHandlers() {
     window.location.href = "index.html";
   };
 
+  actions.appendChild(topStoreNameBtn);
   actions.appendChild(toggleAllStripsBtn);
   actions.appendChild(boxSizeBtn);
   actions.appendChild(colorBtn);
@@ -2911,7 +2922,7 @@ function attachOwnerStoreEditHandlers() {
       pencilBtn.textContent = "✎ Store Name";
       pencilBtn.title = "Edit Store Name & Style";
       pencilBtn.style.cssText =
-        "position:absolute;left:0px;bottom:-22px;top:auto;z-index:25;padding:2px 6px;margin:0;border:1px solid #0f172a;border-radius:5px;background:rgba(255,255,255,0.95);color:#0f172a;font-size:0.7rem;font-weight:700;line-height:1.1;cursor:pointer;white-space:nowrap;";
+        "position:absolute;left:0px;bottom:-22px;top:auto;z-index:30;padding:2px 6px;margin:0;border:1px solid #0f172a;border-radius:5px;background:rgba(255,255,255,0.95);color:#0f172a;font-size:0.7rem;font-weight:700;line-height:1.1;cursor:pointer;white-space:nowrap;";
       pencilBtn.onclick = (e) => {
         e.stopPropagation();
         openStoreNameEditorPopup();
