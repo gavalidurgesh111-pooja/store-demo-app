@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V17");
+console.log("OWNER_EDIT_COMPLETE_V18");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -314,7 +314,7 @@ function openCustomColourPickerModal() {
   );
 }
 
-// ==================== KNOB-ONLY SLIDER (पट्टी पर छूने से नहीं, केवल नीले गोल बटन से हिलेगा) ====================
+// ==================== KNOB-ONLY SLIDER ====================
 function createBlueKnobSlider(min, max, step, initialVal, onValueChange) {
   const minNum = Number(min);
   const maxNum = Number(max);
@@ -420,7 +420,7 @@ function createBlueKnobSlider(min, max, step, initialVal, onValueChange) {
   };
 }
 
-// ==================== INDIVIDUAL AMOUNT, SIZE & COLOUR POP-UP (All + Single Edit) ====================
+// ==================== INDIVIDUAL AMOUNT, SIZE & COLOUR POP-UP ====================
 function openItemAmountEditorModal(sIdx, itemId) {
   removePriceEditorModalIfExists();
   const data = getWorkingStoreData();
@@ -586,7 +586,7 @@ function openItemAmountEditorModal(sIdx, itemId) {
   syncPreview();
 }
 
-// ==================== BOX SIZE PANEL (छोटा बॉक्स और प्रोडक्ट बॉक्स) ====================
+// ==================== BOX SIZE PANEL ====================
 const FALLBACK_BOX_SIZES = {
   miniBox: { width: 92, height: 122, imgHeight: 74, fontSize: 12, bgColor: "#ffffff", priceFontSize: 11, priceColor: "#111827" },
   productBox: { width: 150, height: 215, imgHeight: 125, fontSize: 14, bgColor: "#ffffff", priceFontSize: 13, priceColor: "#111827" }
@@ -1099,7 +1099,7 @@ function openCustomTextStylePopup(config) {
 
   const previewBox = document.createElement("div");
   previewBox.style.cssText =
-    `padding:10px 12px;border-radius:10px;background:${isStore ? "#1e293b" : "#f1f5f9"};min-height:48px;max-height:120px;overflow:auto;display:flex;align-items:flex-start;justify-content:flex-start;text-align:left;`;
+    `padding:10px 12px;border-radius:10px;background:${isStore ? "#1e293b" : "#f1f5f9"};min-height:48px;max-height:120px;overflow:auto;display:flex;align-items:center;justify-content:center;text-align:center;`;
 
   const previewText = document.createElement("span");
   previewText.style.cssText = "display:inline-block;line-height:1.2;white-space:pre-line;word-break:normal;";
@@ -1174,12 +1174,13 @@ function openCustomTextStylePopup(config) {
       }
     },
     {
-      label: "Thin Border",
+      label: "Clear Border",
       apply: () => {
+        st.glowEnabled = false;
         st.borderEnabled = true;
         st.borderColor = "#0f172a";
-        st.borderWidth = getSafeThinBorderWidth(st.fontSize, 0.8);
-        st.fontWeight = 800;
+        st.borderWidth = getSafeThinBorderWidth(st.fontSize, 1.4);
+        st.fontWeight = 700;
       }
     },
     {
@@ -1335,9 +1336,9 @@ function openCustomTextStylePopup(config) {
     })
   );
 
-  const maxThinSlider = Math.max(0.7, Math.min(1.5, Number((st.fontSize * 0.06).toFixed(1))));
+  const maxClearSlider = Math.max(1.2, Math.min(2.6, Number((st.fontSize * 0.08).toFixed(1))));
   borderCtrl = makeToggleColorBox(
-    "Thin Border (पतली बॉर्डर)",
+    "Clear Border (साफ़ बॉर्डर)",
     st.borderEnabled,
     st.borderColor,
     accentHex,
@@ -1351,7 +1352,7 @@ function openCustomTextStylePopup(config) {
     }
   );
   borderCtrl.extraWrap.appendChild(
-    makeLabeledSlider("Border Width (Thin)", 0.5, maxThinSlider, 0.1, st.borderWidth, "px", accentHex, (val) => {
+    makeLabeledSlider("Border Width", 0.8, maxClearSlider, 0.1, st.borderWidth, "px", accentHex, (val) => {
       st.borderWidth = getSafeThinBorderWidth(st.fontSize, val);
       syncPreview();
     })
