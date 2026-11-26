@@ -220,10 +220,10 @@ function syncNoBgCleanStyleTag(miniNoBg, prodNoBg) {
 }
 
 function formatItemPriceDisplay(item) {
-  if (!item) return "₹0";
+  if (!item) return "$0";
   if (item.priceText !== undefined && item.priceText !== null && String(item.priceText).trim() !== "") {
     const raw = String(item.priceText).trim();
-    return raw.startsWith("₹") ? raw : `₹${raw}`;
+    return raw.startsWith("$") || raw.startsWith("₹") ? raw : `₹${raw}`;
   }
   const numVal = Number(item.price || 0);
   return `₹${Number.isFinite(numVal) ? numVal : 0}`;
@@ -1555,7 +1555,7 @@ function confirmOrder() {
 
   saveData();
   closeOrderModal();
-  alert(`Order Placed: ${cleanItemName} (₹${amount})`);
+  alert(`Order Placed: ${cleanItemName} (${amount})`);
 }
 
 function openPinModal() {
@@ -1666,7 +1666,7 @@ function renderFolderGrid() {
     editBtn.type = "button";
     editBtn.className = "icon-mini-btn";
     editBtn.title = "Edit Name";
-    editBtn.textContent = "✎";
+    editBtn.textContent = "Edit";
     editBtn.onclick = (e) => {
       e.stopPropagation();
       renameFolderAt(idx);
@@ -1883,7 +1883,7 @@ function renderBuyersTab() {
         ${thumbHtml}
         <div>
           <div class="row-main-text">${o.customer}</div>
-          <div class="row-sub-text">${cleanItem} × ${o.qty}${phoneLine ? ` • ${phoneLine}` : ""}</div>
+          <div class="row-sub-text">${cleanItem} x ${o.qty}${phoneLine ? ` - ${phoneLine}` : ""}</div>
         </div>
       </div>
       <div class="row-actions">
@@ -1930,7 +1930,7 @@ function renderCustomFolderTab() {
     row.innerHTML = `
       <div class="row-main-text">${text}</div>
       <div class="row-actions">
-        <button type="button" class="icon-mini-btn danger-tone" title="Remove" onclick="removeCustomFolderEntry(${eIdx})">×</button>
+        <button type="button" class="icon-mini-btn danger-tone" title="Remove" onclick="removeCustomFolderEntry(${eIdx})">X</button>
       </div>
     `;
     list.appendChild(row);
