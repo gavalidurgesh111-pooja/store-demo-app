@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V22");
+console.log("OWNER_EDIT_COMPLETE_V23");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -635,7 +635,10 @@ function openBoxSizePanelModal() {
   const accentHex = data.themeColor || "#0f766e";
   const sizes = getCurrentBoxSizesForEdit();
   const snapshot = JSON.parse(JSON.stringify(sizes));
-  let selectedBulkMode = null; // "noBg" | "normalBg" | null
+
+  const allNoBgSaved = Boolean(sizes.miniBox.textBgTransparent && sizes.productBox.textBgTransparent);
+  const allNormalBgSaved = Boolean(!sizes.miniBox.textBgTransparent && !sizes.productBox.textBgTransparent);
+  let selectedBulkMode = allNoBgSaved ? "noBg" : (allNormalBgSaved ? "normalBg" : null);
 
   const modal = document.createElement("div");
   modal.id = "ownerBoxSizePanelModal";
@@ -855,7 +858,9 @@ function openBoxSizePanelModal() {
 
     noBgChk.onchange = () => {
       targetObj.textBgTransparent = noBgChk.checked;
-      selectedBulkMode = null;
+      const bothNoBg = Boolean(sizes.miniBox.textBgTransparent && sizes.productBox.textBgTransparent);
+      const bothNormal = Boolean(!sizes.miniBox.textBgTransparent && !sizes.productBox.textBgTransparent);
+      selectedBulkMode = bothNoBg ? "noBg" : (bothNormal ? "normalBg" : null);
       syncBulkButtonsState();
       syncNoBgToggleActive();
       applyBoxSizePanelToDom(sizes);
@@ -974,9 +979,9 @@ function openBoxSizePanelModal() {
   resetBtn.style.cssText =
     "min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-size:0.84rem;font-weight:700;cursor:pointer;flex-shrink:0;";
   resetBtn.onclick = () => {
-    selectedBulkMode = null;
     sizes.miniBox = { ...FALLBACK_BOX_SIZES.miniBox };
     sizes.productBox = { ...FALLBACK_BOX_SIZES.productBox };
+    selectedBulkMode = "normalBg";
     syncBulkButtonsState();
     miniSec.syncAll();
     prodSec.syncAll();
