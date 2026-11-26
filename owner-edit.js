@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V28");
+console.log("OWNER_EDIT_COMPLETE_V29");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -482,7 +482,7 @@ function openCoverHeightEditorModal() {
   header.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
 
   const title = document.createElement("span");
-  title.textContent = "Cover Area Height";
+  title.textContent = "Cover Size";
   title.style.cssText = "font-size:0.94rem;font-weight:800;color:#111827;";
 
   const closeBtn = document.createElement("button");
@@ -2848,7 +2848,7 @@ function attachOwnerStoreEditHandlers() {
 
   const colorBtn = document.createElement("button");
   colorBtn.type = "button";
-  colorBtn.textContent = "✎ Color";
+  colorBtn.textContent = "Strip Color";
   colorBtn.style.cssText =
     "padding:6px 10px;border:1px solid rgba(255,255,255,0.65);border-radius:8px;background:rgba(255,255,255,0.16);color:#ffffff;font-size:0.78rem;font-weight:700;cursor:pointer;";
   colorBtn.onclick = (e) => {
@@ -2897,18 +2897,21 @@ function attachOwnerStoreEditHandlers() {
     coverWrap.style.position = "relative";
     coverWrap.style.overflow = "hidden";
 
-    const overlayEl = coverWrap.querySelector(".cover-overlay");
+    const overlayEl = typeof ensureCoverStoreTitleElements === "function"
+      ? ensureCoverStoreTitleElements(coverWrap).overlayEl
+      : coverWrap.querySelector(".cover-overlay");
     const titleEl = document.getElementById("storeTitle");
     if (overlayEl && titleEl) {
-      overlayEl.style.zIndex = "22";
+      overlayEl.style.setProperty("z-index", "22", "important");
+      overlayEl.style.setProperty("display", "inline-flex", "important");
 
       const pencilBtn = document.createElement("button");
       pencilBtn.type = "button";
       pencilBtn.className = "owner-inline-edit-btn";
-      pencilBtn.textContent = "✎";
+      pencilBtn.textContent = "✎ Store Name";
       pencilBtn.title = "Edit Store Name & Style";
       pencilBtn.style.cssText =
-        "position:absolute;left:0px;bottom:-16px;top:auto;z-index:25;padding:1px 5px;margin:0;border:1px solid #0f172a;border-radius:4px;background:rgba(255,255,255,0.92);color:#0f172a;font-size:0.72rem;font-weight:700;line-height:1;cursor:pointer;";
+        "position:absolute;left:0px;bottom:-22px;top:auto;z-index:25;padding:2px 6px;margin:0;border:1px solid #0f172a;border-radius:5px;background:rgba(255,255,255,0.95);color:#0f172a;font-size:0.7rem;font-weight:700;line-height:1.1;cursor:pointer;white-space:nowrap;";
       pencilBtn.onclick = (e) => {
         e.stopPropagation();
         openStoreNameEditorPopup();
@@ -2952,10 +2955,10 @@ function attachOwnerStoreEditHandlers() {
     const coverHeightBtn = document.createElement("button");
     coverHeightBtn.type = "button";
     coverHeightBtn.className = "owner-inline-edit-btn";
-    coverHeightBtn.textContent = "↕ Cover";
-    coverHeightBtn.title = "Adjust Cover Height";
+    coverHeightBtn.textContent = "Cover Size";
+    coverHeightBtn.title = "Adjust Cover Size";
     coverHeightBtn.style.cssText =
-      `position:absolute;bottom:10px;left:10px;z-index:20;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
+      `position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:20;padding:5px 12px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);white-space:nowrap;`;
     coverHeightBtn.onclick = (e) => {
       e.stopPropagation();
       openCoverHeightEditorModal();
@@ -3018,8 +3021,8 @@ function attachOwnerStoreEditHandlers() {
 
       const stripColorBtn = document.createElement("button");
       stripColorBtn.type = "button";
-      stripColorBtn.textContent = "Colour";
-      stripColorBtn.title = "Change Strip Colour";
+      stripColorBtn.textContent = "Box Colour";
+      stripColorBtn.title = "Change Box / Strip Colour";
       const curBarBg = sec.barBgColor || "#f1f5f9";
       stripColorBtn.style.cssText =
         `padding:3px 7px;border:1px solid #94a3b8;border-radius:6px;background:${curBarBg};color:#111827;text-shadow:0 0 3px #ffffff;font-size:0.72rem;font-weight:700;cursor:pointer;`;
