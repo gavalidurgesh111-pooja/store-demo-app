@@ -14,7 +14,8 @@ const DEFAULT_BOX_SIZES = {
     fontSize: 12,
     bgColor: "#ffffff",
     priceFontSize: 11,
-    priceColor: "#111827"
+    priceColor: "#111827",
+    textBgTransparent: false
   },
   productBox: {
     width: 150,
@@ -23,7 +24,8 @@ const DEFAULT_BOX_SIZES = {
     fontSize: 14,
     bgColor: "#ffffff",
     priceFontSize: 13,
-    priceColor: "#111827"
+    priceColor: "#111827",
+    textBgTransparent: false
   }
 };
 
@@ -174,7 +176,8 @@ function normalizeBoxSizes(raw) {
       fontSize: clampNum(mini.fontSize, 9, 26, DEFAULT_BOX_SIZES.miniBox.fontSize),
       bgColor: normalizeHexColor(mini.bgColor, DEFAULT_BOX_SIZES.miniBox.bgColor),
       priceFontSize: clampNum(mini.priceFontSize, 9, 26, DEFAULT_BOX_SIZES.miniBox.priceFontSize),
-      priceColor: normalizeHexColor(mini.priceColor, DEFAULT_BOX_SIZES.miniBox.priceColor)
+      priceColor: normalizeHexColor(mini.priceColor, DEFAULT_BOX_SIZES.miniBox.priceColor),
+      textBgTransparent: Boolean(mini.textBgTransparent)
     },
     productBox: {
       width: clampNum(prod.width, 110, 320, DEFAULT_BOX_SIZES.productBox.width),
@@ -183,7 +186,8 @@ function normalizeBoxSizes(raw) {
       fontSize: clampNum(prod.fontSize, 10, 30, DEFAULT_BOX_SIZES.productBox.fontSize),
       bgColor: normalizeHexColor(prod.bgColor, DEFAULT_BOX_SIZES.productBox.bgColor),
       priceFontSize: clampNum(prod.priceFontSize, 10, 28, DEFAULT_BOX_SIZES.productBox.priceFontSize),
-      priceColor: normalizeHexColor(prod.priceColor, DEFAULT_BOX_SIZES.productBox.priceColor)
+      priceColor: normalizeHexColor(prod.priceColor, DEFAULT_BOX_SIZES.productBox.priceColor),
+      textBgTransparent: Boolean(prod.textBgTransparent)
     }
   };
 }
@@ -280,14 +284,27 @@ function syncStripBarCornerDesign() {
   }
 }
 
-function applyInnerBoxColor(boxEl, innerSelector, colorHex) {
-  const safeColor = normalizeHexColor(colorHex, "#ffffff");
-  boxEl.style.setProperty("background", safeColor, "important");
-  boxEl.style.setProperty("background-color", safeColor, "important");
+function applyInnerBoxColor(boxEl, innerSelector, boxCfg) {
+  const safeColor = normalizeHexColor(boxCfg && boxCfg.bgColor, "#ffffff");
+  const isNoBg = Boolean(boxCfg && boxCfg.textBgTransparent);
   const innerEl = boxEl.querySelector(innerSelector);
-  if (innerEl) {
-    innerEl.style.setProperty("background", safeColor, "important");
-    innerEl.style.setProperty("background-color", safeColor, "important");
+
+  if (isNoBg) {
+    boxEl.style.setProperty("background", "transparent", "important");
+    boxEl.style.setProperty("background-color", "transparent", "important");
+    boxEl.style.setProperty("box-shadow", "none", "important");
+    if (innerEl) {
+      innerEl.style.setProperty("background", "transparent", "important");
+      innerEl.style.setProperty("background-color", "transparent", "important");
+    }
+  } else {
+    boxEl.style.setProperty("background", safeColor, "important");
+    boxEl.style.setProperty("background-color", safeColor, "important");
+    boxEl.style.removeProperty("box-shadow");
+    if (innerEl) {
+      innerEl.style.setProperty("background", safeColor, "important");
+      innerEl.style.setProperty("background-color", safeColor, "important");
+    }
   }
 }
 
@@ -301,7 +318,7 @@ function applyBoxSizeStyles() {
   root.style.setProperty("--mini-box-h", `${sizes.miniBox.height}px`);
   root.style.setProperty("--mini-box-img-h", `${sizes.miniBox.imgHeight}px`);
   root.style.setProperty("--mini-box-font-sz", `${sizes.miniBox.fontSize}px`);
-  root.style.setProperty("--mini-box-bg", sizes.miniBox.bgColor);
+  root.style.setProperty("--mini-box-bg", sizes.miniBox.textBgTransparent ? "transparent" : sizes.miniBox.bgColor);
   root.style.setProperty("--mini-price-sz", `${sizes.miniBox.priceFontSize}px`);
   root.style.setProperty("--mini-price-color", sizes.miniBox.priceColor);
 
@@ -309,7 +326,7 @@ function applyBoxSizeStyles() {
   root.style.setProperty("--product-box-h", `${sizes.productBox.height}px`);
   root.style.setProperty("--product-box-img-h", `${sizes.productBox.imgHeight}px`);
   root.style.setProperty("--product-box-font-sz", `${sizes.productBox.fontSize}px`);
-  root.style.setProperty("--product-box-bg", sizes.productBox.bgColor);
+  root.style.setProperty("--product-box-bg", sizes.productBox.textBgTransparent ? "transparent" : sizes.productBox.bgColor);
   root.style.setProperty("--product-price-sz", `${sizes.productBox.priceFontSize}px`);
   root.style.setProperty("--product-price-color", sizes.productBox.priceColor);
 
@@ -325,7 +342,7 @@ function applyBoxSizeStyles() {
     box.style.height = "auto";
     box.style.overflow = "hidden";
 
-    applyInnerBoxColor(box, ".mini-box-body", sizes.miniBox.bgColor);
+    applyInnerBoxColor(box, ".mini-box-body", sizes.miniBox);
     const bodyEl = box.querySelector(".mini-box-body");
     if (bodyEl) {
       bodyEl.style.width = "100%";
@@ -340,11 +357,13 @@ function applyBoxSizeStyles() {
       img.style.width = "100%";
       img.style.height = `${sizes.miniBox.imgHeight}px`;
       img.style.objectFit = "cover";
+      img.style.borderRadius = sizes.miniBox.textBgTransparent ? "10px" : "0px";
     }
     const placeholder = box.querySelector("[data-box-placeholder='mini']");
     if (placeholder) {
       placeholder.style.width = "100%";
       placeholder.style.height = `${sizes.miniBox.imgHeight}px`;
+      placeholder.style.borderRadius = sizes.miniBox.textBgTransparent ? "10px" : "0px";
     }
 
     const nameEl = box.querySelector(".mini-box-name");
@@ -387,7 +406,7 @@ function applyBoxSizeStyles() {
       box.style.height = "auto";
       box.style.overflow = "hidden";
 
-      applyInnerBoxColor(box, ".item-info", sizes.productBox.bgColor);
+      applyInnerBoxColor(box, ".item-info", sizes.productBox);
       const infoEl = box.querySelector(".item-info");
       if (infoEl) {
         infoEl.style.width = "100%";
@@ -402,11 +421,13 @@ function applyBoxSizeStyles() {
         img.style.width = "100%";
         img.style.height = `${sizes.productBox.imgHeight}px`;
         img.style.objectFit = "cover";
+        img.style.borderRadius = sizes.productBox.textBgTransparent ? "10px" : "0px";
       }
       const placeholder = box.querySelector("[data-box-placeholder='product']");
       if (placeholder) {
         placeholder.style.width = "100%";
         placeholder.style.height = `${sizes.productBox.imgHeight}px`;
+        placeholder.style.borderRadius = sizes.productBox.textBgTransparent ? "10px" : "0px";
       }
 
       const nameEl = box.querySelector(".item-name");
@@ -453,6 +474,8 @@ function updateBoxSizeSetting(boxType, prop, value, { persist = false } = {}) {
       targetData.boxSizes.miniBox.priceFontSize = clampNum(value, 9, 26, DEFAULT_BOX_SIZES.miniBox.priceFontSize);
     } else if (prop === "priceColor") {
       targetData.boxSizes.miniBox.priceColor = normalizeHexColor(value, DEFAULT_BOX_SIZES.miniBox.priceColor);
+    } else if (prop === "textBgTransparent") {
+      targetData.boxSizes.miniBox.textBgTransparent = Boolean(value);
     }
   } else if (boxType === "product") {
     if (prop === "width") {
@@ -473,6 +496,8 @@ function updateBoxSizeSetting(boxType, prop, value, { persist = false } = {}) {
       targetData.boxSizes.productBox.priceFontSize = clampNum(value, 10, 28, DEFAULT_BOX_SIZES.productBox.priceFontSize);
     } else if (prop === "priceColor") {
       targetData.boxSizes.productBox.priceColor = normalizeHexColor(value, DEFAULT_BOX_SIZES.productBox.priceColor);
+    } else if (prop === "textBgTransparent") {
+      targetData.boxSizes.productBox.textBgTransparent = Boolean(value);
     }
   }
 
@@ -828,10 +853,13 @@ function imgMarkup(src, altText, isMini = false) {
   const sizes = normalizeBoxSizes(getWorkingStoreData().boxSizes);
   const h = isMini ? sizes.miniBox.imgHeight : sizes.productBox.imgHeight;
   const kind = isMini ? "mini" : "product";
+  const radius = isMini
+    ? (sizes.miniBox.textBgTransparent ? "10px" : "0px")
+    : (sizes.productBox.textBgTransparent ? "10px" : "0px");
   if (src) {
-    return `<img src="${src}" alt="${altText}" style="width:100%;height:${h}px;object-fit:cover;display:block;" />`;
+    return `<img src="${src}" alt="${altText}" style="width:100%;height:${h}px;object-fit:cover;display:block;border-radius:${radius};" />`;
   }
-  return `<div data-box-placeholder="${kind}" style="width:100%;height:${h}px;background:#e5e7eb;"></div>`;
+  return `<div data-box-placeholder="${kind}" style="width:100%;height:${h}px;background:#e5e7eb;border-radius:${radius};"></div>`;
 }
 
 function startCoverAutoScroll(track, slideCount) {
