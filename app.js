@@ -106,6 +106,30 @@ const CARTOON_AVATARS = [
 
 const DEFAULT_SECTION_TITLES = Array.from({ length: 15 }, () => "Name");
 
+function applyNoTapHighlightRule() {
+  const styleId = "storeNoTapHighlightGlobalStyle";
+  if (document.getElementById(styleId)) return;
+
+  const styleEl = document.createElement("style");
+  styleEl.id = styleId;
+  styleEl.textContent = `
+    *, *::before, *::after {
+      -webkit-tap-highlight-color: transparent !important;
+      -webkit-touch-callout: none !important;
+      -webkit-user-select: none !important;
+      user-select: none !important;
+    }
+    input, textarea, select, [contenteditable="true"] {
+      -webkit-user-select: text !important;
+      user-select: text !important;
+      -webkit-touch-callout: default !important;
+    }
+  `;
+  (document.head || document.documentElement).appendChild(styleEl);
+}
+
+applyNoTapHighlightRule();
+
 function formatItemPriceDisplay(item) {
   if (!item) return "₹0";
   if (item.priceText !== undefined && item.priceText !== null && String(item.priceText).trim() !== "") {
@@ -1785,6 +1809,7 @@ function saveUserProfile() {
 }
 
 window.addEventListener("storage", () => {
+  applyNoTapHighlightRule();
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (parsed) storeData = normalizeStoreData(parsed);
