@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V24");
+console.log("OWNER_EDIT_COMPLETE_V25");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -25,6 +25,11 @@ function removeStripHeightModalIfExists() {
   if (existing) existing.remove();
 }
 
+function removeCustomAdModalIfExists() {
+  const existing = document.getElementById("ownerCustomAdEditorModal");
+  if (existing) existing.remove();
+}
+
 function removeOwnerStoreEditUI() {
   const bar = document.getElementById("ownerLiveSaveBar");
   if (bar) bar.remove();
@@ -41,6 +46,7 @@ function removeOwnerStoreEditUI() {
   removeBoxSizePanelIfExists();
   removePriceEditorModalIfExists();
   removeStripHeightModalIfExists();
+  removeCustomAdModalIfExists();
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
 }
 
@@ -426,34 +432,35 @@ function createBlueKnobSlider(min, max, step, initialVal, onValueChange) {
   };
 }
 
-// ==================== STRIP HEIGHT POP-UP ====================
-function openStripHeightEditorModal(sIdx, stripEl) {
-  removeStripHeightModalIfExists();
+// ==================== CUSTOM AD POP-UP (+ Ad) ====================
+function openCustomAdEditorModal(sIdx) {
+  removeCustomAdModalIfExists();
   const data = getWorkingStoreData();
   const sec = data.sections && data.sections[sIdx];
   if (!sec) return;
 
   const accentHex = data.themeColor || "#0f766e";
-  const prevHeight = Number.isFinite(Number(sec.barHeight)) && Number(sec.barHeight) > 0
-    ? Number(sec.barHeight)
-    : 36;
-  let draftHeight = prevHeight;
+  const existingAd = sec.customAd && typeof sec.customAd === "object" ? sec.customAd : {};
+
+  let draftWidth = existingAd.width || "100%";
+  let draftHeight = existingAd.height || "70px";
+  let draftMoveMode = existingAd.moveMode || "static"; // "static" | "marquee" | "float"
 
   const modal = document.createElement("div");
-  modal.id = "ownerStripHeightEditorModal";
+  modal.id = "ownerCustomAdEditorModal";
   modal.style.cssText =
-    "position:fixed;inset:0;z-index:145;background:rgba(15,23,42,0.55);display:flex;align-items:center;justify-content:center;padding:12px;";
+    "position:fixed;inset:0;z-index:150;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;padding:12px;";
 
   const card = document.createElement("div");
   card.style.cssText =
-    "width:100%;max-width:350px;background:#ffffff;border-radius:14px;padding:14px 16px;box-shadow:0 12px 30px rgba(0,0,0,0.35);display:flex;flex-direction:column;gap:12px;color:#111827;";
+    "width:100%;max-width:400px;background:#ffffff;border-radius:14px;padding:14px 16px;box-shadow:0 12px 30px rgba(0,0,0,0.35);display:flex;flex-direction:column;gap:10px;color:#111827;";
 
   const header = document.createElement("div");
   header.style.cssText =
     "display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #e2e8f0;";
 
   const title = document.createElement("span");
-  title.textContent = `Strip ${sIdx + 1} Size`;
+  title.textContent = `Row ${sIdx + 1} Ad / Strip Slot`;
   title.style.cssText = "font-size:0.96rem;font-weight:800;color:#111827;";
 
   const closeBtn = document.createElement("button");
@@ -461,72 +468,126 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   closeBtn.textContent = "✕";
   closeBtn.style.cssText =
     "border:none;background:#f1f5f9;border-radius:8px;min-width:32px;min-height:32px;font-weight:700;color:#334155;cursor:pointer;";
-
-  const applyHeightLive = (val) => {
-    sec.barHeight = val;
-    if (stripEl && typeof applyStripBarStyle === "function") {
-      applyStripBarStyle(stripEl, sec);
-    }
-  };
-
-  closeBtn.onclick = () => {
-    applyHeightLive(prevHeight);
-    modal.remove();
-  };
+  closeBtn.onclick = () => modal.remove();
 
   header.appendChild(title);
   header.appendChild(closeBtn);
 
-  const heightSlider = makeLabeledSlider("Strip Height", 24, 76, 1, draftHeight, "px", accentHex, (val) => {
-    draftHeight = val;
-    applyHeightLive(val);
+  const labelInput = document.createElement("input");
+  labelInput.type = "text";
+  labelInput.value = existingAd.label || "";
+  labelInput.placeholder = "Ad Label / Title (optional)";
+  labelInput.style.cssText =
+    "width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.88rem;color:#111827;box-sizing:border-box;";
+
+  const codeInput = document.createElement("textarea");
+  codeInput.rows = 4;
+  codeInput.value = existingAd.code || "";
+  codeInput.placeholder = "Paste Google Ad / HTML / Script or Image URL here";
+  codeInput.style.cssText =
+    "width:100%;min-height:80px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.84rem;color:#111827;box-sizing:border-box;font-family:monospace;";
+
+  const dimRow = document.createElement("div");
+  dimRow.style.cssText = "display:flex;gap:8px;";
+
+  const widthInput = document.createElement("input");
+  widthInput.type = "text";
+  widthInput.value = draftWidth;
+  widthInput.placeholder = "Width (e.g. 100% or 300px)";
+  widthInput.style.cssText =
+    "flex:1;min-height:36px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.84rem;color:#111827;box-sizing:border-box;";
+
+  const heightInput = document.createElement("input");
+  heightInput.type = "text";
+  heightInput.value = draftHeight;
+  heightInput.placeholder = "Height (e.g. 70px or 180px)";
+  heightInput.style.cssText =
+    "flex:1;min-height:36px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.84rem;color:#111827;box-sizing:border-box;";
+
+  dimRow.appendChild(widthInput);
+  dimRow.appendChild(heightInput);
+
+  const moveRow = document.createElement("div");
+  moveRow.style.cssText = "display:flex;gap:6px;flex-wrap:wrap;";
+
+  const modes = [
+    { id: "static", label: "Fixed" },
+    { id: "marquee", label: "Sliding (Move)" },
+    { id: "float", label: "Floating" }
+  ];
+
+  const modeBtns = modes.map((m) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = m.label;
+    b.onclick = () => {
+      draftMoveMode = m.id;
+      modeBtns.forEach((btn, idx) => {
+        const active = modes[idx].id === draftMoveMode;
+        btn.style.cssText = active
+          ? `flex:1;min-height:34px;padding:5px 8px;border:2px solid ${accentHex};border-radius:8px;background:${accentHex};color:#ffffff;font-size:0.78rem;font-weight:800;cursor:pointer;`
+          : "flex:1;min-height:34px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
+      });
+    };
+    moveRow.appendChild(b);
+    return b;
+  });
+
+  modeBtns.forEach((btn, idx) => {
+    const active = modes[idx].id === draftMoveMode;
+    btn.style.cssText = active
+      ? `flex:1;min-height:34px;padding:5px 8px;border:2px solid ${accentHex};border-radius:8px;background:${accentHex};color:#ffffff;font-size:0.78rem;font-weight:800;cursor:pointer;`
+      : "flex:1;min-height:34px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
   });
 
   const footer = document.createElement("div");
   footer.style.cssText = "display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;";
 
-  const cancelBtn = document.createElement("button");
-  cancelBtn.type = "button";
-  cancelBtn.textContent = "Cancel";
-  cancelBtn.style.cssText =
-    "flex:1;min-height:38px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-weight:700;cursor:pointer;";
-  cancelBtn.onclick = () => {
-    applyHeightLive(prevHeight);
+  const clearAdBtn = document.createElement("button");
+  clearAdBtn.type = "button";
+  clearAdBtn.textContent = "Remove Ad";
+  clearAdBtn.style.cssText =
+    "min-height:38px;padding:7px 10px;border:1px solid #fecaca;border-radius:8px;background:#fee2e2;color:#dc2626;font-size:0.82rem;font-weight:700;cursor:pointer;";
+  clearAdBtn.onclick = () => {
+    sec.customAd = null;
     modal.remove();
+    renderSections();
+    attachOwnerStoreEditHandlers();
   };
 
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
-  applyBtn.textContent = "Apply";
+  applyBtn.textContent = "Apply Ad";
   applyBtn.style.cssText =
-    `flex:1;min-height:38px;padding:7px 12px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
+    `flex:1;min-height:38px;padding:7px 12px;border:none;border-radius:8px;background:${accentHex};color:#ffffff;font-size:0.84rem;font-weight:700;cursor:pointer;`;
   applyBtn.onclick = () => {
-    applyHeightLive(draftHeight);
+    const cleanCode = codeInput.value.trim();
+    const cleanLbl = labelInput.value.trim();
+    if (!cleanCode && !cleanLbl) {
+      sec.customAd = null;
+    } else {
+      sec.barHidden = true;
+      sec.customAd = {
+        label: cleanLbl || "Ad",
+        code: cleanCode,
+        width: (widthInput.value || "").trim() || "100%",
+        height: (heightInput.value || "").trim() || "70px",
+        moveMode: draftMoveMode
+      };
+    }
     modal.remove();
     renderSections();
     attachOwnerStoreEditHandlers();
   };
 
-  const applyAllBtn = document.createElement("button");
-  applyAllBtn.type = "button";
-  applyAllBtn.textContent = "Apply to All";
-  applyAllBtn.style.cssText =
-    "flex:1;min-height:38px;padding:7px 12px;border:none;border-radius:10px;background:#1d4ed8;color:#ffffff;font-weight:700;cursor:pointer;";
-  applyAllBtn.onclick = () => {
-    (data.sections || []).forEach((s) => {
-      s.barHeight = draftHeight;
-    });
-    modal.remove();
-    renderSections();
-    attachOwnerStoreEditHandlers();
-  };
-
-  footer.appendChild(cancelBtn);
+  footer.appendChild(clearAdBtn);
   footer.appendChild(applyBtn);
-  footer.appendChild(applyAllBtn);
 
   card.appendChild(header);
-  card.appendChild(heightSlider);
+  card.appendChild(labelInput);
+  card.appendChild(codeInput);
+  card.appendChild(dimRow);
+  card.appendChild(moveRow);
   card.appendChild(footer);
   modal.appendChild(card);
   document.body.appendChild(modal);
@@ -541,7 +602,7 @@ function openItemAmountEditorModal(sIdx, itemId) {
   if (!item) return;
 
   const accentHex = data.themeColor || "#0f766e";
-  const boxDefaults = normalizeBoxSizes(data.boxSizes);
+  const boxDefaults = getEffectiveBoxSizesForSection(data, sIdx);
   const baseDefaults = sIdx === 0 ? boxDefaults.miniBox : boxDefaults.productBox;
 
   const initialPriceText = item.priceText !== undefined && item.priceText !== null && String(item.priceText).trim() !== ""
@@ -698,14 +759,23 @@ function openItemAmountEditorModal(sIdx, itemId) {
   syncPreview();
 }
 
-// ==================== BOX SIZE PANEL ====================
+// ==================== BOX SIZE PANEL (PER ROW + ALL ROWS) ====================
 const FALLBACK_BOX_SIZES = {
   miniBox: { width: 92, height: 122, imgHeight: 74, fontSize: 12, bgColor: "#ffffff", priceFontSize: 11, priceColor: "#111827", textBgTransparent: false },
   productBox: { width: 150, height: 215, imgHeight: 125, fontSize: 14, bgColor: "#ffffff", priceFontSize: 13, priceColor: "#111827", textBgTransparent: false }
 };
 
-function getCurrentBoxSizesForEdit() {
+function getCurrentBoxSizesForEdit(targetRowIdx = null) {
   const data = getWorkingStoreData();
+  if (typeof targetRowIdx === "number" && data.sections && data.sections[targetRowIdx]) {
+    const eff = typeof getEffectiveBoxSizesForSection === "function"
+      ? getEffectiveBoxSizesForSection(data, targetRowIdx)
+      : normalizeBoxSizes(data.boxSizes);
+    return {
+      miniBox: { ...eff.miniBox },
+      productBox: { ...eff.productBox }
+    };
+  }
   if (typeof normalizeBoxSizes === "function") {
     data.boxSizes = normalizeBoxSizes(data.boxSizes);
     return data.boxSizes;
@@ -718,8 +788,11 @@ function getCurrentBoxSizesForEdit() {
   return data.boxSizes;
 }
 
-function highlightBoxPreview(selector, widthPx, heightPx, accentHex) {
-  document.querySelectorAll(selector).forEach((box) => {
+function highlightBoxPreview(selector, widthPx, heightPx, accentHex, rowIdx = null) {
+  const rootScope = typeof rowIdx === "number"
+    ? document.querySelector(`#sectionsContainer .row-section[data-section-index="${rowIdx}"]`) || document
+    : document;
+  rootScope.querySelectorAll(selector).forEach((box) => {
     box.style.outline = `2px dashed ${accentHex}`;
     box.style.outlineOffset = "2px";
     box.dataset.previewSize = `${widthPx}×${heightPx}px`;
@@ -734,19 +807,35 @@ function clearBoxPreviewHighlights() {
   });
 }
 
-function applyBoxSizePanelToDom(sizes) {
+function applyBoxSizePanelToDom(sizes, targetRowIdx = null) {
+  const data = getWorkingStoreData();
+  if (typeof targetRowIdx === "number" && data.sections && data.sections[targetRowIdx]) {
+    data.sections[targetRowIdx].customBoxSizes = {
+      miniBox: { ...sizes.miniBox },
+      productBox: { ...sizes.productBox }
+    };
+  } else {
+    data.boxSizes = {
+      miniBox: { ...sizes.miniBox },
+      productBox: { ...sizes.productBox }
+    };
+  }
   if (typeof window.applyBoxSizeStyles === "function") {
     window.applyBoxSizeStyles();
   }
 }
 
-function openBoxSizePanelModal() {
+function openBoxSizePanelModal(targetRowIdx = null) {
   removeBoxSizePanelIfExists();
 
   const data = getWorkingStoreData();
   const accentHex = data.themeColor || "#0f766e";
-  const sizes = getCurrentBoxSizesForEdit();
-  const snapshot = JSON.parse(JSON.stringify(sizes));
+  const hasRowTarget = typeof targetRowIdx === "number" && data.sections && data.sections[targetRowIdx];
+  const sizes = getCurrentBoxSizesForEdit(hasRowTarget ? targetRowIdx : null);
+  const snapshotRowSizes = hasRowTarget && data.sections[targetRowIdx].customBoxSizes
+    ? JSON.parse(JSON.stringify(data.sections[targetRowIdx].customBoxSizes))
+    : null;
+  const snapshotGlobalSizes = JSON.parse(JSON.stringify(data.boxSizes));
 
   const allNoBgSaved = Boolean(sizes.miniBox.textBgTransparent && sizes.productBox.textBgTransparent);
   const allNormalBgSaved = Boolean(!sizes.miniBox.textBgTransparent && !sizes.productBox.textBgTransparent);
@@ -773,7 +862,7 @@ function openBoxSizePanelModal() {
     "display:inline-block;width:28px;height:4px;border-radius:999px;background:#cbd5e1;";
 
   const title = document.createElement("span");
-  title.textContent = "Box Size Panel";
+  title.textContent = hasRowTarget ? `Row ${targetRowIdx + 1} Box Size` : "Box Size Panel";
   title.style.cssText = "font-size:0.94rem;font-weight:800;color:#111827;";
 
   titleWrap.appendChild(dragHandle);
@@ -787,8 +876,13 @@ function openBoxSizePanelModal() {
 
   const restoreSnapshot = () => {
     clearBoxPreviewHighlights();
-    data.boxSizes = JSON.parse(JSON.stringify(snapshot));
-    applyBoxSizePanelToDom(data.boxSizes);
+    data.boxSizes = JSON.parse(JSON.stringify(snapshotGlobalSizes));
+    if (hasRowTarget) {
+      data.sections[targetRowIdx].customBoxSizes = snapshotRowSizes ? JSON.parse(JSON.stringify(snapshotRowSizes)) : null;
+    }
+    if (typeof window.applyBoxSizeStyles === "function") {
+      window.applyBoxSizeStyles();
+    }
     modal.remove();
   };
 
@@ -877,8 +971,8 @@ function openBoxSizePanelModal() {
         knobSlider.setValue(clamped);
         numInput.value = String(clamped);
         updateBadge();
-        applyBoxSizePanelToDom(sizes);
-        highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex);
+        applyBoxSizePanelToDom(sizes, hasRowTarget ? targetRowIdx : null);
+        highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex, hasRowTarget ? targetRowIdx : null);
       };
 
       const knobSlider = createBlueKnobSlider(minV, maxV, stepV, targetObj[propKey], (nextVal) => {
@@ -937,8 +1031,8 @@ function openBoxSizePanelModal() {
       openStandaloneColorPicker(targetObj.bgColor || "#ffffff", (hex) => {
         targetObj.bgColor = hex;
         syncBgBtnStyle();
-        applyBoxSizePanelToDom(sizes);
-        highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex);
+        applyBoxSizePanelToDom(sizes, hasRowTarget ? targetRowIdx : null);
+        highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex, hasRowTarget ? targetRowIdx : null);
       });
     };
 
@@ -975,8 +1069,8 @@ function openBoxSizePanelModal() {
       selectedBulkMode = bothNoBg ? "noBg" : (bothNormal ? "normalBg" : null);
       syncBulkButtonsState();
       syncNoBgToggleActive();
-      applyBoxSizePanelToDom(sizes);
-      highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex);
+      applyBoxSizePanelToDom(sizes, hasRowTarget ? targetRowIdx : null);
+      highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex, hasRowTarget ? targetRowIdx : null);
     };
 
     const noBgTxt = document.createElement("span");
@@ -1016,8 +1110,8 @@ function openBoxSizePanelModal() {
       openStandaloneColorPicker(targetObj.priceColor || "#111827", (hex) => {
         targetObj.priceColor = hex;
         syncPriceBtnStyle();
-        applyBoxSizePanelToDom(sizes);
-        highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex);
+        applyBoxSizePanelToDom(sizes, hasRowTarget ? targetRowIdx : null);
+        highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex, hasRowTarget ? targetRowIdx : null);
       });
     };
 
@@ -1072,7 +1166,7 @@ function openBoxSizePanelModal() {
     syncBulkButtonsState();
     miniSec.syncAll();
     prodSec.syncAll();
-    applyBoxSizePanelToDom(sizes);
+    applyBoxSizePanelToDom(sizes, hasRowTarget ? targetRowIdx : null);
   };
 
   quickNormalBgAllBtn.onclick = () => {
@@ -1082,14 +1176,14 @@ function openBoxSizePanelModal() {
     syncBulkButtonsState();
     miniSec.syncAll();
     prodSec.syncAll();
-    applyBoxSizePanelToDom(sizes);
+    applyBoxSizePanelToDom(sizes, hasRowTarget ? targetRowIdx : null);
   };
 
   const resetBtn = document.createElement("button");
   resetBtn.type = "button";
   resetBtn.textContent = "Reset Default";
   resetBtn.style.cssText =
-    "min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-size:0.84rem;font-weight:700;cursor:pointer;flex-shrink:0;";
+    "min-height:40px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-size:0.8rem;font-weight:700;cursor:pointer;flex-shrink:0;";
   resetBtn.onclick = () => {
     sizes.miniBox = { ...FALLBACK_BOX_SIZES.miniBox };
     sizes.productBox = { ...FALLBACK_BOX_SIZES.productBox };
@@ -1097,31 +1191,47 @@ function openBoxSizePanelModal() {
     syncBulkButtonsState();
     miniSec.syncAll();
     prodSec.syncAll();
-    applyBoxSizePanelToDom(sizes);
-    highlightBoxPreview(".mini-box", sizes.miniBox.width, sizes.miniBox.height, accentHex);
-    highlightBoxPreview(".item-box", sizes.productBox.width, sizes.productBox.height, accentHex);
+    applyBoxSizePanelToDom(sizes, hasRowTarget ? targetRowIdx : null);
+    highlightBoxPreview(".mini-box", sizes.miniBox.width, sizes.miniBox.height, accentHex, hasRowTarget ? targetRowIdx : null);
+    highlightBoxPreview(".item-box", sizes.productBox.width, sizes.productBox.height, accentHex, hasRowTarget ? targetRowIdx : null);
   };
 
   const footer = document.createElement("div");
-  footer.style.cssText = "display:flex;gap:8px;margin-top:2px;flex-shrink:0;";
+  footer.style.cssText = "display:flex;gap:6px;margin-top:2px;flex-shrink:0;flex-wrap:wrap;";
 
   const cancelBtn = document.createElement("button");
   cancelBtn.type = "button";
   cancelBtn.textContent = "Cancel";
   cancelBtn.style.cssText =
-    "flex:1;min-height:42px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-weight:700;cursor:pointer;";
+    "flex:1;min-height:40px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-size:0.82rem;font-weight:700;cursor:pointer;";
   cancelBtn.onclick = restoreSnapshot;
 
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
-  applyBtn.textContent = "Apply";
+  applyBtn.textContent = hasRowTarget ? `Apply Row ${targetRowIdx + 1}` : "Apply";
   applyBtn.style.cssText =
-    `flex:1;min-height:42px;padding:8px 14px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
+    `flex:1;min-height:40px;padding:8px 12px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-size:0.82rem;font-weight:700;cursor:pointer;`;
   applyBtn.onclick = () => {
+    applyBoxSizePanelToDom(sizes, hasRowTarget ? targetRowIdx : null);
+    clearBoxPreviewHighlights();
+    modal.remove();
+    renderSections();
+    attachOwnerStoreEditHandlers();
+  };
+
+  const applyAllRowsBtn = document.createElement("button");
+  applyAllRowsBtn.type = "button";
+  applyAllRowsBtn.textContent = "Apply All Rows";
+  applyAllRowsBtn.style.cssText =
+    "flex:1;min-height:40px;padding:8px 12px;border:none;border-radius:10px;background:#1d4ed8;color:#ffffff;font-size:0.82rem;font-weight:700;cursor:pointer;";
+  applyAllRowsBtn.onclick = () => {
     data.boxSizes = {
       miniBox: { ...sizes.miniBox },
       productBox: { ...sizes.productBox }
     };
+    (data.sections || []).forEach((s) => {
+      s.customBoxSizes = null;
+    });
     clearBoxPreviewHighlights();
     modal.remove();
     renderSections();
@@ -1131,6 +1241,7 @@ function openBoxSizePanelModal() {
   footer.appendChild(resetBtn);
   footer.appendChild(cancelBtn);
   footer.appendChild(applyBtn);
+  footer.appendChild(applyAllRowsBtn);
 
   card.appendChild(header);
   card.appendChild(quickBulkRow);
@@ -1531,7 +1642,6 @@ function openCustomTextStylePopup(config) {
       renderFontScrollList();
       syncChooseFontBtnLabel();
       syncPreview();
-      // Auto-close font dropdown after selection so scrolling stays clean
       fontScrollBox.style.display = "none";
     };
     fontScrollBox.appendChild(itemBtn);
@@ -2214,7 +2324,9 @@ function addBottomStoreRow() {
     titleStyle: null,
     barBgColor: "",
     barHidden: false,
-    barHeight: 36
+    barHeight: 36,
+    customBoxSizes: null,
+    customAd: null
   });
 
   renderSections();
@@ -2340,7 +2452,7 @@ function attachOwnerStoreEditHandlers() {
     "padding:6px 10px;border:1px solid rgba(255,255,255,0.65);border-radius:8px;background:rgba(255,255,255,0.16);color:#ffffff;font-size:0.78rem;font-weight:700;cursor:pointer;";
   boxSizeBtn.onclick = (e) => {
     e.stopPropagation();
-    openBoxSizePanelModal();
+    openBoxSizePanelModal(null);
   };
 
   const colorBtn = document.createElement("button");
@@ -2489,6 +2601,17 @@ function attachOwnerStoreEditHandlers() {
       stripControlsWrap.className = "owner-inline-edit-btn";
       stripControlsWrap.style.cssText = "margin-left:auto;display:flex;align-items:center;gap:4px;";
 
+      const rowBoxSizeBtn = document.createElement("button");
+      rowBoxSizeBtn.type = "button";
+      rowBoxSizeBtn.textContent = "Box Size";
+      rowBoxSizeBtn.title = "Row Box Size";
+      rowBoxSizeBtn.style.cssText =
+        `padding:3px 7px;border:1px solid ${activeColor};border-radius:6px;background:#f0fdfa;color:${activeColor};font-size:0.72rem;font-weight:700;cursor:pointer;`;
+      rowBoxSizeBtn.onclick = (e) => {
+        e.stopPropagation();
+        openBoxSizePanelModal(sIdx);
+      };
+
       const stripHeightBtn = document.createElement("button");
       stripHeightBtn.type = "button";
       stripHeightBtn.textContent = "↕ Size";
@@ -2552,6 +2675,7 @@ function attachOwnerStoreEditHandlers() {
         attachOwnerStoreEditHandlers();
       };
 
+      stripControlsWrap.appendChild(rowBoxSizeBtn);
       stripControlsWrap.appendChild(stripHeightBtn);
       stripControlsWrap.appendChild(stripColorBtn);
       stripControlsWrap.appendChild(hideStripBtn);
@@ -2560,7 +2684,7 @@ function attachOwnerStoreEditHandlers() {
       const restoreBarRow = document.createElement("div");
       restoreBarRow.className = "owner-inline-edit-btn";
       restoreBarRow.style.cssText =
-        "display:flex;justify-content:flex-start;align-items:center;gap:6px;margin-bottom:6px;";
+        "display:flex;justify-content:flex-start;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;";
 
       const addStripBtn = document.createElement("button");
       addStripBtn.type = "button";
@@ -2570,11 +2694,34 @@ function attachOwnerStoreEditHandlers() {
       addStripBtn.onclick = (e) => {
         e.stopPropagation();
         sec.barHidden = false;
+        sec.customAd = null;
         renderSections();
         attachOwnerStoreEditHandlers();
       };
 
+      const addAdBtn = document.createElement("button");
+      addAdBtn.type = "button";
+      addAdBtn.textContent = sec.customAd ? "✎ Ad" : "+ Ad";
+      addAdBtn.style.cssText =
+        "padding:4px 10px;border:1px solid #1d4ed8;border-radius:8px;background:#eff6ff;color:#1d4ed8;font-size:0.75rem;font-weight:700;cursor:pointer;";
+      addAdBtn.onclick = (e) => {
+        e.stopPropagation();
+        openCustomAdEditorModal(sIdx);
+      };
+
+      const rowBoxSizeHiddenBtn = document.createElement("button");
+      rowBoxSizeHiddenBtn.type = "button";
+      rowBoxSizeHiddenBtn.textContent = "Box Size";
+      rowBoxSizeHiddenBtn.style.cssText =
+        "padding:4px 9px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#111827;font-size:0.74rem;font-weight:700;cursor:pointer;";
+      rowBoxSizeHiddenBtn.onclick = (e) => {
+        e.stopPropagation();
+        openBoxSizePanelModal(sIdx);
+      };
+
       restoreBarRow.appendChild(addStripBtn);
+      restoreBarRow.appendChild(addAdBtn);
+      restoreBarRow.appendChild(rowBoxSizeHiddenBtn);
       secEl.prepend(restoreBarRow);
     }
 
