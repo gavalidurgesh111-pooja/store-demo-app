@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V30");
+console.log("OWNER_EDIT_COMPLETE_V31");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -43,7 +43,7 @@ function showBottomSavedPopup(message = "Saved Successfully") {
   toast.id = "ownerBottomSavedToast";
   toast.textContent = message;
   toast.style.cssText =
-    "position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:99999;background:#0f172a;color:#ffffff;padding:9px 18px;border-radius:999px;font-size:0.84rem;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,0.32);pointer-events:none;";
+    "position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:99999;background:#ffffff;color:#0f172a;border:1px solid #cbd5e1;padding:9px 18px;border-radius:999px;font-size:0.84rem;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,0.22);pointer-events:none;";
 
   document.body.appendChild(toast);
   setTimeout(() => {
@@ -2966,10 +2966,10 @@ function attachOwnerStoreEditHandlers() {
     const coverHeightBtn = document.createElement("button");
     coverHeightBtn.type = "button";
     coverHeightBtn.className = "owner-inline-edit-btn";
-    coverHeightBtn.textContent = "Cover Size";
-    coverHeightBtn.title = "Adjust Cover Size";
+    coverHeightBtn.textContent = "↕ Cover Size";
+    coverHeightBtn.title = "Adjust Cover Height (Top & Bottom)";
     coverHeightBtn.style.cssText =
-      `position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:20;padding:5px 12px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);white-space:nowrap;`;
+      `position:absolute;bottom:10px;left:54%;transform:translateX(-50%);z-index:20;padding:5px 13px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);white-space:nowrap;`;
     coverHeightBtn.onclick = (e) => {
       e.stopPropagation();
       openCoverHeightEditorModal();
