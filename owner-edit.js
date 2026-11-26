@@ -1,12 +1,74 @@
-console.log("OWNER_EDIT_COMPLETE_V34");
+console.log("OWNER_EDIT_COMPLETE_V35");
 
-// Fixed editor color (#FF631C) for Draft Mode bar, cover buttons, and pop-up action buttons.
+// Fixed editor color (#FF631C) for active/pressed states, and soft light tint (#FFD8C7) before press.
 const FIXED_EDITOR_COLOR = "#FF631C";
+const SOFT_POPUP_BTN_BG = "#FFD8C7";
+const SOFT_POPUP_BTN_TEXT = "#C2410C";
+const SOFT_POPUP_BTN_BORDER = "#FDBA74";
 const COVER_BUTTON_BG_COLOR = "#FF631C";
 const COVER_BUTTON_TEXT_COLOR = "#ffffff";
 
 function getEditorFixedColor() {
   return FIXED_EDITOR_COLOR;
+}
+
+function setButtonSoftIdleStyle(btn) {
+  if (!btn) return;
+  btn.style.background = SOFT_POPUP_BTN_BG;
+  btn.style.backgroundColor = SOFT_POPUP_BTN_BG;
+  btn.style.color = SOFT_POPUP_BTN_TEXT;
+  btn.style.border = `1px solid ${SOFT_POPUP_BTN_BORDER}`;
+}
+
+function setButtonActiveAccentStyle(btn, hexColor = getEditorFixedColor()) {
+  if (!btn) return;
+  const activeHex = hexColor || getEditorFixedColor();
+  btn.style.background = activeHex;
+  btn.style.backgroundColor = activeHex;
+  btn.style.color = "#ffffff";
+  btn.style.border = `1px solid ${activeHex}`;
+}
+
+function bindSoftToAccentButton(btn, { isSelected = false, onBeforeClick = null, onAfterClick = null } = {}) {
+  if (!btn) return;
+
+  const syncVisualState = () => {
+    if (isSelected) {
+      setButtonActiveAccentStyle(btn);
+    } else {
+      setButtonSoftIdleStyle(btn);
+    }
+  };
+
+  syncVisualState();
+
+  btn.addEventListener("pointerdown", () => {
+    setButtonActiveAccentStyle(btn);
+  });
+
+  const releasePress = () => {
+    syncVisualState();
+  };
+
+  btn.addEventListener("pointerup", releasePress);
+  btn.addEventListener("pointerleave", releasePress);
+  btn.addEventListener("pointercancel", releasePress);
+
+  const originalOnClick = btn.onclick;
+  btn.onclick = (e) => {
+    if (typeof onBeforeClick === "function") onBeforeClick(e);
+    setButtonActiveAccentStyle(btn);
+    if (typeof originalOnClick === "function") originalOnClick(e);
+    if (typeof onAfterClick === "function") onAfterClick(e);
+  };
+
+  return {
+    setSelected: (val) => {
+      isSelected = Boolean(val);
+      syncVisualState();
+    },
+    refresh: syncVisualState
+  };
 }
 
 function openOwnerStoreEditView() {
@@ -243,7 +305,7 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore,
   applyBtn.type = "button";
   applyBtn.textContent = options.applyLabel || "Apply";
   applyBtn.style.cssText =
-    `padding:9px 16px;min-height:40px;border:none;border-radius:8px;background:${actionHex};color:#ffffff;font-weight:700;cursor:pointer;`;
+    "padding:9px 16px;min-height:40px;border-radius:8px;font-weight:700;cursor:pointer;";
 
   let applyAllBtn = null;
   if (typeof options.onApplyAll === "function") {
@@ -251,7 +313,7 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore,
     applyAllBtn.type = "button";
     applyAllBtn.textContent = options.applyAllLabel || "Apply to All";
     applyAllBtn.style.cssText =
-      `padding:9px 14px;min-height:40px;border:none;border-radius:8px;background:${actionHex};color:#ffffff;font-weight:700;cursor:pointer;`;
+      "padding:9px 14px;min-height:40px;border-radius:8px;font-weight:700;cursor:pointer;";
   }
 
   function syncColorUI() {
@@ -267,7 +329,6 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore,
     thumbRing.style.top = `${(1 - val) * 100}%`;
     colorNameBadge.textContent = cname;
     selectedNameText.textContent = cname;
-    applyBtn.style.background = actionHex;
     return chosenHex;
   }
 
@@ -328,6 +389,9 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore,
       modal.remove();
     };
   }
+
+  bindSoftToAccentButton(applyBtn);
+  if (applyAllBtn) bindSoftToAccentButton(applyAllBtn);
 
   sliderWrap.appendChild(hueTrackWrap);
   btnGroup.appendChild(cancelBtn);
@@ -536,11 +600,12 @@ function openCoverManagerModal() {
   addSlideBtn.type = "button";
   addSlideBtn.textContent = "+ Add Slide";
   addSlideBtn.style.cssText =
-    `padding:5px 10px;border:none;border-radius:8px;background:${accentHex};color:#ffffff;font-size:0.76rem;font-weight:700;cursor:pointer;`;
+    "padding:5px 10px;border-radius:8px;font-size:0.76rem;font-weight:700;cursor:pointer;";
   addSlideBtn.onclick = () => {
     addCoverInEditMode();
     openCoverManagerModal();
   };
+  bindSoftToAccentButton(addSlideBtn);
 
   slidesTop.appendChild(slidesLbl);
   slidesTop.appendChild(addSlideBtn);
@@ -563,13 +628,14 @@ function openCoverManagerModal() {
     uploadBtn.type = "button";
     uploadBtn.textContent = "Upload Photo";
     uploadBtn.style.cssText =
-      `padding:4px 9px;border:1px solid ${accentHex};border-radius:6px;background:#fff7ed;color:${accentHex};font-size:0.74rem;font-weight:700;cursor:pointer;`;
+      "padding:4px 9px;border-radius:6px;font-size:0.74rem;font-weight:700;cursor:pointer;";
     uploadBtn.onclick = () => {
       modal.remove();
       pendingOwnerEditSlot = { type: "cover", slotIdx: idx };
       fileInput.value = "";
       fileInput.click();
     };
+    bindSoftToAccentButton(uploadBtn);
 
     const delBtn = document.createElement("button");
     delBtn.type = "button";
@@ -595,25 +661,27 @@ function openCoverManagerModal() {
   resetBtn.type = "button";
   resetBtn.textContent = "Reset Height";
   resetBtn.style.cssText =
-    "min-height:38px;padding:7px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:#334155;font-size:0.82rem;font-weight:700;cursor:pointer;";
+    "min-height:38px;padding:7px 12px;border-radius:8px;font-size:0.82rem;font-weight:700;cursor:pointer;";
   resetBtn.onclick = () => {
     data.coverHeight = null;
     modal.remove();
     renderHeader();
     attachOwnerStoreEditHandlers();
   };
+  bindSoftToAccentButton(resetBtn);
 
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
   applyBtn.textContent = "Apply";
   applyBtn.style.cssText =
-    `flex:1;min-height:38px;padding:7px 14px;border:none;border-radius:8px;background:${accentHex};color:#ffffff;font-size:0.84rem;font-weight:700;cursor:pointer;`;
+    "flex:1;min-height:38px;padding:7px 14px;border-radius:8px;font-size:0.84rem;font-weight:700;cursor:pointer;";
   applyBtn.onclick = () => {
     data.coverHeight = draftH;
     modal.remove();
     renderHeader();
     attachOwnerStoreEditHandlers();
   };
+  bindSoftToAccentButton(applyBtn);
 
   footer.appendChild(resetBtn);
   footer.appendChild(applyBtn);
@@ -724,16 +792,16 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   singleColBtn.type = "button";
   singleColBtn.textContent = "Pick Color";
   singleColBtn.style.cssText =
-    `min-height:32px;padding:4px 10px;border:1px solid #94a3b8;border-radius:8px;background:${draftSingleCol};color:#111827;text-shadow:0 0 3px #ffffff;font-size:0.76rem;font-weight:700;cursor:pointer;`;
+    "min-height:32px;padding:4px 10px;border-radius:8px;font-size:0.76rem;font-weight:700;cursor:pointer;";
   singleColBtn.onclick = () => {
     openStandaloneColorPicker(draftSingleCol, (hex) => {
       draftSingleCol = hex;
       useTwoColors = false;
       twoColChk.checked = false;
-      singleColBtn.style.background = hex;
       syncLiveStrip();
     });
   };
+  bindSoftToAccentButton(singleColBtn);
 
   singleColRow.appendChild(singleColLbl);
   singleColRow.appendChild(singleColBtn);
@@ -774,33 +842,22 @@ function openStripHeightEditorModal(sIdx, stripEl) {
     { id: "triangle", label: "< Triangle >" }
   ];
 
+  const shapeControllers = [];
   const shapeBtns = shapes.map((sh) => {
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = sh.label;
+    b.style.cssText = "min-height:34px;padding:5px 8px;border-radius:8px;font-size:0.78rem;font-weight:800;cursor:pointer;";
+    const ctrl = bindSoftToAccentButton(b, { isSelected: sh.id === draftShape });
+    shapeControllers.push(ctrl);
     b.onclick = () => {
       draftShape = sh.id;
-      shapeBtns.forEach((btn, idx) => {
-        const active = shapes[idx].id === draftShape;
-        btn.style.cssText = active
-          ? `min-height:34px;padding:5px 8px;border:2px solid ${accentHex};border-radius:8px;background:${accentHex};color:#ffffff;font-size:0.78rem;font-weight:800;cursor:pointer;`
-          : "min-height:34px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
-      });
+      shapeControllers.forEach((c, idx) => c.setSelected(shapes[idx].id === draftShape));
       syncLiveStrip();
     };
     shapeGrid.appendChild(b);
     return b;
   });
-
-  const refreshShapeBtns = () => {
-    shapeBtns.forEach((btn, idx) => {
-      const active = shapes[idx].id === draftShape;
-      btn.style.cssText = active
-        ? `min-height:34px;padding:5px 8px;border:2px solid ${accentHex};border-radius:8px;background:${accentHex};color:#ffffff;font-size:0.78rem;font-weight:800;cursor:pointer;`
-        : "min-height:34px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
-    });
-  };
-  refreshShapeBtns();
 
   const twoColBox = document.createElement("div");
   twoColBox.style.cssText =
@@ -832,31 +889,31 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   topColBtn.type = "button";
   topColBtn.textContent = "Top Color";
   topColBtn.style.cssText =
-    `flex:1;min-height:34px;padding:4px 8px;border:2px solid #cbd5e1;border-radius:8px;background:${draftTopCol};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.75);font-size:0.78rem;font-weight:700;cursor:pointer;`;
+    "flex:1;min-height:34px;padding:4px 8px;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;";
   topColBtn.onclick = () => {
     openStandaloneColorPicker(draftTopCol, (hex) => {
       draftTopCol = hex;
-      topColBtn.style.background = hex;
       useTwoColors = true;
       twoColChk.checked = true;
       syncLiveStrip();
     });
   };
+  bindSoftToAccentButton(topColBtn);
 
   const botColBtn = document.createElement("button");
   botColBtn.type = "button";
   botColBtn.textContent = "Bottom Color";
   botColBtn.style.cssText =
-    `flex:1;min-height:34px;padding:4px 8px;border:2px solid #cbd5e1;border-radius:8px;background:${draftBotCol};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.75);font-size:0.78rem;font-weight:700;cursor:pointer;`;
+    "flex:1;min-height:34px;padding:4px 8px;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;";
   botColBtn.onclick = () => {
     openStandaloneColorPicker(draftBotCol, (hex) => {
       draftBotCol = hex;
-      botColBtn.style.background = hex;
       useTwoColors = true;
       twoColChk.checked = true;
       syncLiveStrip();
     });
   };
+  bindSoftToAccentButton(botColBtn);
 
   pickersRow.appendChild(topColBtn);
   pickersRow.appendChild(botColBtn);
@@ -877,19 +934,20 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   applyBtn.type = "button";
   applyBtn.textContent = "Apply";
   applyBtn.style.cssText =
-    `flex:1;min-height:38px;padding:7px 12px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
+    "flex:1;min-height:38px;padding:7px 12px;border-radius:10px;font-weight:700;cursor:pointer;";
   applyBtn.onclick = () => {
     syncLiveStrip();
     modal.remove();
     renderSections();
     attachOwnerStoreEditHandlers();
   };
+  bindSoftToAccentButton(applyBtn);
 
   const applyAllBtn = document.createElement("button");
   applyAllBtn.type = "button";
   applyAllBtn.textContent = "Apply to All";
   applyAllBtn.style.cssText =
-    `flex:1;min-height:38px;padding:7px 12px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
+    "flex:1;min-height:38px;padding:7px 12px;border-radius:10px;font-weight:700;cursor:pointer;";
   applyAllBtn.onclick = () => {
     syncLiveStrip();
     (data.sections || []).forEach((s) => {
@@ -904,6 +962,7 @@ function openStripHeightEditorModal(sIdx, stripEl) {
     renderSections();
     attachOwnerStoreEditHandlers();
   };
+  bindSoftToAccentButton(applyAllBtn);
 
   footer.appendChild(cancelBtn);
   footer.appendChild(applyBtn);
@@ -1008,28 +1067,20 @@ function openCustomAdEditorModal(sIdx) {
     { id: "float", label: "Floating" }
   ];
 
+  const modeControllers = [];
   const modeBtns = modes.map((m) => {
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = m.label;
+    b.style.cssText = "flex:1;min-height:34px;padding:5px 8px;border-radius:8px;font-size:0.78rem;font-weight:800;cursor:pointer;";
+    const ctrl = bindSoftToAccentButton(b, { isSelected: m.id === draftMoveMode });
+    modeControllers.push(ctrl);
     b.onclick = () => {
       draftMoveMode = m.id;
-      modeBtns.forEach((btn, idx) => {
-        const active = modes[idx].id === draftMoveMode;
-        btn.style.cssText = active
-          ? `flex:1;min-height:34px;padding:5px 8px;border:2px solid ${accentHex};border-radius:8px;background:${accentHex};color:#ffffff;font-size:0.78rem;font-weight:800;cursor:pointer;`
-          : "flex:1;min-height:34px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
-      });
+      modeControllers.forEach((c, idx) => c.setSelected(modes[idx].id === draftMoveMode));
     };
     moveRow.appendChild(b);
     return b;
-  });
-
-  modeBtns.forEach((btn, idx) => {
-    const active = modes[idx].id === draftMoveMode;
-    btn.style.cssText = active
-      ? `flex:1;min-height:34px;padding:5px 8px;border:2px solid ${accentHex};border-radius:8px;background:${accentHex};color:#ffffff;font-size:0.78rem;font-weight:800;cursor:pointer;`
-      : "flex:1;min-height:34px;padding:5px 8px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
   });
 
   const footer = document.createElement("div");
@@ -1051,7 +1102,7 @@ function openCustomAdEditorModal(sIdx) {
   applyBtn.type = "button";
   applyBtn.textContent = "Apply Ad";
   applyBtn.style.cssText =
-    `flex:1;min-height:38px;padding:7px 12px;border:none;border-radius:8px;background:${accentHex};color:#ffffff;font-size:0.84rem;font-weight:700;cursor:pointer;`;
+    "flex:1;min-height:38px;padding:7px 12px;border-radius:8px;font-size:0.84rem;font-weight:700;cursor:pointer;";
   applyBtn.onclick = () => {
     const cleanCode = codeInput.value.trim();
     const cleanLbl = labelInput.value.trim();
@@ -1071,6 +1122,7 @@ function openCustomAdEditorModal(sIdx) {
     renderSections();
     attachOwnerStoreEditHandlers();
   };
+  bindSoftToAccentButton(applyBtn);
 
   footer.appendChild(clearAdBtn);
   footer.appendChild(applyBtn);
@@ -1174,14 +1226,14 @@ function openItemAmountEditorModal(sIdx, itemId) {
   pickColorBtn.type = "button";
   pickColorBtn.textContent = "Pick Color";
   pickColorBtn.style.cssText =
-    `min-height:34px;padding:5px 12px;border:2px solid #cbd5e1;border-radius:8px;background:${draftPriceColor};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.75);font-size:0.78rem;font-weight:700;cursor:pointer;`;
+    "min-height:34px;padding:5px 12px;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;";
   pickColorBtn.onclick = () => {
     openStandaloneColorPicker(draftPriceColor, (hex) => {
       draftPriceColor = hex;
-      pickColorBtn.style.background = hex;
       syncPreview();
     });
   };
+  bindSoftToAccentButton(pickColorBtn);
 
   colorRow.appendChild(colorLbl);
   colorRow.appendChild(pickColorBtn);
@@ -1209,19 +1261,20 @@ function openItemAmountEditorModal(sIdx, itemId) {
   applyBtn.type = "button";
   applyBtn.textContent = "Apply";
   applyBtn.style.cssText =
-    `flex:1;min-height:40px;padding:8px 12px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
+    "flex:1;min-height:40px;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer;";
   applyBtn.onclick = () => {
     saveSingleItemAmount();
     modal.remove();
     renderSections();
     attachOwnerStoreEditHandlers();
   };
+  bindSoftToAccentButton(applyBtn);
 
   const applyAllBtn = document.createElement("button");
   applyAllBtn.type = "button";
   applyAllBtn.textContent = "Apply to All";
   applyAllBtn.style.cssText =
-    `flex:1;min-height:40px;padding:8px 12px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
+    "flex:1;min-height:40px;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer;";
   applyAllBtn.onclick = () => {
     saveSingleItemAmount();
     (data.sections || []).forEach((s) => {
@@ -1234,6 +1287,7 @@ function openItemAmountEditorModal(sIdx, itemId) {
     renderSections();
     attachOwnerStoreEditHandlers();
   };
+  bindSoftToAccentButton(applyAllBtn);
 
   footer.appendChild(cancelBtn);
   footer.appendChild(applyBtn);
@@ -1396,22 +1450,18 @@ function openBoxSizePanelModal(targetRowIdx = null) {
   const quickNoBgAllBtn = document.createElement("button");
   quickNoBgAllBtn.type = "button";
   quickNoBgAllBtn.textContent = "No BG All Boxes";
+  quickNoBgAllBtn.style.cssText = "flex:1;min-height:36px;padding:6px 10px;border-radius:9px;font-size:0.78rem;font-weight:800;cursor:pointer;";
+  const noBgBulkCtrl = bindSoftToAccentButton(quickNoBgAllBtn, { isSelected: selectedBulkMode === "noBg" });
 
   const quickNormalBgAllBtn = document.createElement("button");
   quickNormalBgAllBtn.type = "button";
   quickNormalBgAllBtn.textContent = "Normal BG All Boxes";
+  quickNormalBgAllBtn.style.cssText = "flex:1;min-height:36px;padding:6px 10px;border-radius:9px;font-size:0.78rem;font-weight:800;cursor:pointer;";
+  const normalBgBulkCtrl = bindSoftToAccentButton(quickNormalBgAllBtn, { isSelected: selectedBulkMode === "normalBg" });
 
   const syncBulkButtonsState = () => {
-    const isNoBgActive = selectedBulkMode === "noBg";
-    const isNormalActive = selectedBulkMode === "normalBg";
-
-    quickNoBgAllBtn.style.cssText = isNoBgActive
-      ? `flex:1;min-height:36px;padding:6px 10px;border:2px solid ${accentHex};border-radius:9px;background:${accentHex};color:#ffffff;font-size:0.78rem;font-weight:800;cursor:pointer;box-shadow:0 2px 6px rgba(15,23,42,0.2);`
-      : "flex:1;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:9px;background:#ffffff;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
-
-    quickNormalBgAllBtn.style.cssText = isNormalActive
-      ? `flex:1;min-height:36px;padding:6px 10px;border:2px solid ${accentHex};border-radius:9px;background:${accentHex};color:#ffffff;font-size:0.78rem;font-weight:800;cursor:pointer;box-shadow:0 2px 6px rgba(15,23,42,0.2);`
-      : "flex:1;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:9px;background:#ffffff;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
+    noBgBulkCtrl.setSelected(selectedBulkMode === "noBg");
+    normalBgBulkCtrl.setSelected(selectedBulkMode === "normalBg");
   };
 
   quickBulkRow.appendChild(quickNoBgAllBtn);
@@ -1514,27 +1564,16 @@ function openBoxSizePanelModal(targetRowIdx = null) {
     const bgColorBtn = document.createElement("button");
     bgColorBtn.type = "button";
     bgColorBtn.textContent = "Pick Color";
-
-    const syncBgBtnStyle = () => {
-      const hex = targetObj.bgColor || "#ffffff";
-      bgColorBtn.style.background = hex;
-      const isLight = hex.toLowerCase() === "#ffffff";
-      bgColorBtn.style.color = isLight ? "#111827" : "#ffffff";
-      bgColorBtn.style.border = isLight ? "1px solid #94a3b8" : "2px solid #cbd5e1";
-    };
-    syncBgBtnStyle();
-
-    bgColorBtn.style.cssText +=
+    bgColorBtn.style.cssText =
       "min-height:32px;padding:4px 10px;border-radius:8px;font-size:0.76rem;font-weight:700;cursor:pointer;";
-
     bgColorBtn.onclick = () => {
       openStandaloneColorPicker(targetObj.bgColor || "#ffffff", (hex) => {
         targetObj.bgColor = hex;
-        syncBgBtnStyle();
         applyBoxSizePanelToDom(sizes, hasRowTarget ? targetRowIdx : null);
         highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex, hasRowTarget ? targetRowIdx : null);
       });
     };
+    bindSoftToAccentButton(bgColorBtn);
 
     bgRow.appendChild(bgLbl);
     bgRow.appendChild(bgColorBtn);
@@ -1593,27 +1632,16 @@ function openBoxSizePanelModal(targetRowIdx = null) {
     const priceColorBtn = document.createElement("button");
     priceColorBtn.type = "button";
     priceColorBtn.textContent = "Pick Color";
-
-    const syncPriceBtnStyle = () => {
-      const hex = targetObj.priceColor || "#111827";
-      priceColorBtn.style.background = hex;
-      const isLight = hex.toLowerCase() === "#ffffff";
-      priceColorBtn.style.color = isLight ? "#111827" : "#ffffff";
-      priceColorBtn.style.border = isLight ? "1px solid #94a3b8" : "2px solid #cbd5e1";
-    };
-    syncPriceBtnStyle();
-
-    priceColorBtn.style.cssText +=
+    priceColorBtn.style.cssText =
       "min-height:32px;padding:4px 10px;border-radius:8px;font-size:0.76rem;font-weight:700;cursor:pointer;";
-
     priceColorBtn.onclick = () => {
       openStandaloneColorPicker(targetObj.priceColor || "#111827", (hex) => {
         targetObj.priceColor = hex;
-        syncPriceBtnStyle();
         applyBoxSizePanelToDom(sizes, hasRowTarget ? targetRowIdx : null);
         highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex, hasRowTarget ? targetRowIdx : null);
       });
     };
+    bindSoftToAccentButton(priceColorBtn);
 
     priceColorRow.appendChild(priceColorLbl);
     priceColorRow.appendChild(priceColorBtn);
@@ -1625,8 +1653,6 @@ function openBoxSizePanelModal(targetRowIdx = null) {
         rows.forEach((r) => r.sync());
         noBgChk.checked = Boolean(targetObj.textBgTransparent);
         syncNoBgToggleActive();
-        syncBgBtnStyle();
-        syncPriceBtnStyle();
       }
     };
   }
@@ -1683,7 +1709,7 @@ function openBoxSizePanelModal(targetRowIdx = null) {
   resetBtn.type = "button";
   resetBtn.textContent = "Reset Default";
   resetBtn.style.cssText =
-    "min-height:40px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-size:0.8rem;font-weight:700;cursor:pointer;flex-shrink:0;";
+    "min-height:40px;padding:8px 10px;border-radius:10px;font-size:0.8rem;font-weight:700;cursor:pointer;flex-shrink:0;";
   resetBtn.onclick = () => {
     sizes.miniBox = { ...FALLBACK_BOX_SIZES.miniBox };
     sizes.productBox = { ...FALLBACK_BOX_SIZES.productBox };
@@ -1695,6 +1721,7 @@ function openBoxSizePanelModal(targetRowIdx = null) {
     highlightBoxPreview(".mini-box", sizes.miniBox.width, sizes.miniBox.height, accentHex, hasRowTarget ? targetRowIdx : null);
     highlightBoxPreview(".item-box", sizes.productBox.width, sizes.productBox.height, accentHex, hasRowTarget ? targetRowIdx : null);
   };
+  bindSoftToAccentButton(resetBtn);
 
   const footer = document.createElement("div");
   footer.style.cssText = "display:flex;gap:6px;margin-top:2px;flex-shrink:0;flex-wrap:wrap;";
@@ -1710,7 +1737,7 @@ function openBoxSizePanelModal(targetRowIdx = null) {
   applyBtn.type = "button";
   applyBtn.textContent = hasRowTarget ? `Apply Row ${targetRowIdx + 1}` : "Apply";
   applyBtn.style.cssText =
-    `flex:1;min-height:40px;padding:8px 12px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-size:0.82rem;font-weight:700;cursor:pointer;`;
+    "flex:1;min-height:40px;padding:8px 12px;border-radius:10px;font-size:0.82rem;font-weight:700;cursor:pointer;";
   applyBtn.onclick = () => {
     applyBoxSizePanelToDom(sizes, hasRowTarget ? targetRowIdx : null);
     clearBoxPreviewHighlights();
@@ -1718,12 +1745,13 @@ function openBoxSizePanelModal(targetRowIdx = null) {
     renderSections();
     attachOwnerStoreEditHandlers();
   };
+  bindSoftToAccentButton(applyBtn);
 
   const applyAllRowsBtn = document.createElement("button");
   applyAllRowsBtn.type = "button";
   applyAllRowsBtn.textContent = "Apply All Rows";
   applyAllRowsBtn.style.cssText =
-    `flex:1;min-height:40px;padding:8px 12px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-size:0.82rem;font-weight:700;cursor:pointer;`;
+    "flex:1;min-height:40px;padding:8px 12px;border-radius:10px;font-size:0.82rem;font-weight:700;cursor:pointer;";
   applyAllRowsBtn.onclick = () => {
     data.boxSizes = {
       miniBox: { ...sizes.miniBox },
@@ -1737,6 +1765,7 @@ function openBoxSizePanelModal(targetRowIdx = null) {
     renderSections();
     attachOwnerStoreEditHandlers();
   };
+  bindSoftToAccentButton(applyAllRowsBtn);
 
   footer.appendChild(resetBtn);
   footer.appendChild(cancelBtn);
@@ -1818,13 +1847,13 @@ function makeToggleColorBox(titleText, enabledVal, colorVal, accentHex, onToggle
   colorBtn.type = "button";
   colorBtn.textContent = "Color";
   colorBtn.style.cssText =
-    `min-height:34px;padding:4px 10px;border:2px solid #cbd5e1;border-radius:8px;background:${colorVal || "#38bdf8"};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.75);font-size:0.78rem;font-weight:700;cursor:pointer;flex-shrink:0;`;
+    "min-height:34px;padding:4px 10px;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;flex-shrink:0;";
   colorBtn.onclick = () => {
-    openStandaloneColorPicker(colorBtn.style.background || colorVal || "#38bdf8", (hex) => {
-      colorBtn.style.background = hex;
+    openStandaloneColorPicker(colorVal || "#38bdf8", (hex) => {
       onColorChange(hex);
     });
   };
+  bindSoftToAccentButton(colorBtn);
 
   head.appendChild(toggleLabel);
   head.appendChild(colorBtn);
@@ -1953,22 +1982,16 @@ function openCustomTextStylePopup(config) {
   let selectedPresetIdx = -1;
 
   function syncAllControlsFromState() {
-    if (textColorTriggerBtn) {
-      textColorTriggerBtn.style.background = st.color || "#ffffff";
-    }
     if (glowCtrl) {
       glowCtrl.chk.checked = Boolean(st.glowEnabled);
-      glowCtrl.colorBtn.style.background = st.glowColor || "#38bdf8";
       if (glowCtrl.syncToggleHighlight) glowCtrl.syncToggleHighlight();
     }
     if (borderCtrl) {
       borderCtrl.chk.checked = Boolean(st.borderEnabled);
-      borderCtrl.colorBtn.style.background = st.borderColor || "#0f172a";
       if (borderCtrl.syncToggleHighlight) borderCtrl.syncToggleHighlight();
     }
     if (bgCtrl) {
       bgCtrl.chk.checked = Boolean(st.bgEnabled);
-      bgCtrl.colorBtn.style.background = st.bgColor || "#0f766e";
       if (bgCtrl.syncToggleHighlight) bgCtrl.syncToggleHighlight();
     }
     if (renderFontScrollList) {
@@ -2035,21 +2058,19 @@ function openCustomTextStylePopup(config) {
     }
   ];
 
+  const presetControllers = [];
   const presetBtns = presets.map((p, pIdx) => {
     const pBtn = document.createElement("button");
     pBtn.type = "button";
     pBtn.textContent = p.label;
     pBtn.style.cssText =
-      "min-height:40px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;color:#111827;font-size:0.84rem;font-weight:700;cursor:pointer;";
+      "min-height:40px;padding:8px 10px;border-radius:10px;font-size:0.84rem;font-weight:700;cursor:pointer;";
+    const ctrl = bindSoftToAccentButton(pBtn, { isSelected: false });
+    presetControllers.push(ctrl);
     pBtn.onclick = () => {
       selectedPresetIdx = pIdx;
       p.apply();
-      presetBtns.forEach((b, idx) => {
-        const active = idx === selectedPresetIdx;
-        b.style.background = active ? accentHex : "#f8fafc";
-        b.style.color = active ? "#ffffff" : "#111827";
-        b.style.borderColor = active ? accentHex : "#cbd5e1";
-      });
+      presetControllers.forEach((c, idx) => c.setSelected(idx === selectedPresetIdx));
       syncAllControlsFromState();
       syncPreview();
     };
@@ -2071,18 +2092,18 @@ function openCustomTextStylePopup(config) {
   textColorTriggerBtn.type = "button";
   textColorTriggerBtn.textContent = "Pick Color";
   textColorTriggerBtn.style.cssText =
-    `min-height:36px;padding:6px 12px;border:2px solid #cbd5e1;border-radius:8px;background:${st.color || "#ffffff"};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.8);font-size:0.82rem;font-weight:700;cursor:pointer;`;
+    "min-height:36px;padding:6px 12px;border-radius:8px;font-size:0.82rem;font-weight:700;cursor:pointer;";
 
   const triggerTextColorPicker = () => {
     openStandaloneColorPicker(st.color || "#ffffff", (hex) => {
       st.color = hex;
-      textColorTriggerBtn.style.background = hex;
       syncPreview();
     });
   };
 
   mainColorLbl.onclick = triggerTextColorPicker;
   textColorTriggerBtn.onclick = triggerTextColorPicker;
+  bindSoftToAccentButton(textColorTriggerBtn);
 
   mainColorRow.appendChild(mainColorLbl);
   mainColorRow.appendChild(textColorTriggerBtn);
@@ -2102,7 +2123,8 @@ function openCustomTextStylePopup(config) {
   toggleFontListBtn.type = "button";
   toggleFontListBtn.textContent = "Choose Font";
   toggleFontListBtn.style.cssText =
-    `padding:5px 10px;min-height:34px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:${accentHex};font-size:0.78rem;font-weight:700;cursor:pointer;max-width:62%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`;
+    "padding:5px 10px;min-height:34px;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;max-width:62%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";
+  const fontToggleCtrl = bindSoftToAccentButton(toggleFontListBtn);
 
   fontHeader.appendChild(fontLbl);
   fontHeader.appendChild(toggleFontListBtn);
@@ -2125,14 +2147,18 @@ function openCustomTextStylePopup(config) {
   toggleFontListBtn.onclick = () => {
     const isHidden = fontScrollBox.style.display === "none";
     fontScrollBox.style.display = isHidden ? "flex" : "none";
+    fontToggleCtrl.setSelected(isHidden);
   };
 
-  const fontItemBtns = STORE_FONT_OPTIONS.map((opt, idx) => {
+  const fontItemControllers = [];
+  const fontItemBtns = STORE_FONT_OPTIONS.map((opt) => {
     const itemBtn = document.createElement("button");
     itemBtn.type = "button";
     itemBtn.textContent = opt.label;
     itemBtn.style.cssText =
-      `width:100%;text-align:left;padding:7px 9px;min-height:34px;border-radius:8px;border:1px solid #e2e8f0;font-family:${opt.value};font-style:${opt.italic ? "italic" : "normal"};font-weight:${opt.weight || 600};letter-spacing:${opt.letterSpacing || 0}px;text-transform:${opt.textTransform || "none"};font-size:0.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;flex-shrink:0;`;
+      `width:100%;text-align:left;padding:7px 9px;min-height:34px;border-radius:8px;font-family:${opt.value};font-style:${opt.italic ? "italic" : "normal"};font-weight:${opt.weight || 600};letter-spacing:${opt.letterSpacing || 0}px;text-transform:${opt.textTransform || "none"};font-size:0.86rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;flex-shrink:0;`;
+    const ctrl = bindSoftToAccentButton(itemBtn, { isSelected: false });
+    fontItemControllers.push(ctrl);
     itemBtn.onclick = () => {
       st.fontFamily = opt.value;
       st.fontStyle = opt.italic ? "italic" : "normal";
@@ -2143,22 +2169,21 @@ function openCustomTextStylePopup(config) {
       syncChooseFontBtnLabel();
       syncPreview();
       fontScrollBox.style.display = "none";
+      fontToggleCtrl.setSelected(false);
     };
     fontScrollBox.appendChild(itemBtn);
     return itemBtn;
   });
 
   renderFontScrollList = () => {
-    fontItemBtns.forEach((b, idx) => {
+    fontItemControllers.forEach((ctrl, idx) => {
       const opt = STORE_FONT_OPTIONS[idx];
       const active =
         opt.value === st.fontFamily &&
         (opt.italic ? "italic" : "normal") === st.fontStyle &&
-        Number(opt.weight) === Number(st.fontWeight) &&
+        Number(o.weight) === Number(st.fontWeight) &&
         Number(opt.letterSpacing) === Number(st.letterSpacing);
-      b.style.background = active ? accentHex : "#f8fafc";
-      b.style.color = active ? "#ffffff" : "#111827";
-      b.style.borderColor = active ? accentHex : "#e2e8f0";
+      ctrl.setSelected(active);
     });
     syncChooseFontBtnLabel();
   };
@@ -2261,13 +2286,13 @@ function openCustomTextStylePopup(config) {
   applyBtn.type = "button";
   applyBtn.textContent = "Apply";
   applyBtn.style.cssText =
-    `flex:1;min-height:44px;padding:9px 14px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
+    "flex:1;min-height:44px;padding:9px 14px;border-radius:10px;font-weight:700;cursor:pointer;";
 
   const applyAllBtn = document.createElement("button");
   applyAllBtn.type = "button";
   applyAllBtn.textContent = "Apply to All";
   applyAllBtn.style.cssText =
-    `flex:1;min-height:44px;padding:9px 14px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
+    "flex:1;min-height:44px;padding:9px 14px;border-radius:10px;font-weight:700;cursor:pointer;";
 
   const commitStyleSelection = (applyToAll) => {
     const rawEnteredText = textInput.value;
@@ -2315,6 +2340,8 @@ function openCustomTextStylePopup(config) {
 
   applyBtn.onclick = () => commitStyleSelection(false);
   applyAllBtn.onclick = () => commitStyleSelection(true);
+  bindSoftToAccentButton(applyBtn);
+  bindSoftToAccentButton(applyAllBtn);
 
   footer.appendChild(cancelBtn);
   footer.appendChild(applyBtn);
