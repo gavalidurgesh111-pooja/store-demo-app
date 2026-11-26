@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V18");
+console.log("OWNER_EDIT_COMPLETE_V19");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -588,8 +588,8 @@ function openItemAmountEditorModal(sIdx, itemId) {
 
 // ==================== BOX SIZE PANEL ====================
 const FALLBACK_BOX_SIZES = {
-  miniBox: { width: 92, height: 122, imgHeight: 74, fontSize: 12, bgColor: "#ffffff", priceFontSize: 11, priceColor: "#111827" },
-  productBox: { width: 150, height: 215, imgHeight: 125, fontSize: 14, bgColor: "#ffffff", priceFontSize: 13, priceColor: "#111827" }
+  miniBox: { width: 92, height: 122, imgHeight: 74, fontSize: 12, bgColor: "#ffffff", priceFontSize: 11, priceColor: "#111827", textBgTransparent: false },
+  productBox: { width: 150, height: 215, imgHeight: 125, fontSize: 14, bgColor: "#ffffff", priceFontSize: 13, priceColor: "#111827", textBgTransparent: false }
 };
 
 function getCurrentBoxSizesForEdit() {
@@ -803,6 +803,32 @@ function openBoxSizePanelModal() {
     bgRow.appendChild(bgColorBtn);
     secWrap.appendChild(bgRow);
 
+    const noBgRow = document.createElement("div");
+    noBgRow.style.cssText =
+      "display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:4px;border-top:1px dashed #cbd5e1;";
+
+    const noBgLabel = document.createElement("label");
+    noBgLabel.style.cssText =
+      "display:flex;align-items:center;gap:6px;font-size:0.78rem;font-weight:700;color:#334155;cursor:pointer;";
+
+    const noBgChk = document.createElement("input");
+    noBgChk.type = "checkbox";
+    noBgChk.checked = Boolean(targetObj.textBgTransparent);
+    noBgChk.style.cssText = "width:18px;height:18px;cursor:pointer;";
+    noBgChk.onchange = () => {
+      targetObj.textBgTransparent = noBgChk.checked;
+      applyBoxSizePanelToDom(sizes);
+      highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex);
+    };
+
+    const noBgTxt = document.createElement("span");
+    noBgTxt.textContent = "नाम-रकम बैकग्राउंड न दें (No BG)";
+
+    noBgLabel.appendChild(noBgChk);
+    noBgLabel.appendChild(noBgTxt);
+    noBgRow.appendChild(noBgLabel);
+    secWrap.appendChild(noBgRow);
+
     const priceColorRow = document.createElement("div");
     priceColorRow.style.cssText =
       "display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:4px;border-top:1px dashed #cbd5e1;";
@@ -844,6 +870,7 @@ function openBoxSizePanelModal() {
       secWrap,
       syncAll: () => {
         rows.forEach((r) => r.sync());
+        noBgChk.checked = Boolean(targetObj.textBgTransparent);
         syncBgBtnStyle();
         syncPriceBtnStyle();
       }
