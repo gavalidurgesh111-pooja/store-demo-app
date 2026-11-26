@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V39");
+console.log("OWNER_EDIT_COMPLETE_V40");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -538,12 +538,12 @@ function openCoverManagerModal() {
   const accentHex = getEditorFixedColor();
 
   const DEFAULT_COVER_H = 170;
-  const prevHeight = data.coverHeight ?? null;
-  let draftH = Number.isFinite(Number(data.coverHeight)) && Number(data.coverHeight) > 0
-    ? Number(data.coverHeight)
-    : Math.max(110, Math.min(380, Math.round((coverWrap && coverWrap.getBoundingClientRect().height) || DEFAULT_COVER_H)));
+  const snapshotCoverHeight = data.coverHeight ?? null;
+  let draftH = Number.isFinite(Number(snapshotCoverHeight)) && Number(snapshotCoverHeight) > 0
+    ? Number(snapshotCoverHeight)
+    : DEFAULT_COVER_H;
 
-  const previewHeightOnly = (hVal) => {
+  const setVisualCoverHeight = (hVal) => {
     if (!coverWrap) return;
     const ch = clampNum(hVal, 110, 380, DEFAULT_COVER_H);
     coverWrap.style.setProperty("height", `${ch}px`, "important");
@@ -572,7 +572,7 @@ function openCoverManagerModal() {
   title.style.cssText = "font-size:0.96rem;font-weight:800;color:#111827;";
 
   const cancelAndClose = () => {
-    data.coverHeight = prevHeight;
+    data.coverHeight = snapshotCoverHeight;
     modal.remove();
     renderHeader();
     attachOwnerStoreEditHandlers();
@@ -590,7 +590,7 @@ function openCoverManagerModal() {
 
   const hSlider = makeLabeledSlider("Cover Height", 110, 380, 2, draftH, "px", accentHex, (val) => {
     draftH = val;
-    previewHeightOnly(val);
+    setVisualCoverHeight(val);
   });
 
   const slidesBox = document.createElement("div");
@@ -666,14 +666,7 @@ function openCoverManagerModal() {
   });
 
   const footer = document.createElement("div");
-  footer.style.cssText = "display:flex;gap:8px;margin-top:2px;flex-wrap:wrap;";
-
-  const cancelBtn = document.createElement("button");
-  cancelBtn.type = "button";
-  cancelBtn.textContent = "Cancel";
-  cancelBtn.style.cssText =
-    "min-height:38px;padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#334155;font-size:0.82rem;font-weight:700;cursor:pointer;";
-  cancelBtn.onclick = cancelAndClose;
+  footer.style.cssText = "display:flex;gap:8px;margin-top:2px;";
 
   const resetBtn = document.createElement("button");
   resetBtn.type = "button";
@@ -702,7 +695,6 @@ function openCoverManagerModal() {
   };
   bindSoftToAccentButton(applyBtn);
 
-  footer.appendChild(cancelBtn);
   footer.appendChild(resetBtn);
   footer.appendChild(applyBtn);
 
