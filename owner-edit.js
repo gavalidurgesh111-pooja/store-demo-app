@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V16");
+console.log("OWNER_EDIT_COMPLETE_V17");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -81,7 +81,7 @@ function getColorNameFromHsv(h, s, v) {
   return base;
 }
 
-function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore) {
+function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore, options = {}) {
   removeCustomPickerIfExists();
   const previousColor = initialColor || "#0f766e";
   let hue = 0;
@@ -177,13 +177,13 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore)
 
   const footer = document.createElement("div");
   footer.style.cssText =
-    "display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:14px;";
+    "display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap;";
 
   const selectedNameText = document.createElement("span");
   selectedNameText.style.cssText = "font-size:0.9rem;font-weight:700;color:#111827;";
 
   const btnGroup = document.createElement("div");
-  btnGroup.style.cssText = "display:flex;gap:8px;";
+  btnGroup.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;";
 
   const cancelBtn = document.createElement("button");
   cancelBtn.type = "button";
@@ -194,9 +194,18 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore)
 
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
-  applyBtn.textContent = "Apply";
+  applyBtn.textContent = options.applyLabel || "Apply";
   applyBtn.style.cssText =
     "padding:9px 16px;min-height:40px;border:none;border-radius:8px;background:#0f766e;color:#ffffff;font-weight:700;cursor:pointer;";
+
+  let applyAllBtn = null;
+  if (typeof options.onApplyAll === "function") {
+    applyAllBtn = document.createElement("button");
+    applyAllBtn.type = "button";
+    applyAllBtn.textContent = options.applyAllLabel || "Apply to All";
+    applyAllBtn.style.cssText =
+      "padding:9px 14px;min-height:40px;border:none;border-radius:8px;background:#1d4ed8;color:#ffffff;font-weight:700;cursor:pointer;";
+  }
 
   function syncColorUI() {
     const pureHueHex = hsvToHex(hue, 1, 1);
@@ -265,9 +274,18 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore)
     modal.remove();
   };
 
+  if (applyAllBtn) {
+    applyAllBtn.onclick = () => {
+      const finalHex = syncColorUI();
+      options.onApplyAll(finalHex);
+      modal.remove();
+    };
+  }
+
   sliderWrap.appendChild(hueTrackWrap);
   btnGroup.appendChild(cancelBtn);
   btnGroup.appendChild(applyBtn);
+  if (applyAllBtn) btnGroup.appendChild(applyAllBtn);
   footer.appendChild(selectedNameText);
   footer.appendChild(btnGroup);
   sliderWrap.appendChild(footer);
@@ -402,7 +420,7 @@ function createBlueKnobSlider(min, max, step, initialVal, onValueChange) {
   };
 }
 
-// ==================== INDIVIDUAL AMOUNT, SIZE & COLOUR POP-UP ====================
+// ==================== INDIVIDUAL AMOUNT, SIZE & COLOUR POP-UP (All + Single Edit) ====================
 function openItemAmountEditorModal(sIdx, itemId) {
   removePriceEditorModalIfExists();
   const data = getWorkingStoreData();
@@ -429,7 +447,7 @@ function openItemAmountEditorModal(sIdx, itemId) {
 
   const card = document.createElement("div");
   card.style.cssText =
-    "width:100%;max-width:360px;background:#ffffff;border-radius:14px;padding:14px 16px;box-shadow:0 12px 30px rgba(0,0,0,0.35);display:flex;flex-direction:column;gap:12px;color:#111827;";
+    "width:100%;max-width:380px;background:#ffffff;border-radius:14px;padding:14px 16px;box-shadow:0 12px 30px rgba(0,0,0,0.35);display:flex;flex-direction:column;gap:12px;color:#111827;";
 
   const header = document.createElement("div");
   header.style.cssText =
@@ -503,28 +521,50 @@ function openItemAmountEditorModal(sIdx, itemId) {
   colorRow.appendChild(colorLbl);
   colorRow.appendChild(pickColorBtn);
 
-  const footer = document.createElement("div");
-  footer.style.cssText = "display:flex;gap:8px;margin-top:4px;";
-
-  const cancelBtn = document.createElement("button");
-  cancelBtn.type = "button";
-  cancelBtn.textContent = "Cancel";
-  cancelBtn.style.cssText =
-    "flex:1;min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-weight:700;cursor:pointer;";
-  cancelBtn.onclick = () => modal.remove();
-
-  const applyBtn = document.createElement("button");
-  applyBtn.type = "button";
-  applyBtn.textContent = "Apply";
-  applyBtn.style.cssText =
-    `flex:1;min-height:40px;padding:8px 14px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
-  applyBtn.onclick = () => {
+  const saveSingleItemAmount = () => {
     const rawVal = amountInput.value.trim();
     item.priceText = rawVal.length > 0 ? rawVal : "0";
     const numMatch = rawVal.match(/(\d+(?:\.\d+)?)/);
     item.price = numMatch ? Number(numMatch[1]) : 0;
     item.priceFontSize = draftPriceSize;
     item.priceColor = draftPriceColor;
+  };
+
+  const footer = document.createElement("div");
+  footer.style.cssText = "display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.style.cssText =
+    "flex:1;min-height:40px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-weight:700;cursor:pointer;";
+  cancelBtn.onclick = () => modal.remove();
+
+  const applyBtn = document.createElement("button");
+  applyBtn.type = "button";
+  applyBtn.textContent = "Apply";
+  applyBtn.style.cssText =
+    `flex:1;min-height:40px;padding:8px 12px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
+  applyBtn.onclick = () => {
+    saveSingleItemAmount();
+    modal.remove();
+    renderSections();
+    attachOwnerStoreEditHandlers();
+  };
+
+  const applyAllBtn = document.createElement("button");
+  applyAllBtn.type = "button";
+  applyAllBtn.textContent = "Apply to All";
+  applyAllBtn.style.cssText =
+    "flex:1;min-height:40px;padding:8px 12px;border:none;border-radius:10px;background:#1d4ed8;color:#ffffff;font-weight:700;cursor:pointer;";
+  applyAllBtn.onclick = () => {
+    saveSingleItemAmount();
+    (data.sections || []).forEach((s) => {
+      (s.items || []).forEach((it) => {
+        it.priceFontSize = draftPriceSize;
+        it.priceColor = draftPriceColor;
+      });
+    });
     modal.remove();
     renderSections();
     attachOwnerStoreEditHandlers();
@@ -532,6 +572,7 @@ function openItemAmountEditorModal(sIdx, itemId) {
 
   footer.appendChild(cancelBtn);
   footer.appendChild(applyBtn);
+  footer.appendChild(applyAllBtn);
 
   card.appendChild(header);
   card.appendChild(amountInput);
@@ -584,7 +625,6 @@ function clearBoxPreviewHighlights() {
 function applyBoxSizePanelToDom(sizes) {
   if (typeof window.applyBoxSizeStyles === "function") {
     window.applyBoxSizeStyles();
-    return;
   }
 }
 
@@ -726,7 +766,6 @@ function openBoxSizePanelModal() {
     addControlRow("नाम का फ़ॉन्ट साइज़ (Name Size)", "fontSize", limits.fontMin, limits.fontMax, 1);
     addControlRow("रकम का साइज (Amount Size)", "priceFontSize", limits.priceMin, limits.priceMax, 1);
 
-    // बॉक्स के अंदरूनी रंग का बटन
     const bgRow = document.createElement("div");
     bgRow.style.cssText =
       "display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:4px;border-top:1px dashed #cbd5e1;";
@@ -764,7 +803,6 @@ function openBoxSizePanelModal() {
     bgRow.appendChild(bgColorBtn);
     secWrap.appendChild(bgRow);
 
-    // रकम के नंबर के रंग का बटन
     const priceColorRow = document.createElement("div");
     priceColorRow.style.cssText =
       "display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:4px;border-top:1px dashed #cbd5e1;";
@@ -1347,21 +1385,28 @@ function openCustomTextStylePopup(config) {
   );
 
   const footer = document.createElement("div");
-  footer.style.cssText = "display:flex;gap:10px;margin-top:4px;";
+  footer.style.cssText = "display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;";
 
   const cancelBtn = document.createElement("button");
   cancelBtn.type = "button";
   cancelBtn.textContent = "Cancel";
   cancelBtn.style.cssText =
-    "flex:1;min-height:44px;padding:9px 14px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-weight:700;cursor:pointer;";
+    "flex:1;min-height:44px;padding:9px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-weight:700;cursor:pointer;";
   cancelBtn.onclick = () => modal.remove();
 
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
   applyBtn.textContent = "Apply";
   applyBtn.style.cssText =
-    `flex:1;min-height:44px;padding:9px 16px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
-  applyBtn.onclick = () => {
+    `flex:1;min-height:44px;padding:9px 14px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
+
+  const applyAllBtn = document.createElement("button");
+  applyAllBtn.type = "button";
+  applyAllBtn.textContent = "Apply to All";
+  applyAllBtn.style.cssText =
+    "flex:1;min-height:44px;padding:9px 14px;border:none;border-radius:10px;background:#1d4ed8;color:#ffffff;font-weight:700;cursor:pointer;";
+
+  const commitStyleSelection = (applyToAll) => {
     const rawEnteredText = textInput.value;
     const finalText = rawEnteredText.length > 0
       ? rawEnteredText
@@ -1381,20 +1426,38 @@ function openCustomTextStylePopup(config) {
     } else if (isSection && secObj) {
       secObj.title = finalText;
       secObj.titleStyle = { ...st };
+      if (applyToAll) {
+        (data.sections || []).forEach((s) => {
+          s.titleStyle = { ...st };
+        });
+      }
       modal.remove();
       renderSections();
       attachOwnerStoreEditHandlers();
     } else if (itemObj) {
       itemObj.name = finalText;
       itemObj.nameStyle = { ...st };
+      if (applyToAll) {
+        (data.sections || []).forEach((s) => {
+          (s.items || []).forEach((it) => {
+            it.nameStyle = { ...st };
+          });
+        });
+      }
       modal.remove();
       renderSections();
       attachOwnerStoreEditHandlers();
     }
   };
 
+  applyBtn.onclick = () => commitStyleSelection(false);
+  applyAllBtn.onclick = () => commitStyleSelection(true);
+
   footer.appendChild(cancelBtn);
   footer.appendChild(applyBtn);
+  if (!isStore) {
+    footer.appendChild(applyAllBtn);
+  }
 
   card.appendChild(stickyHeader);
   card.appendChild(presetWrap);
@@ -2149,7 +2212,6 @@ function attachOwnerStoreEditHandlers() {
       };
       stripTitle.insertAdjacentElement("afterend", secEditBtn);
 
-      // पट्टी का रंग (Strip Colour) बदलने का बटन
       const stripColorBtn = document.createElement("button");
       stripColorBtn.type = "button";
       stripColorBtn.className = "owner-inline-edit-btn";
@@ -2175,6 +2237,17 @@ function attachOwnerStoreEditHandlers() {
             if (typeof applyStripBarStyle === "function") {
               applyStripBarStyle(stripEl, sec);
             }
+          },
+          {
+            applyLabel: "Apply",
+            applyAllLabel: "Apply to All",
+            onApplyAll: (allHex) => {
+              (data.sections || []).forEach((s) => {
+                s.barBgColor = allHex;
+              });
+              renderSections();
+              attachOwnerStoreEditHandlers();
+            }
           }
         );
       };
@@ -2187,7 +2260,6 @@ function attachOwnerStoreEditHandlers() {
       const item = sIdx === 0 ? sec.items.slice(0, topRowLimit)[idx] : sec.items[idx];
       if (!item) return;
 
-      const isMiniBox = card.classList.contains("mini-box");
       card.style.position = "relative";
 
       const photoBtn = document.createElement("button");
