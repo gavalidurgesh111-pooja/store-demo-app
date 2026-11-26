@@ -1,13 +1,10 @@
-console.log("OWNER_EDIT_COMPLETE_V36");
+console.log("OWNER_EDIT_COMPLETE_V37");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
 const SOFT_POPUP_BTN_BG = "#FFEDE5";
 const SOFT_POPUP_BTN_TEXT = "#9A3412";
 const SOFT_POPUP_BTN_BORDER = "#FDBA74";
-const COVER_BUTTON_BG_COLOR = "#FFFFFF";
-const COVER_BUTTON_TEXT_COLOR = "#9A3412";
-const COVER_BUTTON_BORDER_COLOR = "#FDBA74";
 
 function getEditorFixedColor() {
   return FIXED_EDITOR_COLOR;
@@ -2973,7 +2970,7 @@ function attachOwnerStoreEditHandlers() {
   topRow.appendChild(info);
   topRow.appendChild(primaryActions);
 
-  // Unified Tools Row
+  // Unified Tools Row (Cover controls live inside Cover Settings)
   const toolsRow = document.createElement("div");
   toolsRow.style.cssText = "display:flex;gap:6px;align-items:center;flex-wrap:wrap;";
 
@@ -3016,7 +3013,7 @@ function attachOwnerStoreEditHandlers() {
   bar.appendChild(toolsRow);
   document.body.prepend(bar);
 
-  // Cover button uses calm light surface with warm border, independent of strip edge shape color
+  // Keep cover area clean; only Store Name drag is active on cover
   const coverWrap = document.querySelector(".cover-wrapper");
   if (coverWrap) {
     coverWrap.style.position = "relative";
@@ -3031,18 +3028,6 @@ function attachOwnerStoreEditHandlers() {
       overlayEl.style.setProperty("display", "inline-flex", "important");
       enableStoreNameDragOnCover(coverWrap, overlayEl);
     }
-
-    const coverQuickBtn = document.createElement("button");
-    coverQuickBtn.type = "button";
-    coverQuickBtn.className = "owner-inline-edit-btn";
-    coverQuickBtn.textContent = "Cover";
-    coverQuickBtn.style.cssText =
-      `position:absolute;bottom:10px;right:10px;z-index:20;padding:5px 12px;border:1px solid ${COVER_BUTTON_BORDER_COLOR};border-radius:8px;background:${COVER_BUTTON_BG_COLOR};color:${COVER_BUTTON_TEXT_COLOR};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(15,23,42,0.16);`;
-    coverQuickBtn.onclick = (e) => {
-      e.stopPropagation();
-      openCoverManagerModal();
-    };
-    coverWrap.appendChild(coverQuickBtn);
   }
 
   // Row Controls
