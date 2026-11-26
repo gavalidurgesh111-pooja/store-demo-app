@@ -315,6 +315,14 @@ function applyStripBarStyle(stripEl, sec) {
     stripEl.style.setProperty("background-color", customBg, "important");
   }
 
+  if (sec && Number.isFinite(Number(sec.barHeight)) && Number(sec.barHeight) > 0) {
+    const h = clampNum(sec.barHeight, 24, 80, 36);
+    stripEl.style.setProperty("min-height", `${h}px`, "important");
+    stripEl.style.setProperty("height", `${h}px`, "important");
+    stripEl.style.setProperty("display", "flex", "important");
+    stripEl.style.setProperty("align-items", "center", "important");
+  }
+
   const cs = window.getComputedStyle(stripEl);
   const tl = cs.borderTopLeftRadius;
   const bl = cs.borderBottomLeftRadius;
@@ -783,7 +791,7 @@ function buildInitialData() {
         nameStyle: null
       });
     }
-    return { title, items, titleStyle: null, barBgColor: "" };
+    return { title, items, titleStyle: null, barBgColor: "", barHidden: false, barHeight: 36 };
   });
 
   const ownerFolders = [
@@ -1147,22 +1155,26 @@ function renderSections() {
   data.sections.forEach((sec, sIdx) => {
     const sectionEl = document.createElement("section");
     sectionEl.className = "row-section";
+    sectionEl.dataset.sectionIndex = String(sIdx);
 
-    const displayTitle = getSectionTitleForView(sec.title || "", sIdx);
+    const isBarHidden = Boolean(sec && sec.barHidden);
 
-    const stripEl = document.createElement("div");
-    stripEl.className = "strip-bar";
-    const stripTitleEl = document.createElement("span");
-    stripTitleEl.className = "strip-title";
-    stripTitleEl.textContent = displayTitle;
-    stripEl.appendChild(stripTitleEl);
-    applyTextStyleToElement(stripTitleEl, sec.titleStyle, {
-      fontSize: 16,
-      fontWeight: 700,
-      color: "#111827"
-    });
-    applyStripBarStyle(stripEl, sec);
-    sectionEl.appendChild(stripEl);
+    if (!isBarHidden) {
+      const displayTitle = getSectionTitleForView(sec.title || "", sIdx);
+      const stripEl = document.createElement("div");
+      stripEl.className = "strip-bar";
+      const stripTitleEl = document.createElement("span");
+      stripTitleEl.className = "strip-title";
+      stripTitleEl.textContent = displayTitle;
+      stripEl.appendChild(stripTitleEl);
+      applyTextStyleToElement(stripTitleEl, sec.titleStyle, {
+        fontSize: 16,
+        fontWeight: 700,
+        color: "#111827"
+      });
+      applyStripBarStyle(stripEl, sec);
+      sectionEl.appendChild(stripEl);
+    }
 
     if (sIdx === 0) {
       const fiveRow = document.createElement("div");
