@@ -233,6 +233,10 @@ function applyPriceVisualStyle(priceEl, item, defaultBoxPriceStyle) {
   priceEl.style.setProperty("font-size", `${customSize}px`, "important");
   priceEl.style.setProperty("color", customColor, "important");
   priceEl.style.setProperty("font-weight", "700", "important");
+  if (defaultBoxPriceStyle && defaultBoxPriceStyle.textBgTransparent) {
+    priceEl.style.setProperty("background", "transparent", "important");
+    priceEl.style.setProperty("background-color", "transparent", "important");
+  }
 }
 
 function applyStripBarStyle(stripEl, sec) {
@@ -292,18 +296,34 @@ function applyInnerBoxColor(boxEl, innerSelector, boxCfg) {
   if (isNoBg) {
     boxEl.style.setProperty("background", "transparent", "important");
     boxEl.style.setProperty("background-color", "transparent", "important");
+    boxEl.style.setProperty("border", "none", "important");
     boxEl.style.setProperty("box-shadow", "none", "important");
+    boxEl.style.setProperty("padding", "0px", "important");
+    boxEl.style.setProperty("min-height", "0px", "important");
+    boxEl.style.setProperty("height", "auto", "important");
+    boxEl.style.setProperty("overflow", "visible", "important");
     if (innerEl) {
       innerEl.style.setProperty("background", "transparent", "important");
       innerEl.style.setProperty("background-color", "transparent", "important");
+      innerEl.style.setProperty("border", "none", "important");
+      innerEl.style.setProperty("box-shadow", "none", "important");
+      innerEl.style.setProperty("padding", "4px 0 0 0", "important");
+      innerEl.style.setProperty("margin", "0", "important");
     }
   } else {
     boxEl.style.setProperty("background", safeColor, "important");
     boxEl.style.setProperty("background-color", safeColor, "important");
+    boxEl.style.removeProperty("border");
     boxEl.style.removeProperty("box-shadow");
+    boxEl.style.removeProperty("padding");
+    boxEl.style.setProperty("overflow", "hidden", "important");
     if (innerEl) {
       innerEl.style.setProperty("background", safeColor, "important");
       innerEl.style.setProperty("background-color", safeColor, "important");
+      innerEl.style.removeProperty("border");
+      innerEl.style.removeProperty("box-shadow");
+      innerEl.style.removeProperty("padding");
+      innerEl.style.removeProperty("margin");
     }
   }
 }
@@ -338,9 +358,12 @@ function applyBoxSizeStyles() {
     box.style.width = `${sizes.miniBox.width}px`;
     box.style.minWidth = `${sizes.miniBox.width}px`;
     box.style.maxWidth = `${sizes.miniBox.width}px`;
-    box.style.minHeight = `${sizes.miniBox.height}px`;
     box.style.height = "auto";
-    box.style.overflow = "hidden";
+    if (sizes.miniBox.textBgTransparent) {
+      box.style.minHeight = "0px";
+    } else {
+      box.style.minHeight = `${sizes.miniBox.height}px`;
+    }
 
     applyInnerBoxColor(box, ".mini-box-body", sizes.miniBox);
     const bodyEl = box.querySelector(".mini-box-body");
@@ -376,6 +399,10 @@ function applyBoxSizeStyles() {
       nameEl.style.maxWidth = "100%";
       nameEl.style.minWidth = "0";
       nameEl.style.overflow = "hidden";
+      if (sizes.miniBox.textBgTransparent) {
+        nameEl.style.setProperty("background", "transparent", "important");
+        nameEl.style.setProperty("background-color", "transparent", "important");
+      }
     }
     const priceEl = box.querySelector(".mini-box-price");
     if (priceEl) {
@@ -402,9 +429,12 @@ function applyBoxSizeStyles() {
       box.style.width = `${sizes.productBox.width}px`;
       box.style.minWidth = `${sizes.productBox.width}px`;
       box.style.maxWidth = `${sizes.productBox.width}px`;
-      box.style.minHeight = `${sizes.productBox.height}px`;
       box.style.height = "auto";
-      box.style.overflow = "hidden";
+      if (sizes.productBox.textBgTransparent) {
+        box.style.minHeight = "0px";
+      } else {
+        box.style.minHeight = `${sizes.productBox.height}px`;
+      }
 
       applyInnerBoxColor(box, ".item-info", sizes.productBox);
       const infoEl = box.querySelector(".item-info");
@@ -440,6 +470,10 @@ function applyBoxSizeStyles() {
         nameEl.style.maxWidth = "100%";
         nameEl.style.minWidth = "0";
         nameEl.style.overflow = "hidden";
+        if (sizes.productBox.textBgTransparent) {
+          nameEl.style.setProperty("background", "transparent", "important");
+          nameEl.style.setProperty("background-color", "transparent", "important");
+        }
       }
       const priceEl = box.querySelector(".item-price");
       if (priceEl) {
