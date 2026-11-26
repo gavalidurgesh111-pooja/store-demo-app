@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V27");
+console.log("OWNER_EDIT_COMPLETE_V28");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -569,8 +569,8 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   const spObj = {
     top: prevSpacing && Number.isFinite(Number(prevSpacing.top)) ? Number(prevSpacing.top) : 6,
     bottom: prevSpacing && Number.isFinite(Number(prevSpacing.bottom)) ? Number(prevSpacing.bottom) : 6,
-    left: prevSpacing && Number.isFinite(Number(prevSpacing.left)) ? Number(prevSpacing.left) : 10,
-    right: prevSpacing && Number.isFinite(Number(prevSpacing.right)) ? Number(prevSpacing.right) : 10
+    left: prevSpacing && Number.isFinite(Number(prevSpacing.left)) ? Number(prevSpacing.left) : 12,
+    right: prevSpacing && Number.isFinite(Number(prevSpacing.right)) ? Number(prevSpacing.right) : 12
   };
 
   const modal = document.createElement("div");
@@ -658,9 +658,9 @@ function openStripHeightEditorModal(sIdx, stripEl) {
 
   const shapes = [
     { id: "default", label: "Default" },
-    { id: "round", label: "Round (Left-Right)" },
-    { id: "square", label: "Square" },
-    { id: "triangle", label: "Triangle (Left-Right)" }
+    { id: "square", label: "[ Square ]" },
+    { id: "round", label: "( Round )" },
+    { id: "triangle", label: "《 Triangle 》" }
   ];
 
   const shapeBtns = shapes.map((sh) => {
