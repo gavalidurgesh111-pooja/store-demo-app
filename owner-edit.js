@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V38");
+console.log("OWNER_EDIT_COMPLETE_V39");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -537,17 +537,18 @@ function openCoverManagerModal() {
   const fileInput = ensureOwnerInlineFileInput();
   const accentHex = getEditorFixedColor();
 
-  const curHeight = Number.isFinite(Number(data.coverHeight)) && Number(data.coverHeight) > 0
-    ? Number(data.coverHeight)
-    : Math.max(120, Math.round((coverWrap && coverWrap.getBoundingClientRect().height) || 170));
+  const DEFAULT_COVER_H = 170;
   const prevHeight = data.coverHeight ?? null;
-  let draftH = curHeight;
+  let draftH = Number.isFinite(Number(data.coverHeight)) && Number(data.coverHeight) > 0
+    ? Number(data.coverHeight)
+    : Math.max(110, Math.min(380, Math.round((coverWrap && coverWrap.getBoundingClientRect().height) || DEFAULT_COVER_H)));
 
-  const syncCoverAndTitleWithHeight = (hVal) => {
-    data.coverHeight = hVal;
-    if (coverWrap && typeof applyCoverHeightStyle === "function") {
-      applyCoverHeightStyle(coverWrap, data);
-    }
+  const previewHeightOnly = (hVal) => {
+    if (!coverWrap) return;
+    const ch = clampNum(hVal, 110, 380, DEFAULT_COVER_H);
+    coverWrap.style.setProperty("height", `${ch}px`, "important");
+    coverWrap.style.setProperty("min-height", `${ch}px`, "important");
+    coverWrap.style.setProperty("max-height", `${ch}px`, "important");
     if (typeof applyTitlePositionStyle === "function") {
       applyTitlePositionStyle();
     }
@@ -570,24 +571,26 @@ function openCoverManagerModal() {
   title.textContent = "Cover Settings";
   title.style.cssText = "font-size:0.96rem;font-weight:800;color:#111827;";
 
+  const cancelAndClose = () => {
+    data.coverHeight = prevHeight;
+    modal.remove();
+    renderHeader();
+    attachOwnerStoreEditHandlers();
+  };
+
   const closeBtn = document.createElement("button");
   closeBtn.type = "button";
   closeBtn.textContent = "X";
   closeBtn.style.cssText =
     "border:none;background:#f8fafc;border-radius:8px;min-width:32px;min-height:32px;font-weight:700;color:#334155;cursor:pointer;";
-  closeBtn.onclick = () => {
-    data.coverHeight = prevHeight;
-    renderHeader();
-    attachOwnerStoreEditHandlers();
-    modal.remove();
-  };
+  closeBtn.onclick = cancelAndClose;
 
   header.appendChild(title);
   header.appendChild(closeBtn);
 
   const hSlider = makeLabeledSlider("Cover Height", 110, 380, 2, draftH, "px", accentHex, (val) => {
     draftH = val;
-    syncCoverAndTitleWithHeight(val);
+    previewHeightOnly(val);
   });
 
   const slidesBox = document.createElement("div");
@@ -607,6 +610,7 @@ function openCoverManagerModal() {
   addSlideBtn.style.cssText =
     "padding:5px 10px;border-radius:8px;font-size:0.76rem;font-weight:700;cursor:pointer;";
   addSlideBtn.onclick = () => {
+    data.coverHeight = draftH;
     addCoverInEditMode();
     openCoverManagerModal();
   };
@@ -635,6 +639,7 @@ function openCoverManagerModal() {
     uploadBtn.style.cssText =
       "padding:4px 9px;border-radius:6px;font-size:0.74rem;font-weight:700;cursor:pointer;";
     uploadBtn.onclick = () => {
+      data.coverHeight = draftH;
       modal.remove();
       pendingOwnerEditSlot = { type: "cover", slotIdx: idx };
       fileInput.value = "";
@@ -648,6 +653,7 @@ function openCoverManagerModal() {
     delBtn.style.cssText =
       "padding:4px 8px;border:1px solid #fecaca;border-radius:6px;background:#fff5f5;color:#b91c1c;font-size:0.74rem;font-weight:700;cursor:pointer;";
     delBtn.onclick = () => {
+      data.coverHeight = draftH;
       removeCoverSlotAt(idx);
       openCoverManagerModal();
     };
@@ -660,7 +666,14 @@ function openCoverManagerModal() {
   });
 
   const footer = document.createElement("div");
-  footer.style.cssText = "display:flex;gap:8px;margin-top:2px;";
+  footer.style.cssText = "display:flex;gap:8px;margin-top:2px;flex-wrap:wrap;";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.style.cssText =
+    "min-height:38px;padding:7px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#334155;font-size:0.82rem;font-weight:700;cursor:pointer;";
+  cancelBtn.onclick = cancelAndClose;
 
   const resetBtn = document.createElement("button");
   resetBtn.type = "button";
@@ -668,6 +681,7 @@ function openCoverManagerModal() {
   resetBtn.style.cssText =
     "min-height:38px;padding:7px 12px;border-radius:8px;font-size:0.82rem;font-weight:700;cursor:pointer;";
   resetBtn.onclick = () => {
+    draftH = DEFAULT_COVER_H;
     data.coverHeight = null;
     modal.remove();
     renderHeader();
@@ -688,6 +702,7 @@ function openCoverManagerModal() {
   };
   bindSoftToAccentButton(applyBtn);
 
+  footer.appendChild(cancelBtn);
   footer.appendChild(resetBtn);
   footer.appendChild(applyBtn);
 
