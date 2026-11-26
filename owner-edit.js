@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V31");
+console.log("OWNER_EDIT_COMPLETE_V32");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -32,6 +32,11 @@ function removeCustomAdModalIfExists() {
 
 function removeCoverHeightModalIfExists() {
   const existing = document.getElementById("ownerCoverHeightEditorModal");
+  if (existing) existing.remove();
+}
+
+function removeCoverManagerModalIfExists() {
+  const existing = document.getElementById("ownerCoverManagerModal");
   if (existing) existing.remove();
 }
 
@@ -70,6 +75,7 @@ function removeOwnerStoreEditUI() {
   removeStripHeightModalIfExists();
   removeCustomAdModalIfExists();
   removeCoverHeightModalIfExists();
+  removeCoverManagerModalIfExists();
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
 }
 
@@ -140,13 +146,13 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore,
   leftHead.style.cssText = "display:flex;align-items:center;gap:10px;flex-wrap:wrap;";
 
   const title = document.createElement("span");
-  title.textContent = "Colour picker";
-  title.style.cssText = "font-size:1.08rem;font-weight:700;color:#111827;";
+  title.textContent = "Color Picker";
+  title.style.cssText = "font-size:1.05rem;font-weight:700;color:#111827;";
 
   const colorNameBadge = document.createElement("span");
   colorNameBadge.textContent = "Red";
   colorNameBadge.style.cssText =
-    "font-size:0.84rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#f1f5f9;color:#111827;";
+    "font-size:0.82rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#f1f5f9;color:#111827;";
 
   leftHead.appendChild(title);
   leftHead.appendChild(colorNameBadge);
@@ -160,9 +166,9 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore,
 
   const closeBtn = document.createElement("button");
   closeBtn.type = "button";
-  closeBtn.textContent = "✕";
+  closeBtn.textContent = "X";
   closeBtn.style.cssText =
-    "border:none;background:transparent;font-size:1.15rem;font-weight:700;color:#475569;cursor:pointer;padding:6px 10px;min-width:36px;min-height:36px;";
+    "border:none;background:transparent;font-size:1.05rem;font-weight:700;color:#475569;cursor:pointer;padding:6px 10px;min-width:36px;min-height:36px;";
   closeBtn.onclick = closeModalAndRestore;
 
   header.appendChild(leftHead);
@@ -455,41 +461,42 @@ function createBlueKnobSlider(min, max, step, initialVal, onValueChange) {
   };
 }
 
-// ==================== COVER HEIGHT POP-UP ====================
-function openCoverHeightEditorModal() {
-  removeCoverHeightModalIfExists();
+// ==================== UNIFIED COVER MANAGER PANEL ====================
+function openCoverManagerModal() {
+  removeCoverManagerModalIfExists();
   const data = getWorkingStoreData();
   const coverWrap = document.querySelector(".cover-wrapper");
-  if (!coverWrap) return;
-
+  const fileInput = ensureOwnerInlineFileInput();
   const accentHex = data.themeColor || "#0f766e";
+
   const curHeight = Number.isFinite(Number(data.coverHeight)) && Number(data.coverHeight) > 0
     ? Number(data.coverHeight)
-    : Math.max(120, Math.round(coverWrap.getBoundingClientRect().height || 170));
+    : Math.max(120, Math.round((coverWrap && coverWrap.getBoundingClientRect().height) || 170));
   const prevHeight = data.coverHeight ?? null;
   let draftH = curHeight;
 
   const modal = document.createElement("div");
-  modal.id = "ownerCoverHeightEditorModal";
+  modal.id = "ownerCoverManagerModal";
   modal.style.cssText =
     "position:fixed;inset:0;z-index:145;background:transparent;display:flex;align-items:flex-end;justify-content:center;padding:0;pointer-events:none;";
 
   const card = document.createElement("div");
   card.style.cssText =
-    "width:100%;max-width:440px;background:#ffffff;border-top:2px solid #cbd5e1;border-radius:16px 16px 0 0;padding:12px 16px 16px;box-shadow:0 -10px 28px rgba(15,23,42,0.28);display:flex;flex-direction:column;gap:10px;color:#111827;pointer-events:auto;";
+    "width:100%;max-width:480px;max-height:52vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#ffffff;border-top:2px solid #cbd5e1;border-radius:16px 16px 0 0;padding:12px 16px 18px;box-shadow:0 -10px 28px rgba(15,23,42,0.28);display:flex;flex-direction:column;gap:12px;color:#111827;pointer-events:auto;";
 
   const header = document.createElement("div");
-  header.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
+  header.style.cssText =
+    "display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #e2e8f0;";
 
   const title = document.createElement("span");
-  title.textContent = "Cover Size";
-  title.style.cssText = "font-size:0.94rem;font-weight:800;color:#111827;";
+  title.textContent = "Cover Settings";
+  title.style.cssText = "font-size:0.96rem;font-weight:800;color:#111827;";
 
   const closeBtn = document.createElement("button");
   closeBtn.type = "button";
-  closeBtn.textContent = "✕";
+  closeBtn.textContent = "X";
   closeBtn.style.cssText =
-    "border:none;background:#f1f5f9;border-radius:8px;min-width:30px;min-height:30px;font-weight:700;color:#334155;cursor:pointer;";
+    "border:none;background:#f1f5f9;border-radius:8px;min-width:32px;min-height:32px;font-weight:700;color:#334155;cursor:pointer;";
   closeBtn.onclick = () => {
     data.coverHeight = prevHeight;
     renderHeader();
@@ -503,9 +510,76 @@ function openCoverHeightEditorModal() {
   const hSlider = makeLabeledSlider("Cover Height", 110, 380, 2, draftH, "px", accentHex, (val) => {
     draftH = val;
     data.coverHeight = val;
-    if (typeof applyCoverHeightStyle === "function") {
+    if (coverWrap && typeof applyCoverHeightStyle === "function") {
       applyCoverHeightStyle(coverWrap, data);
     }
+  });
+
+  const slidesBox = document.createElement("div");
+  slidesBox.style.cssText =
+    "border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;";
+
+  const slidesTop = document.createElement("div");
+  slidesTop.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
+
+  const slidesLbl = document.createElement("span");
+  slidesLbl.textContent = "Cover Slides";
+  slidesLbl.style.cssText = "font-size:0.84rem;font-weight:800;color:#111827;";
+
+  const addSlideBtn = document.createElement("button");
+  addSlideBtn.type = "button";
+  addSlideBtn.textContent = "+ Add Slide";
+  addSlideBtn.style.cssText =
+    `padding:5px 10px;border:none;border-radius:8px;background:${accentHex};color:#ffffff;font-size:0.76rem;font-weight:700;cursor:pointer;`;
+  addSlideBtn.onclick = () => {
+    addCoverInEditMode();
+    openCoverManagerModal();
+  };
+
+  slidesTop.appendChild(slidesLbl);
+  slidesTop.appendChild(addSlideBtn);
+  slidesBox.appendChild(slidesTop);
+
+  const slots = Array.isArray(data.coverSlots) && data.coverSlots.length > 0 ? data.coverSlots : [""];
+  slots.forEach((src, idx) => {
+    const row = document.createElement("div");
+    row.style.cssText =
+      "display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 8px;background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;";
+
+    const sName = document.createElement("span");
+    sName.textContent = src ? `Slide ${idx + 1} (Photo Set)` : `Slide ${idx + 1} (Empty)`;
+    sName.style.cssText = "font-size:0.8rem;font-weight:700;color:#334155;";
+
+    const rowBtns = document.createElement("div");
+    rowBtns.style.cssText = "display:flex;gap:6px;";
+
+    const uploadBtn = document.createElement("button");
+    uploadBtn.type = "button";
+    uploadBtn.textContent = "Upload Photo";
+    uploadBtn.style.cssText =
+      `padding:4px 9px;border:1px solid ${accentHex};border-radius:6px;background:#f0fdfa;color:${accentHex};font-size:0.74rem;font-weight:700;cursor:pointer;`;
+    uploadBtn.onclick = () => {
+      modal.remove();
+      pendingOwnerEditSlot = { type: "cover", slotIdx: idx };
+      fileInput.value = "";
+      fileInput.click();
+    };
+
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.textContent = "Remove";
+    delBtn.style.cssText =
+      "padding:4px 8px;border:1px solid #fecaca;border-radius:6px;background:#fee2e2;color:#dc2626;font-size:0.74rem;font-weight:700;cursor:pointer;";
+    delBtn.onclick = () => {
+      removeCoverSlotAt(idx);
+      openCoverManagerModal();
+    };
+
+    rowBtns.appendChild(uploadBtn);
+    rowBtns.appendChild(delBtn);
+    row.appendChild(sName);
+    row.appendChild(rowBtns);
+    slidesBox.appendChild(row);
   });
 
   const footer = document.createElement("div");
@@ -513,7 +587,7 @@ function openCoverHeightEditorModal() {
 
   const resetBtn = document.createElement("button");
   resetBtn.type = "button";
-  resetBtn.textContent = "Reset";
+  resetBtn.textContent = "Reset Height";
   resetBtn.style.cssText =
     "min-height:38px;padding:7px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:#334155;font-size:0.82rem;font-weight:700;cursor:pointer;";
   resetBtn.onclick = () => {
@@ -540,6 +614,7 @@ function openCoverHeightEditorModal() {
 
   card.appendChild(header);
   card.appendChild(hSlider);
+  card.appendChild(slidesBox);
   card.appendChild(footer);
   modal.appendChild(card);
   document.body.appendChild(modal);
@@ -559,11 +634,13 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   const prevShape = sec.barShape || "default";
   const prevTopCol = sec.barGradTop || "";
   const prevBotCol = sec.barGradBottom || "";
+  const prevSingleCol = sec.barBgColor || "";
   const prevSpacing = sec.barSpacing ? { ...sec.barSpacing } : null;
 
   let draftHeight = prevBarHeight;
   let draftShape = prevShape;
-  let draftTopCol = prevTopCol || sec.barBgColor || "#0f766e";
+  let draftSingleCol = prevSingleCol || "#f1f5f9";
+  let draftTopCol = prevTopCol || prevSingleCol || "#0f766e";
   let draftBotCol = prevBotCol || "#1d4ed8";
   let useTwoColors = Boolean(prevTopCol && prevBotCol);
   const spObj = {
@@ -580,19 +657,19 @@ function openStripHeightEditorModal(sIdx, stripEl) {
 
   const card = document.createElement("div");
   card.style.cssText =
-    "width:100%;max-width:480px;height:46vh;max-height:48vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#ffffff;border-top:2px solid #cbd5e1;border-radius:16px 16px 0 0;padding:10px 14px 18px;box-shadow:0 -10px 28px rgba(15,23,42,0.28);display:flex;flex-direction:column;gap:10px;color:#111827;pointer-events:auto;";
+    "width:100%;max-width:480px;height:48vh;max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#ffffff;border-top:2px solid #cbd5e1;border-radius:16px 16px 0 0;padding:10px 14px 18px;box-shadow:0 -10px 28px rgba(15,23,42,0.28);display:flex;flex-direction:column;gap:10px;color:#111827;pointer-events:auto;";
 
   const header = document.createElement("div");
   header.style.cssText =
     "position:sticky;top:-10px;z-index:5;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:6px 0 8px;border-bottom:1px solid #e2e8f0;";
 
   const title = document.createElement("span");
-  title.textContent = `Strip ${sIdx + 1} Style & Size`;
+  title.textContent = `Row ${sIdx + 1} Strip Settings`;
   title.style.cssText = "font-size:0.96rem;font-weight:800;color:#111827;";
 
   const closeBtn = document.createElement("button");
   closeBtn.type = "button";
-  closeBtn.textContent = "✕";
+  closeBtn.textContent = "X";
   closeBtn.style.cssText =
     "border:none;background:#f1f5f9;border-radius:8px;min-width:32px;min-height:32px;font-weight:700;color:#334155;cursor:pointer;";
 
@@ -600,6 +677,7 @@ function openStripHeightEditorModal(sIdx, stripEl) {
     sec.barHeight = draftHeight;
     sec.barShape = draftShape;
     sec.barSpacing = { ...spObj };
+    sec.barBgColor = draftSingleCol;
     if (useTwoColors) {
       sec.barGradTop = draftTopCol;
       sec.barGradBottom = draftBotCol;
@@ -615,6 +693,7 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   closeBtn.onclick = () => {
     sec.barHeight = prevBarHeight;
     sec.barShape = prevShape;
+    sec.barBgColor = prevSingleCol;
     sec.barGradTop = prevTopCol;
     sec.barGradBottom = prevBotCol;
     sec.barSpacing = prevSpacing;
@@ -627,7 +706,33 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   header.appendChild(title);
   header.appendChild(closeBtn);
 
-  const heightSlider = makeLabeledSlider("Height", 24, 76, 1, draftHeight, "px", accentHex, (val) => {
+  const singleColRow = document.createElement("div");
+  singleColRow.style.cssText =
+    "display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;";
+
+  const singleColLbl = document.createElement("span");
+  singleColLbl.textContent = "Strip Color";
+  singleColLbl.style.cssText = "font-size:0.82rem;font-weight:700;color:#334155;";
+
+  const singleColBtn = document.createElement("button");
+  singleColBtn.type = "button";
+  singleColBtn.textContent = "Pick Color";
+  singleColBtn.style.cssText =
+    `min-height:32px;padding:4px 10px;border:1px solid #94a3b8;border-radius:8px;background:${draftSingleCol};color:#111827;text-shadow:0 0 3px #ffffff;font-size:0.76rem;font-weight:700;cursor:pointer;`;
+  singleColBtn.onclick = () => {
+    openStandaloneColorPicker(draftSingleCol, (hex) => {
+      draftSingleCol = hex;
+      useTwoColors = false;
+      twoColChk.checked = false;
+      singleColBtn.style.background = hex;
+      syncLiveStrip();
+    });
+  };
+
+  singleColRow.appendChild(singleColLbl);
+  singleColRow.appendChild(singleColBtn);
+
+  const heightSlider = makeLabeledSlider("Strip Height", 24, 76, 1, draftHeight, "px", accentHex, (val) => {
     draftHeight = val;
     syncLiveStrip();
   });
@@ -650,7 +755,7 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   });
 
   const shapeLabel = document.createElement("span");
-  shapeLabel.textContent = "Strip Shape";
+  shapeLabel.textContent = "Strip Edge Shape";
   shapeLabel.style.cssText = "font-size:0.82rem;font-weight:700;color:#334155;";
 
   const shapeGrid = document.createElement("div");
@@ -660,7 +765,7 @@ function openStripHeightEditorModal(sIdx, stripEl) {
     { id: "default", label: "Default" },
     { id: "square", label: "[ Square ]" },
     { id: "round", label: "( Round )" },
-    { id: "triangle", label: "《 Triangle 》" }
+    { id: "triangle", label: "< Triangle >" }
   ];
 
   const shapeBtns = shapes.map((sh) => {
@@ -709,7 +814,7 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   };
 
   const twoColTxt = document.createElement("span");
-  twoColTxt.textContent = "2-Colour Blend (Top + Bottom)";
+  twoColTxt.textContent = "Two-Color Gradient (Top + Bottom)";
 
   twoColHead.appendChild(twoColChk);
   twoColHead.appendChild(twoColTxt);
@@ -719,7 +824,7 @@ function openStripHeightEditorModal(sIdx, stripEl) {
 
   const topColBtn = document.createElement("button");
   topColBtn.type = "button";
-  topColBtn.textContent = "Top Colour";
+  topColBtn.textContent = "Top Color";
   topColBtn.style.cssText =
     `flex:1;min-height:34px;padding:4px 8px;border:2px solid #cbd5e1;border-radius:8px;background:${draftTopCol};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.75);font-size:0.78rem;font-weight:700;cursor:pointer;`;
   topColBtn.onclick = () => {
@@ -734,7 +839,7 @@ function openStripHeightEditorModal(sIdx, stripEl) {
 
   const botColBtn = document.createElement("button");
   botColBtn.type = "button";
-  botColBtn.textContent = "Bottom Colour";
+  botColBtn.textContent = "Bottom Color";
   botColBtn.style.cssText =
     `flex:1;min-height:34px;padding:4px 8px;border:2px solid #cbd5e1;border-radius:8px;background:${draftBotCol};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.75);font-size:0.78rem;font-weight:700;cursor:pointer;`;
   botColBtn.onclick = () => {
@@ -784,6 +889,7 @@ function openStripHeightEditorModal(sIdx, stripEl) {
     (data.sections || []).forEach((s) => {
       s.barHeight = draftHeight;
       s.barShape = draftShape;
+      s.barBgColor = draftSingleCol;
       s.barSpacing = { ...spObj };
       s.barGradTop = useTwoColors ? draftTopCol : "";
       s.barGradBottom = useTwoColors ? draftBotCol : "";
@@ -798,6 +904,7 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   footer.appendChild(applyAllBtn);
 
   card.appendChild(header);
+  card.appendChild(singleColRow);
   card.appendChild(heightSlider);
   card.appendChild(sTop);
   card.appendChild(sBot);
@@ -811,7 +918,7 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   document.body.appendChild(modal);
 }
 
-// ==================== CUSTOM AD POP-UP (+ Ad) ====================
+// ==================== CUSTOM AD POP-UP ====================
 function openCustomAdEditorModal(sIdx) {
   removeCustomAdModalIfExists();
   const data = getWorkingStoreData();
@@ -839,12 +946,12 @@ function openCustomAdEditorModal(sIdx) {
     "display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #e2e8f0;";
 
   const title = document.createElement("span");
-  title.textContent = `Row ${sIdx + 1} Ad / Strip Slot`;
+  title.textContent = `Row ${sIdx + 1} Ad Banner`;
   title.style.cssText = "font-size:0.96rem;font-weight:800;color:#111827;";
 
   const closeBtn = document.createElement("button");
   closeBtn.type = "button";
-  closeBtn.textContent = "✕";
+  closeBtn.textContent = "X";
   closeBtn.style.cssText =
     "border:none;background:#f1f5f9;border-radius:8px;min-width:32px;min-height:32px;font-weight:700;color:#334155;cursor:pointer;";
   closeBtn.onclick = () => modal.remove();
@@ -855,14 +962,14 @@ function openCustomAdEditorModal(sIdx) {
   const labelInput = document.createElement("input");
   labelInput.type = "text";
   labelInput.value = existingAd.label || "";
-  labelInput.placeholder = "Ad Label / Title (optional)";
+  labelInput.placeholder = "Ad Title (optional)";
   labelInput.style.cssText =
     "width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.88rem;color:#111827;box-sizing:border-box;";
 
   const codeInput = document.createElement("textarea");
   codeInput.rows = 4;
   codeInput.value = existingAd.code || "";
-  codeInput.placeholder = "Paste Google Ad / HTML / Script or Image URL here";
+  codeInput.placeholder = "Paste Google Ad / HTML / Script or Image URL";
   codeInput.style.cssText =
     "width:100%;min-height:80px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.84rem;color:#111827;box-sizing:border-box;font-family:monospace;";
 
@@ -891,7 +998,7 @@ function openCustomAdEditorModal(sIdx) {
 
   const modes = [
     { id: "static", label: "Fixed" },
-    { id: "marquee", label: "Sliding (Move)" },
+    { id: "marquee", label: "Sliding" },
     { id: "float", label: "Floating" }
   ];
 
@@ -972,7 +1079,7 @@ function openCustomAdEditorModal(sIdx) {
   document.body.appendChild(modal);
 }
 
-// ==================== INDIVIDUAL AMOUNT, SIZE & COLOUR POP-UP ====================
+// ==================== INDIVIDUAL AMOUNT, SIZE & COLOR POP-UP ====================
 function openItemAmountEditorModal(sIdx, itemId) {
   removePriceEditorModalIfExists();
   const data = getWorkingStoreData();
@@ -1006,12 +1113,12 @@ function openItemAmountEditorModal(sIdx, itemId) {
     "display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #e2e8f0;";
 
   const title = document.createElement("span");
-  title.textContent = "Amount Style";
+  title.textContent = "Price & Style";
   title.style.cssText = "font-size:0.96rem;font-weight:800;color:#111827;";
 
   const closeBtn = document.createElement("button");
   closeBtn.type = "button";
-  closeBtn.textContent = "✕";
+  closeBtn.textContent = "X";
   closeBtn.style.cssText =
     "border:none;background:#f1f5f9;border-radius:8px;min-width:32px;min-height:32px;font-weight:700;color:#334155;cursor:pointer;";
   closeBtn.onclick = () => modal.remove();
@@ -1022,7 +1129,7 @@ function openItemAmountEditorModal(sIdx, itemId) {
   const amountInput = document.createElement("input");
   amountInput.type = "text";
   amountInput.value = initialPriceText;
-  amountInput.placeholder = "Enter amount (e.g. 99.50 or 150/-)";
+  amountInput.placeholder = "Enter price (e.g. 99.50 or 150/-)";
   amountInput.style.cssText =
     "width:100%;min-height:40px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:1rem;font-weight:700;color:#111827;box-sizing:border-box;";
 
@@ -1035,7 +1142,7 @@ function openItemAmountEditorModal(sIdx, itemId) {
 
   const syncPreview = () => {
     const raw = amountInput.value.trim();
-    const disp = raw.length > 0 ? (raw.startsWith("₹") ? raw : `₹${raw}`) : "₹0";
+    const disp = raw.length > 0 ? (raw.startsWith("₹") || raw.startsWith("$") ? raw : `₹${raw}`) : "₹0";
     previewSpan.textContent = disp;
     previewSpan.style.fontSize = `${draftPriceSize}px`;
     previewSpan.style.color = draftPriceColor;
@@ -1044,7 +1151,7 @@ function openItemAmountEditorModal(sIdx, itemId) {
 
   amountInput.oninput = syncPreview;
 
-  const sizeSlider = makeLabeledSlider("Amount Size", 9, 28, 1, draftPriceSize, "px", accentHex, (val) => {
+  const sizeSlider = makeLabeledSlider("Price Size", 9, 28, 1, draftPriceSize, "px", accentHex, (val) => {
     draftPriceSize = val;
     syncPreview();
   });
@@ -1054,12 +1161,12 @@ function openItemAmountEditorModal(sIdx, itemId) {
     "display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;";
 
   const colorLbl = document.createElement("span");
-  colorLbl.textContent = "Amount Colour";
+  colorLbl.textContent = "Price Color";
   colorLbl.style.cssText = "font-size:0.84rem;font-weight:700;color:#334155;";
 
   const pickColorBtn = document.createElement("button");
   pickColorBtn.type = "button";
-  pickColorBtn.textContent = "Pick Colour";
+  pickColorBtn.textContent = "Pick Color";
   pickColorBtn.style.cssText =
     `min-height:34px;padding:5px 12px;border:2px solid #cbd5e1;border-radius:8px;background:${draftPriceColor};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.75);font-size:0.78rem;font-weight:700;cursor:pointer;`;
   pickColorBtn.onclick = () => {
@@ -1138,7 +1245,7 @@ function openItemAmountEditorModal(sIdx, itemId) {
   syncPreview();
 }
 
-// ==================== BOX SIZE PANEL (PER ROW + ALL ROWS) ====================
+// ==================== BOX SIZE & STYLE PANEL ====================
 const FALLBACK_BOX_SIZES = {
   miniBox: { width: 92, height: 122, imgHeight: 74, fontSize: 12, bgColor: "#ffffff", priceFontSize: 11, priceColor: "#111827", textBgTransparent: false },
   productBox: { width: 150, height: 215, imgHeight: 125, fontSize: 14, bgColor: "#ffffff", priceFontSize: 13, priceColor: "#111827", textBgTransparent: false }
@@ -1174,7 +1281,7 @@ function highlightBoxPreview(selector, widthPx, heightPx, accentHex, rowIdx = nu
   rootScope.querySelectorAll(selector).forEach((box) => {
     box.style.outline = `2px dashed ${accentHex}`;
     box.style.outlineOffset = "2px";
-    box.dataset.previewSize = `${widthPx}×${heightPx}px`;
+    box.dataset.previewSize = `${widthPx}x${heightPx}px`;
   });
 }
 
@@ -1249,7 +1356,7 @@ function openBoxSizePanelModal(targetRowIdx = null) {
     "display:inline-block;width:28px;height:4px;border-radius:999px;background:#cbd5e1;";
 
   const title = document.createElement("span");
-  title.textContent = hasRowTarget ? `Row ${targetRowIdx + 1} Box Size` : "Box Size Panel";
+  title.textContent = hasRowTarget ? `Row ${targetRowIdx + 1} Box Settings` : "All Boxes Settings";
   title.style.cssText = "font-size:0.94rem;font-weight:800;color:#111827;";
 
   titleWrap.appendChild(dragHandle);
@@ -1257,7 +1364,7 @@ function openBoxSizePanelModal(targetRowIdx = null) {
 
   const closeBtn = document.createElement("button");
   closeBtn.type = "button";
-  closeBtn.textContent = "✕";
+  closeBtn.textContent = "X";
   closeBtn.style.cssText =
     "border:none;background:#f1f5f9;border-radius:8px;min-width:32px;min-height:32px;font-size:0.95rem;font-weight:700;color:#334155;cursor:pointer;";
 
@@ -1320,7 +1427,7 @@ function openBoxSizePanelModal(targetRowIdx = null) {
     badge.style.cssText = "font-size:0.74rem;font-weight:700;color:#475569;";
 
     const updateBadge = () => {
-      badge.textContent = `${targetObj.width}×${targetObj.height}px • ₹ ${targetObj.priceFontSize}px`;
+      badge.textContent = `${targetObj.width}x${targetObj.height}px | Price ${targetObj.priceFontSize}px`;
     };
     updateBadge();
 
@@ -1388,19 +1495,19 @@ function openBoxSizePanelModal(targetRowIdx = null) {
     addControlRow("Height", "height", limits.hMin, limits.hMax, 1);
     addControlRow("Image Height", "imgHeight", limits.imgMin, limits.imgMax, 1);
     addControlRow("Name Size", "fontSize", limits.fontMin, limits.fontMax, 1);
-    addControlRow("Amount Size", "priceFontSize", limits.priceMin, limits.priceMax, 1);
+    addControlRow("Price Size", "priceFontSize", limits.priceMin, limits.priceMax, 1);
 
     const bgRow = document.createElement("div");
     bgRow.style.cssText =
       "display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:4px;border-top:1px dashed #cbd5e1;";
 
     const bgLbl = document.createElement("span");
-    bgLbl.textContent = "Inner Colour";
+    bgLbl.textContent = "Box Background Color";
     bgLbl.style.cssText = "font-size:0.78rem;font-weight:700;color:#334155;";
 
     const bgColorBtn = document.createElement("button");
     bgColorBtn.type = "button";
-    bgColorBtn.textContent = "Pick Colour";
+    bgColorBtn.textContent = "Pick Color";
 
     const syncBgBtnStyle = () => {
       const hex = targetObj.bgColor || "#ffffff";
@@ -1461,7 +1568,7 @@ function openBoxSizePanelModal(targetRowIdx = null) {
     };
 
     const noBgTxt = document.createElement("span");
-    noBgTxt.textContent = "No BG (Transparent)";
+    noBgTxt.textContent = "Transparent Box (No BG)";
 
     noBgLabel.appendChild(noBgChk);
     noBgLabel.appendChild(noBgTxt);
@@ -1474,12 +1581,12 @@ function openBoxSizePanelModal(targetRowIdx = null) {
       "display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:4px;border-top:1px dashed #cbd5e1;";
 
     const priceColorLbl = document.createElement("span");
-    priceColorLbl.textContent = "Amount Colour";
+    priceColorLbl.textContent = "Price Color";
     priceColorLbl.style.cssText = "font-size:0.78rem;font-weight:700;color:#334155;";
 
     const priceColorBtn = document.createElement("button");
     priceColorBtn.type = "button";
-    priceColorBtn.textContent = "Pick Colour";
+    priceColorBtn.textContent = "Pick Color";
 
     const syncPriceBtnStyle = () => {
       const hex = targetObj.priceColor || "#111827";
@@ -1518,7 +1625,7 @@ function openBoxSizePanelModal(targetRowIdx = null) {
     };
   }
 
-  const miniSec = buildBoxSection("Mini Box (.mini-box)", sizes.miniBox, ".mini-box", {
+  const miniSec = buildBoxSection("Top Mini Boxes", sizes.miniBox, ".mini-box", {
     wMin: 64,
     wMax: 180,
     hMin: 90,
@@ -1531,7 +1638,7 @@ function openBoxSizePanelModal(targetRowIdx = null) {
     priceMax: 26
   });
 
-  const prodSec = buildBoxSection("Product Box (.item-box)", sizes.productBox, ".item-box", {
+  const prodSec = buildBoxSection("Product Boxes", sizes.productBox, ".item-box", {
     wMin: 110,
     wMax: 320,
     hMin: 165,
@@ -1703,7 +1810,7 @@ function makeToggleColorBox(titleText, enabledVal, colorVal, accentHex, onToggle
 
   const colorBtn = document.createElement("button");
   colorBtn.type = "button";
-  colorBtn.textContent = "Colour";
+  colorBtn.textContent = "Color";
   colorBtn.style.cssText =
     `min-height:34px;padding:4px 10px;border:2px solid #cbd5e1;border-radius:8px;background:${colorVal || "#38bdf8"};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.75);font-size:0.78rem;font-weight:700;cursor:pointer;flex-shrink:0;`;
   colorBtn.onclick = () => {
@@ -1805,7 +1912,7 @@ function openCustomTextStylePopup(config) {
 
   const topCloseBtn = document.createElement("button");
   topCloseBtn.type = "button";
-  topCloseBtn.textContent = "✕";
+  topCloseBtn.textContent = "X";
   topCloseBtn.style.cssText =
     "border:none;background:#f1f5f9;border-radius:8px;min-width:34px;min-height:34px;font-size:1rem;font-weight:700;color:#334155;cursor:pointer;";
   topCloseBtn.onclick = () => modal.remove();
@@ -1951,12 +2058,12 @@ function openCustomTextStylePopup(config) {
     "display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:12px;padding:10px 12px;";
 
   const mainColorLbl = document.createElement("span");
-  mainColorLbl.textContent = "Text Colour";
+  mainColorLbl.textContent = "Text Color";
   mainColorLbl.style.cssText = "font-size:0.88rem;font-weight:700;color:#111827;cursor:pointer;flex:1;";
 
   textColorTriggerBtn = document.createElement("button");
   textColorTriggerBtn.type = "button";
-  textColorTriggerBtn.textContent = "Pick Colour";
+  textColorTriggerBtn.textContent = "Pick Color";
   textColorTriggerBtn.style.cssText =
     `min-height:36px;padding:6px 12px;border:2px solid #cbd5e1;border-radius:8px;background:${st.color || "#ffffff"};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.8);font-size:0.82rem;font-weight:700;cursor:pointer;`;
 
@@ -2234,7 +2341,7 @@ function openStoreNameEditorPopup() {
   });
 }
 
-// ==================== COVER SIZE CROP POP-UP EDITOR (#screenPhotoEditor) ====================
+// ==================== COVER CROP POP-UP EDITOR (#screenPhotoEditor) ====================
 let rawImageObj = null;
 let posX = 0, posY = 0, imgScale = 1, minScale = 1, maxScale = 2.5;
 let baseLeft = 0, baseTop = 0;
@@ -2259,8 +2366,8 @@ function ensureCoverEditorDOM() {
           <div class="crop-frame-box" id="cropFrameBox" style="width:290px;height:140px;border:2px solid #ffffff;box-shadow:0 0 0 9999px rgba(0, 0, 0, 0.52);position:relative;pointer-events:none;z-index:10;"></div>
         </div>
         <div class="editor-bottom-bar" style="width:100%;height:48px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:0 22px;z-index:25;border-top:1px solid #e2e8f0;">
-          <button type="button" class="editor-bottom-btn" onclick="cancelEditor()" title="Cancel" style="background:none;border:none;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#334155;font-weight:700;">✕</button>
-          <button type="button" class="editor-bottom-btn" onclick="confirmEditor()" title="Save" style="background:none;border:none;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#0f766e;font-weight:700;">✓</button>
+          <button type="button" class="editor-bottom-btn" onclick="cancelEditor()" title="Cancel" style="background:none;border:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#334155;font-weight:700;">X</button>
+          <button type="button" class="editor-bottom-btn" onclick="confirmEditor()" title="Save" style="background:none;border:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#0f766e;font-weight:700;">OK</button>
         </div>
       </div>
     `;
@@ -2732,28 +2839,11 @@ function removeBottomStoreRow() {
   attachOwnerStoreEditHandlers();
 }
 
-function enableStoreNameDragOnCover(coverWrap, overlayEl, pencilBtn) {
+function enableStoreNameDragOnCover(coverWrap, overlayEl) {
   const data = getWorkingStoreData();
   if (!data.titlePos) data.titlePos = { x: 0, y: 0 };
   overlayEl.style.cursor = "move";
   overlayEl.style.touchAction = "none";
-
-  function syncPencilVerticalSide() {
-    if (!pencilBtn) return;
-    const wrapRect = coverWrap.getBoundingClientRect();
-    const boxRect = overlayEl.getBoundingClientRect();
-    const wrapHeight = wrapRect.height || 1;
-    const centerY = boxRect.top - wrapRect.top + boxRect.height / 2;
-    const isLowerHalf = centerY > wrapHeight * 0.5;
-
-    if (isLowerHalf) {
-      pencilBtn.style.top = "-22px";
-      pencilBtn.style.bottom = "auto";
-    } else {
-      pencilBtn.style.top = "auto";
-      pencilBtn.style.bottom = "-22px";
-    }
-  }
 
   let dragging = false;
   let startX = 0;
@@ -2766,7 +2856,6 @@ function enableStoreNameDragOnCover(coverWrap, overlayEl, pencilBtn) {
     overlayEl.setPointerCapture(e.pointerId);
     startX = e.clientX - (Number(data.titlePos.x) || 0);
     startY = e.clientY - (Number(data.titlePos.y) || 0);
-    syncPencilVerticalSide();
   };
 
   overlayEl.onpointermove = (e) => {
@@ -2786,15 +2875,11 @@ function enableStoreNameDragOnCover(coverWrap, overlayEl, pencilBtn) {
     data.titlePos = { x: rx, y: ry };
     overlayEl.style.left = `${rx}px`;
     overlayEl.style.top = `${ry}px`;
-    syncPencilVerticalSide();
   };
 
   overlayEl.onpointerup = () => {
     dragging = false;
-    syncPencilVerticalSide();
   };
-
-  syncPencilVerticalSide();
 }
 
 function attachOwnerStoreEditHandlers() {
@@ -2807,71 +2892,28 @@ function attachOwnerStoreEditHandlers() {
   const activeColor = data.themeColor || "#0f766e";
   document.documentElement.style.setProperty("--primary", activeColor);
 
+  // Unified Editor Control Bar
   const bar = document.createElement("div");
   bar.id = "ownerLiveSaveBar";
   bar.style.cssText =
-    `position:sticky;top:0;z-index:80;background:${activeColor};color:#ffffff;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;`;
+    `position:sticky;top:0;z-index:80;background:${activeColor};color:#ffffff;padding:8px 12px;display:flex;flex-direction:column;gap:8px;box-shadow:0 3px 10px rgba(0,0,0,0.18);`;
+
+  const topRow = document.createElement("div");
+  topRow.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:8px;";
 
   const info = document.createElement("span");
-  info.textContent = "Draft mode: Tap Save to update store";
-  info.style.cssText = "font-size:0.8rem;font-weight:600;";
+  info.textContent = "Store Editor (Draft Mode)";
+  info.style.cssText = "font-size:0.82rem;font-weight:700;letter-spacing:0.2px;";
 
-  const actions = document.createElement("div");
-  actions.style.cssText = "display:flex;gap:6px;align-items:center;flex-wrap:wrap;";
-
-  const topStoreNameBtn = document.createElement("button");
-  topStoreNameBtn.type = "button";
-  topStoreNameBtn.textContent = "Store Name";
-  topStoreNameBtn.style.cssText =
-    "padding:6px 10px;border:1px solid rgba(255,255,255,0.65);border-radius:8px;background:rgba(255,255,255,0.16);color:#ffffff;font-size:0.78rem;font-weight:700;cursor:pointer;";
-  topStoreNameBtn.onclick = (e) => {
-    e.stopPropagation();
-    openStoreNameEditorPopup();
-  };
-
-  const allStripsHidden = Array.isArray(data.sections) && data.sections.length > 0 && data.sections.every((s) => Boolean(s.barHidden));
-  const toggleAllStripsBtn = document.createElement("button");
-  toggleAllStripsBtn.type = "button";
-  toggleAllStripsBtn.textContent = allStripsHidden ? "Show All Strips" : "Hide All Strips";
-  toggleAllStripsBtn.style.cssText = allStripsHidden
-    ? "padding:6px 10px;border:2px solid #ffffff;border-radius:8px;background:#ffffff;color:#0f172a;font-size:0.78rem;font-weight:800;cursor:pointer;"
-    : "padding:6px 10px;border:1px solid rgba(255,255,255,0.65);border-radius:8px;background:rgba(255,255,255,0.16);color:#ffffff;font-size:0.78rem;font-weight:700;cursor:pointer;";
-  toggleAllStripsBtn.onclick = (e) => {
-    e.stopPropagation();
-    const targetHide = !allStripsHidden;
-    (data.sections || []).forEach((s) => {
-      s.barHidden = targetHide;
-    });
-    renderSections();
-    attachOwnerStoreEditHandlers();
-  };
-
-  const boxSizeBtn = document.createElement("button");
-  boxSizeBtn.type = "button";
-  boxSizeBtn.textContent = "Box Size";
-  boxSizeBtn.style.cssText =
-    "padding:6px 10px;border:1px solid rgba(255,255,255,0.65);border-radius:8px;background:rgba(255,255,255,0.16);color:#ffffff;font-size:0.78rem;font-weight:700;cursor:pointer;";
-  boxSizeBtn.onclick = (e) => {
-    e.stopPropagation();
-    openBoxSizePanelModal(null);
-  };
-
-  const colorBtn = document.createElement("button");
-  colorBtn.type = "button";
-  colorBtn.textContent = "Strip Color";
-  colorBtn.style.cssText =
-    "padding:6px 10px;border:1px solid rgba(255,255,255,0.65);border-radius:8px;background:rgba(255,255,255,0.16);color:#ffffff;font-size:0.78rem;font-weight:700;cursor:pointer;";
-  colorBtn.onclick = (e) => {
-    e.stopPropagation();
-    openCustomColourPickerModal();
-  };
+  const primaryActions = document.createElement("div");
+  primaryActions.style.cssText = "display:flex;gap:6px;align-items:center;";
 
   const saveBtn = document.createElement("button");
   saveBtn.id = "ownerLiveSaveBtn";
   saveBtn.type = "button";
   saveBtn.textContent = "Save";
   saveBtn.style.cssText =
-    `padding:7px 14px;border:none;border-radius:8px;background:#ffffff;color:${activeColor};font-weight:700;cursor:pointer;`;
+    `padding:6px 14px;border:none;border-radius:8px;background:#ffffff;color:${activeColor};font-size:0.8rem;font-weight:800;cursor:pointer;`;
   saveBtn.onclick = () => {
     commitDraftStoreData();
     draftStoreData = JSON.parse(JSON.stringify(storeData));
@@ -2883,9 +2925,9 @@ function attachOwnerStoreEditHandlers() {
 
   const backBtn = document.createElement("button");
   backBtn.type = "button";
-  backBtn.textContent = "Store";
+  backBtn.textContent = "Exit";
   backBtn.style.cssText =
-    "padding:7px 10px;border:1px solid rgba(255,255,255,0.55);border-radius:8px;background:transparent;color:#ffffff;font-weight:600;cursor:pointer;";
+    "padding:6px 10px;border:1px solid rgba(255,255,255,0.6);border-radius:8px;background:transparent;color:#ffffff;font-size:0.78rem;font-weight:700;cursor:pointer;";
   backBtn.onclick = () => {
     setOwnerEditMode(false);
     draftStoreData = null;
@@ -2893,16 +2935,55 @@ function attachOwnerStoreEditHandlers() {
     window.location.href = "index.html";
   };
 
-  actions.appendChild(topStoreNameBtn);
-  actions.appendChild(toggleAllStripsBtn);
-  actions.appendChild(boxSizeBtn);
-  actions.appendChild(colorBtn);
-  actions.appendChild(saveBtn);
-  actions.appendChild(backBtn);
-  bar.appendChild(info);
-  bar.appendChild(actions);
+  primaryActions.appendChild(saveBtn);
+  primaryActions.appendChild(backBtn);
+  topRow.appendChild(info);
+  topRow.appendChild(primaryActions);
+
+  // Unified Tools Row
+  const toolsRow = document.createElement("div");
+  toolsRow.style.cssText = "display:flex;gap:6px;align-items:center;flex-wrap:wrap;";
+
+  const makeToolBtn = (label, onClickFn, isHighlighted = false) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = label;
+    btn.style.cssText = isHighlighted
+      ? "padding:5px 10px;border:1px solid #ffffff;border-radius:8px;background:#ffffff;color:#0f172a;font-size:0.76rem;font-weight:800;cursor:pointer;"
+      : "padding:5px 10px;border:1px solid rgba(255,255,255,0.55);border-radius:8px;background:rgba(255,255,255,0.16);color:#ffffff;font-size:0.76rem;font-weight:700;cursor:pointer;";
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      onClickFn();
+    };
+    return btn;
+  };
+
+  const allStripsHidden = Array.isArray(data.sections) && data.sections.length > 0 && data.sections.every((s) => Boolean(s.barHidden));
+
+  toolsRow.appendChild(makeToolBtn("Store Name", () => openStoreNameEditorPopup()));
+  toolsRow.appendChild(makeToolBtn("Cover", () => openCoverManagerModal()));
+  toolsRow.appendChild(makeToolBtn("All Boxes", () => openBoxSizePanelModal(null)));
+  toolsRow.appendChild(makeToolBtn("Theme Color", () => openCustomColourPickerModal()));
+  toolsRow.appendChild(
+    makeToolBtn(
+      allStripsHidden ? "Show All Strips" : "Hide All Strips",
+      () => {
+        const targetHide = !allStripsHidden;
+        (data.sections || []).forEach((s) => {
+          s.barHidden = targetHide;
+        });
+        renderSections();
+        attachOwnerStoreEditHandlers();
+      },
+      allStripsHidden
+    )
+  );
+
+  bar.appendChild(topRow);
+  bar.appendChild(toolsRow);
   document.body.prepend(bar);
 
+  // Keep cover clean; enable drag on Store Name
   const coverWrap = document.querySelector(".cover-wrapper");
   if (coverWrap) {
     coverWrap.style.position = "relative";
@@ -2915,81 +2996,11 @@ function attachOwnerStoreEditHandlers() {
     if (overlayEl && titleEl) {
       overlayEl.style.setProperty("z-index", "22", "important");
       overlayEl.style.setProperty("display", "inline-flex", "important");
-
-      const pencilBtn = document.createElement("button");
-      pencilBtn.type = "button";
-      pencilBtn.className = "owner-inline-edit-btn";
-      pencilBtn.textContent = "✎ Store Name";
-      pencilBtn.title = "Edit Store Name & Style";
-      pencilBtn.style.cssText =
-        "position:absolute;left:0px;bottom:-22px;top:auto;z-index:30;padding:2px 6px;margin:0;border:1px solid #0f172a;border-radius:5px;background:rgba(255,255,255,0.95);color:#0f172a;font-size:0.7rem;font-weight:700;line-height:1.1;cursor:pointer;white-space:nowrap;";
-      pencilBtn.onclick = (e) => {
-        e.stopPropagation();
-        openStoreNameEditorPopup();
-      };
-
-      overlayEl.appendChild(pencilBtn);
-      enableStoreNameDragOnCover(coverWrap, overlayEl, pencilBtn);
+      enableStoreNameDragOnCover(coverWrap, overlayEl);
     }
-
-    const slides = coverWrap.querySelectorAll(".cover-slide-item");
-    slides.forEach((slide, idx) => {
-      const slidePhotoBtn = document.createElement("button");
-      slidePhotoBtn.type = "button";
-      slidePhotoBtn.className = "owner-inline-edit-btn";
-      slidePhotoBtn.textContent = `Update Photo ${idx + 1}`;
-      slidePhotoBtn.style.cssText =
-        `position:absolute;top:10px;right:48px;z-index:20;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
-      slidePhotoBtn.onclick = (e) => {
-        e.stopPropagation();
-        pendingOwnerEditSlot = { type: "cover", slotIdx: idx };
-        fileInput.value = "";
-        fileInput.click();
-      };
-
-      const slideDeleteBtn = document.createElement("button");
-      slideDeleteBtn.type = "button";
-      slideDeleteBtn.className = "owner-inline-edit-btn";
-      slideDeleteBtn.textContent = "✕";
-      slideDeleteBtn.title = "Delete Cover";
-      slideDeleteBtn.style.cssText =
-        "position:absolute;top:10px;right:10px;z-index:20;width:30px;height:28px;border:none;border-radius:8px;background:#fee2e2;color:#dc2626;font-size:0.85rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);";
-      slideDeleteBtn.onclick = (e) => {
-        e.stopPropagation();
-        removeCoverSlotAt(idx);
-      };
-
-      slide.appendChild(slidePhotoBtn);
-      slide.appendChild(slideDeleteBtn);
-    });
-
-    const coverHeightBtn = document.createElement("button");
-    coverHeightBtn.type = "button";
-    coverHeightBtn.className = "owner-inline-edit-btn";
-    coverHeightBtn.textContent = "↕ Cover Size";
-    coverHeightBtn.title = "Adjust Cover Height (Top & Bottom)";
-    coverHeightBtn.style.cssText =
-      `position:absolute;bottom:10px;left:54%;transform:translateX(-50%);z-index:20;padding:5px 13px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);white-space:nowrap;`;
-    coverHeightBtn.onclick = (e) => {
-      e.stopPropagation();
-      openCoverHeightEditorModal();
-    };
-    coverWrap.appendChild(coverHeightBtn);
-
-    const addCoverBtn = document.createElement("button");
-    addCoverBtn.type = "button";
-    addCoverBtn.className = "owner-inline-edit-btn";
-    addCoverBtn.textContent = "+ Cover Update";
-    addCoverBtn.style.cssText =
-      `position:absolute;bottom:10px;right:10px;z-index:20;padding:5px 10px;border:none;border-radius:8px;background:#ffffff;color:${data.themeColor || "#0f766e"};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
-    addCoverBtn.onclick = (e) => {
-      e.stopPropagation();
-      addCoverInEditMode();
-    };
-
-    coverWrap.appendChild(addCoverBtn);
   }
 
+  // Row Controls
   const sectionEls = document.querySelectorAll("#sectionsContainer .row-section");
   sectionEls.forEach((secEl, sIdx) => {
     const sec = data.sections[sIdx];
@@ -2998,31 +3009,27 @@ function attachOwnerStoreEditHandlers() {
     const stripEl = secEl.querySelector(".strip-bar");
     const stripTitle = secEl.querySelector(".strip-title");
     if (stripEl && stripTitle) {
+      const stripControlsWrap = document.createElement("div");
+      stripControlsWrap.className = "owner-inline-edit-btn";
+      stripControlsWrap.style.cssText = "margin-left:auto;display:flex;align-items:center;gap:4px;";
+
       const secEditBtn = document.createElement("button");
       secEditBtn.type = "button";
-      secEditBtn.className = "owner-inline-edit-btn";
-      secEditBtn.textContent = "✎";
-      secEditBtn.title = "Edit Name & Style";
+      secEditBtn.textContent = "Edit Name";
       secEditBtn.style.cssText =
-        "margin-left:8px;padding:3px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
+        "padding:3px 7px;border:1px solid #cbd5e1;border-radius:6px;background:#ffffff;color:#111827;font-size:0.72rem;font-weight:700;cursor:pointer;";
       secEditBtn.onclick = (e) => {
         e.stopPropagation();
         openCustomTextStylePopup({
           targetType: "section",
           sIdx,
-          modalTitle: `Section ${sIdx + 1} Name & Style`
+          modalTitle: `Row ${sIdx + 1} Strip Name & Style`
         });
       };
-      stripTitle.insertAdjacentElement("afterend", secEditBtn);
-
-      const stripControlsWrap = document.createElement("div");
-      stripControlsWrap.className = "owner-inline-edit-btn";
-      stripControlsWrap.style.cssText = "margin-left:auto;display:flex;align-items:center;gap:4px;";
 
       const stripHeightBtn = document.createElement("button");
       stripHeightBtn.type = "button";
-      stripHeightBtn.textContent = "↕ Strip";
-      stripHeightBtn.title = "Strip Size, Shape & Colours";
+      stripHeightBtn.textContent = "Strip Style";
       stripHeightBtn.style.cssText =
         "padding:3px 7px;border:1px solid #cbd5e1;border-radius:6px;background:#ffffff;color:#111827;font-size:0.72rem;font-weight:700;cursor:pointer;";
       stripHeightBtn.onclick = (e) => {
@@ -3030,53 +3037,9 @@ function attachOwnerStoreEditHandlers() {
         openStripHeightEditorModal(sIdx, stripEl);
       };
 
-      const stripColorBtn = document.createElement("button");
-      stripColorBtn.type = "button";
-      stripColorBtn.textContent = "Box Colour";
-      stripColorBtn.title = "Change Box / Strip Colour";
-      const curBarBg = sec.barBgColor || "#f1f5f9";
-      stripColorBtn.style.cssText =
-        `padding:3px 7px;border:1px solid #94a3b8;border-radius:6px;background:${curBarBg};color:#111827;text-shadow:0 0 3px #ffffff;font-size:0.72rem;font-weight:700;cursor:pointer;`;
-      stripColorBtn.onclick = (e) => {
-        e.stopPropagation();
-        openStandaloneColorPicker(
-          sec.barBgColor || "#f1f5f9",
-          (hex) => {
-            sec.barBgColor = hex;
-            sec.barGradTop = "";
-            sec.barGradBottom = "";
-            stripColorBtn.style.background = hex;
-            if (typeof applyStripBarStyle === "function") {
-              applyStripBarStyle(stripEl, sec);
-            }
-          },
-          (restoreHex) => {
-            sec.barBgColor = restoreHex;
-            stripColorBtn.style.background = restoreHex;
-            if (typeof applyStripBarStyle === "function") {
-              applyStripBarStyle(stripEl, sec);
-            }
-          },
-          {
-            applyLabel: "Apply",
-            applyAllLabel: "Apply to All",
-            onApplyAll: (allHex) => {
-              (data.sections || []).forEach((s) => {
-                s.barBgColor = allHex;
-                s.barGradTop = "";
-                s.barGradBottom = "";
-              });
-              renderSections();
-              attachOwnerStoreEditHandlers();
-            }
-          }
-        );
-      };
-
       const hideStripBtn = document.createElement("button");
       hideStripBtn.type = "button";
       hideStripBtn.textContent = "Hide";
-      hideStripBtn.title = "Hide This Strip";
       hideStripBtn.style.cssText =
         "padding:3px 7px;border:1px solid #fecaca;border-radius:6px;background:#fee2e2;color:#dc2626;font-size:0.72rem;font-weight:700;cursor:pointer;";
       hideStripBtn.onclick = (e) => {
@@ -3086,8 +3049,8 @@ function attachOwnerStoreEditHandlers() {
         attachOwnerStoreEditHandlers();
       };
 
+      stripControlsWrap.appendChild(secEditBtn);
       stripControlsWrap.appendChild(stripHeightBtn);
-      stripControlsWrap.appendChild(stripColorBtn);
       stripControlsWrap.appendChild(hideStripBtn);
       stripEl.appendChild(stripControlsWrap);
     } else if (sec.barHidden) {
@@ -3111,7 +3074,7 @@ function attachOwnerStoreEditHandlers() {
 
       const addAdBtn = document.createElement("button");
       addAdBtn.type = "button";
-      addAdBtn.textContent = sec.customAd ? "✎ Ad" : "+ Ad";
+      addAdBtn.textContent = sec.customAd ? "Edit Ad" : "+ Ad";
       addAdBtn.style.cssText =
         "padding:4px 10px;border:1px solid #1d4ed8;border-radius:8px;background:#eff6ff;color:#1d4ed8;font-size:0.75rem;font-weight:700;cursor:pointer;";
       addAdBtn.onclick = (e) => {
@@ -3135,10 +3098,10 @@ function attachOwnerStoreEditHandlers() {
       const photoBtn = document.createElement("button");
       photoBtn.type = "button";
       photoBtn.className = "owner-inline-edit-btn";
-      photoBtn.textContent = "✎";
-      photoBtn.title = "Edit Photo";
+      photoBtn.textContent = "Photo";
+      photoBtn.title = "Change Item Photo";
       photoBtn.style.cssText =
-        `position:absolute;top:6px;right:6px;z-index:4;width:24px;height:24px;border:none;border-radius:6px;background:${data.themeColor || "#0f766e"};color:#ffffff;font-size:0.75rem;font-weight:700;cursor:pointer;`;
+        `position:absolute;top:6px;right:6px;z-index:4;padding:2px 6px;border:none;border-radius:5px;background:${data.themeColor || "#0f766e"};color:#ffffff;font-size:0.68rem;font-weight:700;cursor:pointer;`;
       photoBtn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -3152,25 +3115,22 @@ function attachOwnerStoreEditHandlers() {
       const priceEl = card.querySelector(".mini-box-price, .item-price");
 
       if (nameEl && !nameEl.parentElement.classList.contains("owner-item-inline-group")) {
-        const alignItemsVal = "flex-start";
-        const justifyVal = "flex-start";
-
         const groupWrap = document.createElement("div");
         groupWrap.className = "owner-item-inline-group";
         groupWrap.style.cssText =
-          `display:flex;flex-direction:column;align-items:${alignItemsVal};gap:3px;width:100%;margin-top:2px;`;
+          "display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;margin-top:2px;";
 
         const nameLine = document.createElement("div");
         nameLine.style.cssText =
-          `display:flex;align-items:center;justify-content:${justifyVal};gap:4px;flex-wrap:nowrap;width:100%;`;
+          "display:flex;align-items:center;justify-content:flex-start;gap:4px;flex-wrap:nowrap;width:100%;";
 
         const nameBtn = document.createElement("button");
         nameBtn.type = "button";
         nameBtn.className = "owner-inline-edit-btn";
-        nameBtn.textContent = "✎";
+        nameBtn.textContent = "Edit";
         nameBtn.title = "Edit Name & Style";
         nameBtn.style.cssText =
-          "padding:1px 5px;border:1px solid #cbd5e1;border-radius:5px;background:#f1f5f9;color:#111827;font-size:0.72rem;font-weight:700;line-height:1.1;cursor:pointer;flex-shrink:0;";
+          "padding:1px 5px;border:1px solid #cbd5e1;border-radius:4px;background:#f1f5f9;color:#111827;font-size:0.66rem;font-weight:700;line-height:1.1;cursor:pointer;flex-shrink:0;";
         nameBtn.onclick = (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -3193,15 +3153,15 @@ function attachOwnerStoreEditHandlers() {
         if (priceEl) {
           const priceLine = document.createElement("div");
           priceLine.style.cssText =
-            `display:flex;align-items:center;justify-content:${justifyVal};gap:4px;flex-wrap:nowrap;width:100%;`;
+            "display:flex;align-items:center;justify-content:flex-start;gap:4px;flex-wrap:nowrap;width:100%;";
 
           const pricePencilBtn = document.createElement("button");
           pricePencilBtn.type = "button";
           pricePencilBtn.className = "owner-inline-edit-btn";
-          pricePencilBtn.textContent = "✎";
-          pricePencilBtn.title = "Edit Amount, Size & Colour";
+          pricePencilBtn.textContent = "Price";
+          pricePencilBtn.title = "Edit Price, Size & Color";
           pricePencilBtn.style.cssText =
-            "padding:1px 5px;border:1px solid #cbd5e1;border-radius:5px;background:#fefce8;color:#854d0e;font-size:0.72rem;font-weight:700;line-height:1.1;cursor:pointer;flex-shrink:0;";
+            "padding:1px 5px;border:1px solid #cbd5e1;border-radius:4px;background:#fefce8;color:#854d0e;font-size:0.66rem;font-weight:700;line-height:1.1;cursor:pointer;flex-shrink:0;";
           pricePencilBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -3220,12 +3180,26 @@ function attachOwnerStoreEditHandlers() {
 
     const boxContainerEl = sIdx === 0 ? secEl.querySelector(".five-boxes-row") : secEl.querySelector(".scroll-row");
     if (boxContainerEl) {
+      const underRowBar = document.createElement("div");
+      underRowBar.className = "owner-inline-edit-btn";
+      underRowBar.style.cssText =
+        "display:flex;justify-content:flex-start;align-items:center;gap:6px;margin-top:6px;width:100%;flex-wrap:wrap;";
+
+      const rowBoxSizeBtn = document.createElement("button");
+      rowBoxSizeBtn.type = "button";
+      rowBoxSizeBtn.textContent = `Row ${sIdx + 1} Box Size`;
+      rowBoxSizeBtn.style.cssText =
+        `padding:4px 10px;border:1px solid ${activeColor};border-radius:8px;background:#f0fdfa;color:${activeColor};font-size:0.74rem;font-weight:800;cursor:pointer;`;
+      rowBoxSizeBtn.onclick = (e) => {
+        e.stopPropagation();
+        openBoxSizePanelModal(sIdx);
+      };
+
       const addBoxBtn = document.createElement("button");
       addBoxBtn.type = "button";
-      addBoxBtn.className = "owner-inline-edit-btn";
-      addBoxBtn.textContent = "+ Box";
+      addBoxBtn.textContent = "+ Add Box";
       addBoxBtn.style.cssText =
-        `flex:0 0 auto;align-self:center;padding:10px 14px;border:1px dashed ${data.themeColor || "#0f766e"};border-radius:14px;background:#f0fdfa;color:${data.themeColor || "#0f766e"};font-size:0.82rem;font-weight:700;cursor:pointer;`;
+        "padding:4px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:#111827;font-size:0.74rem;font-weight:700;cursor:pointer;";
       addBoxBtn.onclick = (e) => {
         e.stopPropagation();
         addBoxToSection(sIdx);
@@ -3233,36 +3207,17 @@ function attachOwnerStoreEditHandlers() {
 
       const remBoxBtn = document.createElement("button");
       remBoxBtn.type = "button";
-      remBoxBtn.className = "owner-inline-edit-btn";
-      remBoxBtn.textContent = "−";
-      remBoxBtn.title = "Remove Last Box";
+      remBoxBtn.textContent = "- Remove Box";
       remBoxBtn.style.cssText =
-        "flex:0 0 auto;align-self:center;padding:10px 12px;border:1px solid #fecaca;border-radius:14px;background:#fee2e2;color:#dc2626;font-size:0.9rem;font-weight:700;cursor:pointer;";
+        "padding:4px 10px;border:1px solid #fecaca;border-radius:8px;background:#fee2e2;color:#dc2626;font-size:0.74rem;font-weight:700;cursor:pointer;";
       remBoxBtn.onclick = (e) => {
         e.stopPropagation();
         removeBoxFromSection(sIdx);
       };
 
-      boxContainerEl.appendChild(addBoxBtn);
-      boxContainerEl.appendChild(remBoxBtn);
-
-      const underRowBar = document.createElement("div");
-      underRowBar.className = "owner-inline-edit-btn";
-      underRowBar.style.cssText =
-        "display:flex;justify-content:flex-start;align-items:center;gap:8px;margin-top:6px;width:100%;";
-
-      const rowBoxSizeBtn = document.createElement("button");
-      rowBoxSizeBtn.type = "button";
-      rowBoxSizeBtn.textContent = "Box Size";
-      rowBoxSizeBtn.title = `Row ${sIdx + 1} Box Size`;
-      rowBoxSizeBtn.style.cssText =
-        `padding:4px 11px;border:1px solid ${activeColor};border-radius:8px;background:#f0fdfa;color:${activeColor};font-size:0.76rem;font-weight:800;cursor:pointer;`;
-      rowBoxSizeBtn.onclick = (e) => {
-        e.stopPropagation();
-        openBoxSizePanelModal(sIdx);
-      };
-
       underRowBar.appendChild(rowBoxSizeBtn);
+      underRowBar.appendChild(addBoxBtn);
+      underRowBar.appendChild(remBoxBtn);
       boxContainerEl.insertAdjacentElement("afterend", underRowBar);
     }
   });
@@ -3277,17 +3232,17 @@ function attachOwnerStoreEditHandlers() {
     const addRowBtn = document.createElement("button");
     addRowBtn.type = "button";
     addRowBtn.className = "owner-inline-edit-btn";
-    addRowBtn.textContent = "+ Row";
+    addRowBtn.textContent = "+ Add Row";
     addRowBtn.style.cssText =
-      `flex:1;padding:10px 14px;border:1px solid ${data.themeColor || "#0f766e"};border-radius:12px;background:#f0fdfa;color:${data.themeColor || "#0f766e"};font-size:0.88rem;font-weight:700;cursor:pointer;`;
+      `flex:1;padding:10px 14px;border:1px solid ${data.themeColor || "#0f766e"};border-radius:12px;background:#f0fdfa;color:${data.themeColor || "#0f766e"};font-size:0.86rem;font-weight:700;cursor:pointer;`;
     addRowBtn.onclick = () => addBottomStoreRow();
 
     const remRowBtn = document.createElement("button");
     remRowBtn.type = "button";
     remRowBtn.className = "owner-inline-edit-btn";
-    remRowBtn.textContent = "− Row";
+    remRowBtn.textContent = "- Remove Row";
     remRowBtn.style.cssText =
-      "padding:10px 14px;border:1px solid #fecaca;border-radius:12px;background:#fee2e2;color:#dc2626;font-size:0.88rem;font-weight:700;cursor:pointer;";
+      "padding:10px 14px;border:1px solid #fecaca;border-radius:12px;background:#fee2e2;color:#dc2626;font-size:0.86rem;font-weight:700;cursor:pointer;";
     remRowBtn.onclick = () => removeBottomStoreRow();
 
     bottomControls.appendChild(addRowBtn);
