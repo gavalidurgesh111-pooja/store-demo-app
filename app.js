@@ -957,6 +957,7 @@ function buildInitialData() {
     storeTitle: "Store Name",
     storeSubtitle: "",
     titlePos: { x: 0, y: 0 },
+    titlePosNorm: { rx: 0, ry: 0 },
     titleFont: STORE_FONT_OPTIONS[0].value,
     titleFontStyle: "normal",
     titleSize: 30,
@@ -1010,6 +1011,9 @@ function normalizeStoreData(raw) {
   if (!data.themeColor) data.themeColor = "#0f766e";
   if (!data.titlePos || typeof data.titlePos.x !== "number" || typeof data.titlePos.y !== "number") {
     data.titlePos = { x: 0, y: 0 };
+  }
+  if (!data.titlePosNorm || typeof data.titlePosNorm.rx !== "number" || typeof data.titlePosNorm.ry !== "number") {
+    data.titlePosNorm = { rx: 0, ry: 0 };
   }
   if (!data.titleFont) data.titleFont = STORE_FONT_OPTIONS[0].value;
   if (!data.titleFontStyle) data.titleFontStyle = "normal";
@@ -1187,6 +1191,52 @@ function ensureCoverStoreTitleElements(coverWrap) {
   return { overlayEl, titleEl, subEl };
 }
 
+function resolveTitlePixelPos(data, coverWrap, overlayEl) {
+  const pos = data && data.titlePos ? data.titlePos : { x: 0, y: 0 };
+  const wrapRect = coverWrap ? coverWrap.getBoundingClientRect() : null;
+  const wrapW = wrapRect && wrapRect.width > 0 ? wrapRect.width : 360;
+  const wrapH = wrapRect && wrapRect.height > 0
+    ? wrapRect.height
+    : (Number.isFinite(Number(data && data.coverHeight)) && Number(data.coverHeight) > 0
+      ? Number(data.coverHeight)
+      : 170);
+
+  const boxW = overlayEl ? (overlayEl.offsetWidth || 0) : 0;
+  const boxH = overlayEl ? (overlayEl.offsetHeight || 0) : 0;
+  const maxX = Math.max(0, wrapW - boxW);
+  const maxY = Math.max(0, wrapH - boxH);
+
+  const norm = data && data.titlePosNorm;
+  if (norm && typeof norm.rx === "number" && typeof norm.ry === "number") {
+    const x = Math.min(maxX, Math.max(0, Math.round(norm.rx * maxX)));
+    const y = Math.min(maxY, Math.max(0, Math.round(norm.ry * maxY)));
+    return { x, y };
+  }
+
+  const x = Math.min(maxX, Math.max(0, Math.round(Number(pos.x) || 0)));
+  const y = Math.min(maxY, Math.max(0, Math.round(Number(pos.y) || 0)));
+  return { x, y };
+}
+
+function syncTitleNormalizedPos(data, coverWrap, overlayEl) {
+  if (!data || !coverWrap || !overlayEl) return;
+  const wrapRect = coverWrap.getBoundingClientRect();
+  if (!wrapRect.width || !wrapRect.height) return;
+
+  const boxW = overlayEl.offsetWidth || 0;
+  const boxH = overlayEl.offsetHeight || 0;
+  const maxX = Math.max(1, wrapRect.width - boxW);
+  const maxY = Math.max(1, wrapRect.height - boxH);
+
+  const curX = Number(data.titlePos && data.titlePos.x) || 0;
+  const curY = Number(data.titlePos && data.titlePos.y) || 0;
+
+  data.titlePosNorm = {
+    rx: Math.min(1, Math.max(0, curX / maxX)),
+    ry: Math.min(1, Math.max(0, curY / maxY))
+  };
+}
+
 function applyTitlePositionStyle() {
   const data = getWorkingStoreData();
   const coverWrap = document.querySelector(".cover-wrapper");
@@ -1198,10 +1248,9 @@ function applyTitlePositionStyle() {
     subEl.style.display = "none";
   }
 
-  const pos = data.titlePos || { x: 0, y: 0 };
   overlayEl.style.position = "absolute";
-  overlayEl.style.left = `${pos.x}px`;
-  overlayEl.style.top = `${pos.y}px`;
+  overlayEl.style.left = "0px";
+  overlayEl.style.top = "0px";
   overlayEl.style.right = "auto";
   overlayEl.style.bottom = "auto";
   overlayEl.style.width = "max-content";
@@ -1236,7 +1285,17 @@ function applyTitlePositionStyle() {
       titleEl.style.borderRadius = "0px";
     }
   }
+
+  const resolved = resolveTitlePixelPos(data, coverWrap, overlayEl);
+  data.titlePos = resolved;
+  overlayEl.style.left = `${resolved.x}px`;
+  overlayEl.style.top = `${resolved.y}px`;
+  syncTitleNormalizedPos(data, coverWrap, overlayEl);
 }
+
+window.resolveTitlePixelPos = resolveTitlePixelPos;
+window.syncTitleNormalizedPos = syncTitleNormalizedPos;
+window.applyTitlePositionStyle = applyTitlePositionStyle;
 
 function applyCoverHeightStyle(coverWrap, data) {
   if (!coverWrap || !data) return;
@@ -1247,6 +1306,8 @@ function applyCoverHeightStyle(coverWrap, data) {
     coverWrap.style.setProperty("max-height", `${ch}px`, "important");
   }
 }
+
+window.applyCoverHeightStyle = applyCoverHeightStyle;
 
 function renderHeader() {
   const data = getWorkingStoreData();
