@@ -360,25 +360,44 @@ function applyStripBarStyle(stripEl, sec) {
     if (Number.isFinite(Number(sp.right))) stripEl.style.setProperty("padding-right", `${clampNum(sp.right, 0, 36, 10)}px`, "important");
   }
 
+  const cs = window.getComputedStyle(stripEl);
+  const bwLeft = parseFloat(cs.borderLeftWidth) || 0;
+  const sideW = bwLeft > 0 ? `${bwLeft}px` : "5px";
+  const sideStyle = cs.borderLeftStyle && cs.borderLeftStyle !== "none" ? cs.borderLeftStyle : "solid";
+  const sideCol = topCol || customBg || (cs.borderLeftColor && cs.borderLeftColor !== "rgba(0, 0, 0, 0)" ? cs.borderLeftColor : "#0f766e");
+
   const shapeMode = (sec && sec.barShape) || "default";
   if (shapeMode === "round") {
     stripEl.style.setProperty("border-radius", "999px", "important");
-    stripEl.style.setProperty("clip-path", "none", "important");
+    stripEl.style.setProperty("border-left-width", sideW, "important");
+    stripEl.style.setProperty("border-left-style", sideStyle, "important");
+    stripEl.style.setProperty("border-left-color", sideCol, "important");
+    stripEl.style.setProperty("border-right-width", sideW, "important");
+    stripEl.style.setProperty("border-right-style", sideStyle, "important");
+    stripEl.style.setProperty("border-right-color", sideCol, "important");
   } else if (shapeMode === "square") {
     stripEl.style.setProperty("border-radius", "0px", "important");
-    stripEl.style.setProperty("clip-path", "none", "important");
+    stripEl.style.setProperty("border-top-left-radius", "0px", "important");
+    stripEl.style.setProperty("border-top-right-radius", "0px", "important");
+    stripEl.style.setProperty("border-bottom-left-radius", "0px", "important");
+    stripEl.style.setProperty("border-bottom-right-radius", "0px", "important");
+    stripEl.style.setProperty("border-left-width", sideW, "important");
+    stripEl.style.setProperty("border-left-style", sideStyle, "important");
+    stripEl.style.setProperty("border-left-color", sideCol, "important");
+    stripEl.style.setProperty("border-right-width", sideW, "important");
+    stripEl.style.setProperty("border-right-style", sideStyle, "important");
+    stripEl.style.setProperty("border-right-color", sideCol, "important");
   } else if (shapeMode === "triangle") {
+    // तिकोने किनारे (Left & Right triangle notches) दोनों साइड पर रंग के साथ
+    const triCol = botCol || topCol || customBg || sideCol;
     stripEl.style.setProperty("border-radius", "0px", "important");
-    stripEl.style.setProperty("clip-path", "polygon(0% 100%, 50% 0%, 100% 100%)", "important");
+    stripEl.style.setProperty("border-left", `14px solid ${triCol}`, "important");
+    stripEl.style.setProperty("border-right", `14px solid ${triCol}`, "important");
+    stripEl.style.setProperty("border-top", `2px solid ${topCol || triCol}`, "important");
+    stripEl.style.setProperty("border-bottom", `2px solid ${botCol || triCol}`, "important");
   } else {
-    stripEl.style.setProperty("clip-path", "none", "important");
-    const cs = window.getComputedStyle(stripEl);
     const tl = cs.borderTopLeftRadius;
     const bl = cs.borderBottomLeftRadius;
-    const bwLeft = parseFloat(cs.borderLeftWidth) || 0;
-    const bStyleLeft = cs.borderLeftStyle && cs.borderLeftStyle !== "none" ? cs.borderLeftStyle : "solid";
-    const bColorLeft = cs.borderLeftColor;
-
     if (tl && tl !== "0px") {
       stripEl.style.setProperty("border-top-right-radius", tl, "important");
     }
@@ -387,9 +406,9 @@ function applyStripBarStyle(stripEl, sec) {
     }
     if (bwLeft > 0) {
       stripEl.style.setProperty("border-right-width", `${bwLeft}px`, "important");
-      stripEl.style.setProperty("border-right-style", bStyleLeft, "important");
-      if (bColorLeft) {
-        stripEl.style.setProperty("border-right-color", bColorLeft, "important");
+      stripEl.style.setProperty("border-right-style", sideStyle, "important");
+      if (cs.borderLeftColor) {
+        stripEl.style.setProperty("border-right-color", cs.borderLeftColor, "important");
       }
     }
     if ((!sp || !Number.isFinite(Number(sp.right))) && cs.paddingLeft && cs.paddingLeft !== "0px") {
