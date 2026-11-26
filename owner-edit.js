@@ -1,4 +1,13 @@
-console.log("OWNER_EDIT_COMPLETE_V32");
+console.log("OWNER_EDIT_COMPLETE_V34");
+
+// Fixed editor color (#FF631C) for Draft Mode bar, cover buttons, and pop-up action buttons.
+const FIXED_EDITOR_COLOR = "#FF631C";
+const COVER_BUTTON_BG_COLOR = "#FF631C";
+const COVER_BUTTON_TEXT_COLOR = "#ffffff";
+
+function getEditorFixedColor() {
+  return FIXED_EDITOR_COLOR;
+}
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -84,10 +93,6 @@ function applyDraftThemeColor(hexColor) {
   if (!hexColor) return;
   data.themeColor = hexColor;
   document.documentElement.style.setProperty("--primary", hexColor);
-  const bar = document.getElementById("ownerLiveSaveBar");
-  if (bar) bar.style.background = hexColor;
-  const saveBtn = document.getElementById("ownerLiveSaveBtn");
-  if (saveBtn) saveBtn.style.color = hexColor;
   if (typeof syncStripBarCornerDesign === "function") {
     syncStripBarCornerDesign();
   }
@@ -124,7 +129,8 @@ function getColorNameFromHsv(h, s, v) {
 
 function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore, options = {}) {
   removeCustomPickerIfExists();
-  const previousColor = initialColor || "#0f766e";
+  const previousColor = initialColor || getEditorFixedColor();
+  const actionHex = getEditorFixedColor();
   let hue = 0;
   let sat = 0.85;
   let val = 0.85;
@@ -237,7 +243,7 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore,
   applyBtn.type = "button";
   applyBtn.textContent = options.applyLabel || "Apply";
   applyBtn.style.cssText =
-    "padding:9px 16px;min-height:40px;border:none;border-radius:8px;background:#0f766e;color:#ffffff;font-weight:700;cursor:pointer;";
+    `padding:9px 16px;min-height:40px;border:none;border-radius:8px;background:${actionHex};color:#ffffff;font-weight:700;cursor:pointer;`;
 
   let applyAllBtn = null;
   if (typeof options.onApplyAll === "function") {
@@ -245,7 +251,7 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore,
     applyAllBtn.type = "button";
     applyAllBtn.textContent = options.applyAllLabel || "Apply to All";
     applyAllBtn.style.cssText =
-      "padding:9px 14px;min-height:40px;border:none;border-radius:8px;background:#1d4ed8;color:#ffffff;font-weight:700;cursor:pointer;";
+      `padding:9px 14px;min-height:40px;border:none;border-radius:8px;background:${actionHex};color:#ffffff;font-weight:700;cursor:pointer;`;
   }
 
   function syncColorUI() {
@@ -261,7 +267,7 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore,
     thumbRing.style.top = `${(1 - val) * 100}%`;
     colorNameBadge.textContent = cname;
     selectedNameText.textContent = cname;
-    applyBtn.style.background = chosenHex;
+    applyBtn.style.background = actionHex;
     return chosenHex;
   }
 
@@ -342,7 +348,7 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore,
 
 function openCustomColourPickerModal() {
   const data = getWorkingStoreData();
-  const previousColor = data.themeColor || "#0f766e";
+  const previousColor = data.themeColor || getEditorFixedColor();
   openStandaloneColorPicker(
     previousColor,
     (hex, isFinal) => {
@@ -360,7 +366,7 @@ function createBlueKnobSlider(min, max, step, initialVal, onValueChange) {
   const minNum = Number(min);
   const maxNum = Number(max);
   const stepNum = Number(step) || 1;
-  const knobColor = "#2563eb";
+  const knobColor = getEditorFixedColor();
   const knobSize = 26;
 
   const container = document.createElement("div");
@@ -380,7 +386,7 @@ function createBlueKnobSlider(min, max, step, initialVal, onValueChange) {
   knob.type = "button";
   knob.setAttribute("aria-label", "Adjust slider");
   knob.style.cssText =
-    `position:absolute;top:50%;left:0%;width:${knobSize}px;height:${knobSize}px;border-radius:50%;background:${knobColor};border:3px solid #ffffff;box-shadow:0 2px 7px rgba(37,99,235,0.55);transform:translate(-50%,-50%);cursor:grab;touch-action:none;padding:0;z-index:2;`;
+    `position:absolute;top:50%;left:0%;width:${knobSize}px;height:${knobSize}px;border-radius:50%;background:${knobColor};border:3px solid #ffffff;box-shadow:0 2px 7px rgba(15,23,42,0.35);transform:translate(-50%,-50%);cursor:grab;touch-action:none;padding:0;z-index:2;`;
 
   let currentVal = Number(initialVal);
 
@@ -467,7 +473,7 @@ function openCoverManagerModal() {
   const data = getWorkingStoreData();
   const coverWrap = document.querySelector(".cover-wrapper");
   const fileInput = ensureOwnerInlineFileInput();
-  const accentHex = data.themeColor || "#0f766e";
+  const accentHex = getEditorFixedColor();
 
   const curHeight = Number.isFinite(Number(data.coverHeight)) && Number(data.coverHeight) > 0
     ? Number(data.coverHeight)
@@ -557,7 +563,7 @@ function openCoverManagerModal() {
     uploadBtn.type = "button";
     uploadBtn.textContent = "Upload Photo";
     uploadBtn.style.cssText =
-      `padding:4px 9px;border:1px solid ${accentHex};border-radius:6px;background:#f0fdfa;color:${accentHex};font-size:0.74rem;font-weight:700;cursor:pointer;`;
+      `padding:4px 9px;border:1px solid ${accentHex};border-radius:6px;background:#fff7ed;color:${accentHex};font-size:0.74rem;font-weight:700;cursor:pointer;`;
     uploadBtn.onclick = () => {
       modal.remove();
       pendingOwnerEditSlot = { type: "cover", slotIdx: idx };
@@ -627,7 +633,7 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   const sec = data.sections && data.sections[sIdx];
   if (!sec) return;
 
-  const accentHex = data.themeColor || "#0f766e";
+  const accentHex = getEditorFixedColor();
   const prevBarHeight = Number.isFinite(Number(sec.barHeight)) && Number(sec.barHeight) > 0
     ? Number(sec.barHeight)
     : 36;
@@ -883,7 +889,7 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   applyAllBtn.type = "button";
   applyAllBtn.textContent = "Apply to All";
   applyAllBtn.style.cssText =
-    "flex:1;min-height:38px;padding:7px 12px;border:none;border-radius:10px;background:#1d4ed8;color:#ffffff;font-weight:700;cursor:pointer;";
+    `flex:1;min-height:38px;padding:7px 12px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
   applyAllBtn.onclick = () => {
     syncLiveStrip();
     (data.sections || []).forEach((s) => {
@@ -925,7 +931,7 @@ function openCustomAdEditorModal(sIdx) {
   const sec = data.sections && data.sections[sIdx];
   if (!sec) return;
 
-  const accentHex = data.themeColor || "#0f766e";
+  const accentHex = getEditorFixedColor();
   const existingAd = sec.customAd && typeof sec.customAd === "object" ? sec.customAd : {};
 
   let draftWidth = existingAd.width || "100%";
@@ -1087,7 +1093,7 @@ function openItemAmountEditorModal(sIdx, itemId) {
   const item = sec && Array.isArray(sec.items) ? sec.items.find((i) => i.id === itemId) : null;
   if (!item) return;
 
-  const accentHex = data.themeColor || "#0f766e";
+  const accentHex = getEditorFixedColor();
   const boxDefaults = getEffectiveBoxSizesForSection(data, sIdx);
   const baseDefaults = sIdx === 0 ? boxDefaults.miniBox : boxDefaults.productBox;
 
@@ -1215,7 +1221,7 @@ function openItemAmountEditorModal(sIdx, itemId) {
   applyAllBtn.type = "button";
   applyAllBtn.textContent = "Apply to All";
   applyAllBtn.style.cssText =
-    "flex:1;min-height:40px;padding:8px 12px;border:none;border-radius:10px;background:#1d4ed8;color:#ffffff;font-weight:700;cursor:pointer;";
+    `flex:1;min-height:40px;padding:8px 12px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
   applyAllBtn.onclick = () => {
     saveSingleItemAmount();
     (data.sections || []).forEach((s) => {
@@ -1323,7 +1329,7 @@ function openBoxSizePanelModal(targetRowIdx = null) {
   removeBoxSizePanelIfExists();
 
   const data = getWorkingStoreData();
-  const accentHex = data.themeColor || "#0f766e";
+  const accentHex = getEditorFixedColor();
   const hasRowTarget = typeof targetRowIdx === "number" && data.sections && data.sections[targetRowIdx];
   const sizes = getCurrentBoxSizesForEdit(hasRowTarget ? targetRowIdx : null);
   const snapshotRowSizes = hasRowTarget && data.sections[targetRowIdx].customBoxSizes
@@ -1549,7 +1555,7 @@ function openBoxSizePanelModal(targetRowIdx = null) {
 
     const syncNoBgToggleActive = () => {
       const active = Boolean(noBgChk.checked);
-      noBgRow.style.background = active ? "#eff6ff" : "transparent";
+      noBgRow.style.background = active ? "#fff7ed" : "transparent";
       noBgRow.style.borderRadius = "8px";
       noBgRow.style.padding = active ? "6px" : "4px 0 0 0";
       noBgTxt.style.color = active ? accentHex : "#334155";
@@ -1717,7 +1723,7 @@ function openBoxSizePanelModal(targetRowIdx = null) {
   applyAllRowsBtn.type = "button";
   applyAllRowsBtn.textContent = "Apply All Rows";
   applyAllRowsBtn.style.cssText =
-    "flex:1;min-height:40px;padding:8px 12px;border:none;border-radius:10px;background:#1d4ed8;color:#ffffff;font-size:0.82rem;font-weight:700;cursor:pointer;";
+    `flex:1;min-height:40px;padding:8px 12px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-size:0.82rem;font-weight:700;cursor:pointer;`;
   applyAllRowsBtn.onclick = () => {
     data.boxSizes = {
       miniBox: { ...sizes.miniBox },
@@ -1796,7 +1802,7 @@ function makeToggleColorBox(titleText, enabledVal, colorVal, accentHex, onToggle
   const syncToggleHighlight = () => {
     const isChecked = Boolean(chk.checked);
     box.style.borderColor = isChecked ? accentHex : "#cbd5e1";
-    box.style.background = isChecked ? "#f0fdfa" : "#f8fafc";
+    box.style.background = isChecked ? "#fff7ed" : "#f8fafc";
     txt.style.color = isChecked ? accentHex : "#111827";
   };
 
@@ -1838,7 +1844,7 @@ function openCustomTextStylePopup(config) {
   if (existing) existing.remove();
 
   const data = getWorkingStoreData();
-  const accentHex = data.themeColor || "#0f766e";
+  const accentHex = getEditorFixedColor();
 
   const isStore = config.targetType === "store";
   const isSection = config.targetType === "section";
@@ -2261,7 +2267,7 @@ function openCustomTextStylePopup(config) {
   applyAllBtn.type = "button";
   applyAllBtn.textContent = "Apply to All";
   applyAllBtn.style.cssText =
-    "flex:1;min-height:44px;padding:9px 14px;border:none;border-radius:10px;background:#1d4ed8;color:#ffffff;font-weight:700;cursor:pointer;";
+    `flex:1;min-height:44px;padding:9px 14px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
 
   const commitStyleSelection = (applyToAll) => {
     const rawEnteredText = textInput.value;
@@ -2367,7 +2373,7 @@ function ensureCoverEditorDOM() {
         </div>
         <div class="editor-bottom-bar" style="width:100%;height:48px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:0 22px;z-index:25;border-top:1px solid #e2e8f0;">
           <button type="button" class="editor-bottom-btn" onclick="cancelEditor()" title="Cancel" style="background:none;border:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#334155;font-weight:700;">X</button>
-          <button type="button" class="editor-bottom-btn" onclick="confirmEditor()" title="Save" style="background:none;border:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#0f766e;font-weight:700;">OK</button>
+          <button type="button" class="editor-bottom-btn" onclick="confirmEditor()" title="Save" style="background:none;border:none;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#FF631C;font-weight:700;">OK</button>
         </div>
       </div>
     `;
@@ -2889,14 +2895,13 @@ function attachOwnerStoreEditHandlers() {
   const fileInput = ensureOwnerInlineFileInput();
   removeOwnerStoreEditUI();
 
-  const activeColor = data.themeColor || "#0f766e";
-  document.documentElement.style.setProperty("--primary", activeColor);
+  const fixedEditorColor = getEditorFixedColor();
 
-  // Unified Editor Control Bar
+  // Unified Editor Control Bar with fixed color #FF631C
   const bar = document.createElement("div");
   bar.id = "ownerLiveSaveBar";
   bar.style.cssText =
-    `position:sticky;top:0;z-index:80;background:${activeColor};color:#ffffff;padding:8px 12px;display:flex;flex-direction:column;gap:8px;box-shadow:0 3px 10px rgba(0,0,0,0.18);`;
+    `position:sticky;top:0;z-index:80;background:${fixedEditorColor};color:#ffffff;padding:8px 12px;display:flex;flex-direction:column;gap:8px;box-shadow:0 3px 10px rgba(0,0,0,0.18);`;
 
   const topRow = document.createElement("div");
   topRow.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:8px;";
@@ -2913,7 +2918,7 @@ function attachOwnerStoreEditHandlers() {
   saveBtn.type = "button";
   saveBtn.textContent = "Save";
   saveBtn.style.cssText =
-    `padding:6px 14px;border:none;border-radius:8px;background:#ffffff;color:${activeColor};font-size:0.8rem;font-weight:800;cursor:pointer;`;
+    `padding:6px 14px;border:none;border-radius:8px;background:#ffffff;color:${fixedEditorColor};font-size:0.8rem;font-weight:800;cursor:pointer;`;
   saveBtn.onclick = () => {
     commitDraftStoreData();
     draftStoreData = JSON.parse(JSON.stringify(storeData));
@@ -2983,7 +2988,7 @@ function attachOwnerStoreEditHandlers() {
   bar.appendChild(toolsRow);
   document.body.prepend(bar);
 
-  // Keep cover clean; enable drag on Store Name
+  // Cover button uses fixed color #FF631C, independent of strip edge shape color
   const coverWrap = document.querySelector(".cover-wrapper");
   if (coverWrap) {
     coverWrap.style.position = "relative";
@@ -2998,6 +3003,18 @@ function attachOwnerStoreEditHandlers() {
       overlayEl.style.setProperty("display", "inline-flex", "important");
       enableStoreNameDragOnCover(coverWrap, overlayEl);
     }
+
+    const coverQuickBtn = document.createElement("button");
+    coverQuickBtn.type = "button";
+    coverQuickBtn.className = "owner-inline-edit-btn";
+    coverQuickBtn.textContent = "Cover";
+    coverQuickBtn.style.cssText =
+      `position:absolute;bottom:10px;right:10px;z-index:20;padding:5px 12px;border:1px solid rgba(255,255,255,0.65);border-radius:8px;background:${COVER_BUTTON_BG_COLOR};color:${COVER_BUTTON_TEXT_COLOR};font-size:0.76rem;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.25);`;
+    coverQuickBtn.onclick = (e) => {
+      e.stopPropagation();
+      openCoverManagerModal();
+    };
+    coverWrap.appendChild(coverQuickBtn);
   }
 
   // Row Controls
@@ -3063,7 +3080,7 @@ function attachOwnerStoreEditHandlers() {
       addStripBtn.type = "button";
       addStripBtn.textContent = `+ Strip ${sIdx + 1}`;
       addStripBtn.style.cssText =
-        `padding:4px 10px;border:1px dashed ${activeColor};border-radius:8px;background:#f0fdfa;color:${activeColor};font-size:0.75rem;font-weight:700;cursor:pointer;`;
+        `padding:4px 10px;border:1px dashed ${fixedEditorColor};border-radius:8px;background:#fff7ed;color:${fixedEditorColor};font-size:0.75rem;font-weight:700;cursor:pointer;`;
       addStripBtn.onclick = (e) => {
         e.stopPropagation();
         sec.barHidden = false;
@@ -3076,7 +3093,7 @@ function attachOwnerStoreEditHandlers() {
       addAdBtn.type = "button";
       addAdBtn.textContent = sec.customAd ? "Edit Ad" : "+ Ad";
       addAdBtn.style.cssText =
-        "padding:4px 10px;border:1px solid #1d4ed8;border-radius:8px;background:#eff6ff;color:#1d4ed8;font-size:0.75rem;font-weight:700;cursor:pointer;";
+        "padding:4px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:#111827;font-size:0.75rem;font-weight:700;cursor:pointer;";
       addAdBtn.onclick = (e) => {
         e.stopPropagation();
         openCustomAdEditorModal(sIdx);
@@ -3101,7 +3118,7 @@ function attachOwnerStoreEditHandlers() {
       photoBtn.textContent = "Photo";
       photoBtn.title = "Change Item Photo";
       photoBtn.style.cssText =
-        `position:absolute;top:6px;right:6px;z-index:4;padding:2px 6px;border:none;border-radius:5px;background:${data.themeColor || "#0f766e"};color:#ffffff;font-size:0.68rem;font-weight:700;cursor:pointer;`;
+        `position:absolute;top:6px;right:6px;z-index:4;padding:2px 6px;border:none;border-radius:5px;background:${fixedEditorColor};color:#ffffff;font-size:0.68rem;font-weight:700;cursor:pointer;`;
       photoBtn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -3189,7 +3206,7 @@ function attachOwnerStoreEditHandlers() {
       rowBoxSizeBtn.type = "button";
       rowBoxSizeBtn.textContent = `Row ${sIdx + 1} Box Size`;
       rowBoxSizeBtn.style.cssText =
-        `padding:4px 10px;border:1px solid ${activeColor};border-radius:8px;background:#f0fdfa;color:${activeColor};font-size:0.74rem;font-weight:800;cursor:pointer;`;
+        `padding:4px 10px;border:1px solid ${fixedEditorColor};border-radius:8px;background:#fff7ed;color:${fixedEditorColor};font-size:0.74rem;font-weight:800;cursor:pointer;`;
       rowBoxSizeBtn.onclick = (e) => {
         e.stopPropagation();
         openBoxSizePanelModal(sIdx);
@@ -3234,7 +3251,7 @@ function attachOwnerStoreEditHandlers() {
     addRowBtn.className = "owner-inline-edit-btn";
     addRowBtn.textContent = "+ Add Row";
     addRowBtn.style.cssText =
-      `flex:1;padding:10px 14px;border:1px solid ${data.themeColor || "#0f766e"};border-radius:12px;background:#f0fdfa;color:${data.themeColor || "#0f766e"};font-size:0.86rem;font-weight:700;cursor:pointer;`;
+      `flex:1;padding:10px 14px;border:1px solid ${fixedEditorColor};border-radius:12px;background:#fff7ed;color:${fixedEditorColor};font-size:0.86rem;font-weight:700;cursor:pointer;`;
     addRowBtn.onclick = () => addBottomStoreRow();
 
     const remRowBtn = document.createElement("button");
