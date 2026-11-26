@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V21");
+console.log("OWNER_EDIT_COMPLETE_V22");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -454,7 +454,7 @@ function openItemAmountEditorModal(sIdx, itemId) {
     "display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #e2e8f0;";
 
   const title = document.createElement("span");
-  title.textContent = "रकम, साइज और रंग (Amount Style)";
+  title.textContent = "Amount Style";
   title.style.cssText = "font-size:0.96rem;font-weight:800;color:#111827;";
 
   const closeBtn = document.createElement("button");
@@ -470,7 +470,7 @@ function openItemAmountEditorModal(sIdx, itemId) {
   const amountInput = document.createElement("input");
   amountInput.type = "text";
   amountInput.value = initialPriceText;
-  amountInput.placeholder = "रकम लिखें (जैसे 99.50 या 150/-)";
+  amountInput.placeholder = "Enter amount (e.g. 99.50 or 150/-)";
   amountInput.style.cssText =
     "width:100%;min-height:40px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:1rem;font-weight:700;color:#111827;box-sizing:border-box;";
 
@@ -492,7 +492,7 @@ function openItemAmountEditorModal(sIdx, itemId) {
 
   amountInput.oninput = syncPreview;
 
-  const sizeSlider = makeLabeledSlider("रकम का साइज (Amount Size)", 9, 28, 1, draftPriceSize, "px", accentHex, (val) => {
+  const sizeSlider = makeLabeledSlider("Amount Size", 9, 28, 1, draftPriceSize, "px", accentHex, (val) => {
     draftPriceSize = val;
     syncPreview();
   });
@@ -502,12 +502,12 @@ function openItemAmountEditorModal(sIdx, itemId) {
     "display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;";
 
   const colorLbl = document.createElement("span");
-  colorLbl.textContent = "रकम का रंग (Amount Colour)";
+  colorLbl.textContent = "Amount Colour";
   colorLbl.style.cssText = "font-size:0.84rem;font-weight:700;color:#334155;";
 
   const pickColorBtn = document.createElement("button");
   pickColorBtn.type = "button";
-  pickColorBtn.textContent = "रंग चुनें";
+  pickColorBtn.textContent = "Pick Colour";
   pickColorBtn.style.cssText =
     `min-height:34px;padding:5px 12px;border:2px solid #cbd5e1;border-radius:8px;background:${draftPriceColor};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.75);font-size:0.78rem;font-weight:700;cursor:pointer;`;
   pickColorBtn.onclick = () => {
@@ -635,6 +635,7 @@ function openBoxSizePanelModal() {
   const accentHex = data.themeColor || "#0f766e";
   const sizes = getCurrentBoxSizesForEdit();
   const snapshot = JSON.parse(JSON.stringify(sizes));
+  let selectedBulkMode = null; // "noBg" | "normalBg" | null
 
   const modal = document.createElement("div");
   modal.id = "ownerBoxSizePanelModal";
@@ -680,21 +681,29 @@ function openBoxSizePanelModal() {
   header.appendChild(titleWrap);
   header.appendChild(closeBtn);
 
-  // एक ही झटके में छोटे और बड़े दोनों बॉक्स पर No BG / Normal BG लगाने वाले बटन
   const quickBulkRow = document.createElement("div");
   quickBulkRow.style.cssText = "display:flex;gap:8px;flex-shrink:0;";
 
   const quickNoBgAllBtn = document.createElement("button");
   quickNoBgAllBtn.type = "button";
-  quickNoBgAllBtn.textContent = "No BG All Boxes (सब साफ)";
-  quickNoBgAllBtn.style.cssText =
-    "flex:1;min-height:36px;padding:6px 10px;border:none;border-radius:9px;background:#1d4ed8;color:#ffffff;font-size:0.78rem;font-weight:700;cursor:pointer;";
+  quickNoBgAllBtn.textContent = "No BG All Boxes";
 
   const quickNormalBgAllBtn = document.createElement("button");
   quickNormalBgAllBtn.type = "button";
-  quickNormalBgAllBtn.textContent = "Normal BG All (बॉक्स रंग)";
-  quickNormalBgAllBtn.style.cssText =
-    "flex:1;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:9px;background:#f1f5f9;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
+  quickNormalBgAllBtn.textContent = "Normal BG All Boxes";
+
+  const syncBulkButtonsState = () => {
+    const isNoBgActive = selectedBulkMode === "noBg";
+    const isNormalActive = selectedBulkMode === "normalBg";
+
+    quickNoBgAllBtn.style.cssText = isNoBgActive
+      ? `flex:1;min-height:36px;padding:6px 10px;border:2px solid ${accentHex};border-radius:9px;background:${accentHex};color:#ffffff;font-size:0.78rem;font-weight:800;cursor:pointer;box-shadow:0 2px 6px rgba(15,23,42,0.2);`
+      : "flex:1;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:9px;background:#ffffff;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
+
+    quickNormalBgAllBtn.style.cssText = isNormalActive
+      ? `flex:1;min-height:36px;padding:6px 10px;border:2px solid ${accentHex};border-radius:9px;background:${accentHex};color:#ffffff;font-size:0.78rem;font-weight:800;cursor:pointer;box-shadow:0 2px 6px rgba(15,23,42,0.2);`
+      : "flex:1;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:9px;background:#ffffff;color:#111827;font-size:0.78rem;font-weight:700;cursor:pointer;";
+  };
 
   quickBulkRow.appendChild(quickNoBgAllBtn);
   quickBulkRow.appendChild(quickNormalBgAllBtn);
@@ -779,23 +788,23 @@ function openBoxSizePanelModal() {
       });
     };
 
-    addControlRow("चौड़ाई (Width)", "width", limits.wMin, limits.wMax, 1);
-    addControlRow("ऊँचाई (Height)", "height", limits.hMin, limits.hMax, 1);
-    addControlRow("फ़ोटो ऊँचाई (Image Height)", "imgHeight", limits.imgMin, limits.imgMax, 1);
-    addControlRow("नाम का फ़ॉन्ट साइज़ (Name Size)", "fontSize", limits.fontMin, limits.fontMax, 1);
-    addControlRow("रकम का साइज (Amount Size)", "priceFontSize", limits.priceMin, limits.priceMax, 1);
+    addControlRow("Width", "width", limits.wMin, limits.wMax, 1);
+    addControlRow("Height", "height", limits.hMin, limits.hMax, 1);
+    addControlRow("Image Height", "imgHeight", limits.imgMin, limits.imgMax, 1);
+    addControlRow("Name Size", "fontSize", limits.fontMin, limits.fontMax, 1);
+    addControlRow("Amount Size", "priceFontSize", limits.priceMin, limits.priceMax, 1);
 
     const bgRow = document.createElement("div");
     bgRow.style.cssText =
       "display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:4px;border-top:1px dashed #cbd5e1;";
 
     const bgLbl = document.createElement("span");
-    bgLbl.textContent = "बॉक्स का अंदरूनी रंग (Inner Colour)";
+    bgLbl.textContent = "Inner Colour";
     bgLbl.style.cssText = "font-size:0.78rem;font-weight:700;color:#334155;";
 
     const bgColorBtn = document.createElement("button");
     bgColorBtn.type = "button";
-    bgColorBtn.textContent = "रंग चुनें";
+    bgColorBtn.textContent = "Pick Colour";
 
     const syncBgBtnStyle = () => {
       const hex = targetObj.bgColor || "#ffffff";
@@ -834,31 +843,45 @@ function openBoxSizePanelModal() {
     noBgChk.type = "checkbox";
     noBgChk.checked = Boolean(targetObj.textBgTransparent);
     noBgChk.style.cssText = "width:18px;height:18px;cursor:pointer;";
+
+    const syncNoBgToggleActive = () => {
+      const active = Boolean(noBgChk.checked);
+      noBgRow.style.background = active ? "#eff6ff" : "transparent";
+      noBgRow.style.borderRadius = "8px";
+      noBgRow.style.padding = active ? "6px" : "4px 0 0 0";
+      noBgTxt.style.color = active ? accentHex : "#334155";
+      noBgTxt.style.fontWeight = active ? "800" : "700";
+    };
+
     noBgChk.onchange = () => {
       targetObj.textBgTransparent = noBgChk.checked;
+      selectedBulkMode = null;
+      syncBulkButtonsState();
+      syncNoBgToggleActive();
       applyBoxSizePanelToDom(sizes);
       highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex);
     };
 
     const noBgTxt = document.createElement("span");
-    noBgTxt.textContent = "नाम-रकम बैकग्राउंड न दें (No BG)";
+    noBgTxt.textContent = "No BG (Transparent)";
 
     noBgLabel.appendChild(noBgChk);
     noBgLabel.appendChild(noBgTxt);
     noBgRow.appendChild(noBgLabel);
     secWrap.appendChild(noBgRow);
+    syncNoBgToggleActive();
 
     const priceColorRow = document.createElement("div");
     priceColorRow.style.cssText =
       "display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:4px;border-top:1px dashed #cbd5e1;";
 
     const priceColorLbl = document.createElement("span");
-    priceColorLbl.textContent = "रकम का रंग (Amount Colour)";
+    priceColorLbl.textContent = "Amount Colour";
     priceColorLbl.style.cssText = "font-size:0.78rem;font-weight:700;color:#334155;";
 
     const priceColorBtn = document.createElement("button");
     priceColorBtn.type = "button";
-    priceColorBtn.textContent = "रंग चुनें";
+    priceColorBtn.textContent = "Pick Colour";
 
     const syncPriceBtnStyle = () => {
       const hex = targetObj.priceColor || "#111827";
@@ -890,13 +913,14 @@ function openBoxSizePanelModal() {
       syncAll: () => {
         rows.forEach((r) => r.sync());
         noBgChk.checked = Boolean(targetObj.textBgTransparent);
+        syncNoBgToggleActive();
         syncBgBtnStyle();
         syncPriceBtnStyle();
       }
     };
   }
 
-  const miniSec = buildBoxSection("छोटा बॉक्स (.mini-box)", sizes.miniBox, ".mini-box", {
+  const miniSec = buildBoxSection("Mini Box (.mini-box)", sizes.miniBox, ".mini-box", {
     wMin: 64,
     wMax: 180,
     hMin: 90,
@@ -909,7 +933,7 @@ function openBoxSizePanelModal() {
     priceMax: 26
   });
 
-  const prodSec = buildBoxSection("प्रोडक्ट बॉक्स (.item-box)", sizes.productBox, ".item-box", {
+  const prodSec = buildBoxSection("Product Box (.item-box)", sizes.productBox, ".item-box", {
     wMin: 110,
     wMax: 320,
     hMin: 165,
@@ -922,17 +946,23 @@ function openBoxSizePanelModal() {
     priceMax: 28
   });
 
+  syncBulkButtonsState();
+
   quickNoBgAllBtn.onclick = () => {
+    selectedBulkMode = "noBg";
     sizes.miniBox.textBgTransparent = true;
     sizes.productBox.textBgTransparent = true;
+    syncBulkButtonsState();
     miniSec.syncAll();
     prodSec.syncAll();
     applyBoxSizePanelToDom(sizes);
   };
 
   quickNormalBgAllBtn.onclick = () => {
+    selectedBulkMode = "normalBg";
     sizes.miniBox.textBgTransparent = false;
     sizes.productBox.textBgTransparent = false;
+    syncBulkButtonsState();
     miniSec.syncAll();
     prodSec.syncAll();
     applyBoxSizePanelToDom(sizes);
@@ -944,8 +974,10 @@ function openBoxSizePanelModal() {
   resetBtn.style.cssText =
     "min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-size:0.84rem;font-weight:700;cursor:pointer;flex-shrink:0;";
   resetBtn.onclick = () => {
+    selectedBulkMode = null;
     sizes.miniBox = { ...FALLBACK_BOX_SIZES.miniBox };
     sizes.productBox = { ...FALLBACK_BOX_SIZES.productBox };
+    syncBulkButtonsState();
     miniSec.syncAll();
     prodSec.syncAll();
     applyBoxSizePanelToDom(sizes);
@@ -1035,10 +1067,21 @@ function makeToggleColorBox(titleText, enabledVal, colorVal, accentHex, onToggle
   chk.type = "checkbox";
   chk.checked = Boolean(enabledVal);
   chk.style.cssText = "width:20px;height:20px;cursor:pointer;flex-shrink:0;";
-  chk.onchange = () => onToggle(chk.checked);
 
   const txt = document.createElement("span");
   txt.textContent = titleText;
+
+  const syncToggleHighlight = () => {
+    const isChecked = Boolean(chk.checked);
+    box.style.borderColor = isChecked ? accentHex : "#cbd5e1";
+    box.style.background = isChecked ? "#f0fdfa" : "#f8fafc";
+    txt.style.color = isChecked ? accentHex : "#111827";
+  };
+
+  chk.onchange = () => {
+    syncToggleHighlight();
+    onToggle(chk.checked);
+  };
 
   toggleLabel.appendChild(chk);
   toggleLabel.appendChild(txt);
@@ -1063,7 +1106,9 @@ function makeToggleColorBox(titleText, enabledVal, colorVal, accentHex, onToggle
   extraWrap.style.cssText = "display:flex;flex-direction:column;gap:8px;";
   box.appendChild(extraWrap);
 
-  return { box, extraWrap, chk, colorBtn };
+  syncToggleHighlight();
+
+  return { box, extraWrap, chk, colorBtn, syncToggleHighlight };
 }
 
 function openCustomTextStylePopup(config) {
@@ -1156,7 +1201,7 @@ function openCustomTextStylePopup(config) {
   const textInput = document.createElement("textarea");
   textInput.rows = 3;
   textInput.value = currentText;
-  textInput.placeholder = "नाम लिखें (Enter दबाकर दूसरी लाइन में लिख सकते हैं)";
+  textInput.placeholder = "Enter name (Press Enter for a new line)";
   textInput.style.cssText =
     "width:100%;min-height:68px;max-height:140px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:0.96rem;line-height:1.35;color:#111827;box-sizing:border-box;resize:vertical;overflow:auto;font-family:inherit;";
 
@@ -1177,6 +1222,7 @@ function openCustomTextStylePopup(config) {
   let bgCtrl;
   let textColorTriggerBtn;
   let renderFontScrollList;
+  let selectedPresetIdx = -1;
 
   function syncAllControlsFromState() {
     if (textColorTriggerBtn) {
@@ -1185,14 +1231,17 @@ function openCustomTextStylePopup(config) {
     if (glowCtrl) {
       glowCtrl.chk.checked = Boolean(st.glowEnabled);
       glowCtrl.colorBtn.style.background = st.glowColor || "#38bdf8";
+      if (glowCtrl.syncToggleHighlight) glowCtrl.syncToggleHighlight();
     }
     if (borderCtrl) {
       borderCtrl.chk.checked = Boolean(st.borderEnabled);
       borderCtrl.colorBtn.style.background = st.borderColor || "#0f172a";
+      if (borderCtrl.syncToggleHighlight) borderCtrl.syncToggleHighlight();
     }
     if (bgCtrl) {
       bgCtrl.chk.checked = Boolean(st.bgEnabled);
-      bgCtrl.colorBtn.style.background = st.bgColor || "#0f172a";
+      bgCtrl.colorBtn.style.background = st.bgColor || "#0f766e";
+      if (bgCtrl.syncToggleHighlight) bgCtrl.syncToggleHighlight();
     }
     if (renderFontScrollList) {
       renderFontScrollList();
@@ -1258,18 +1307,26 @@ function openCustomTextStylePopup(config) {
     }
   ];
 
-  presets.forEach((p) => {
+  const presetBtns = presets.map((p, pIdx) => {
     const pBtn = document.createElement("button");
     pBtn.type = "button";
     pBtn.textContent = p.label;
     pBtn.style.cssText =
       "min-height:40px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;color:#111827;font-size:0.84rem;font-weight:700;cursor:pointer;";
     pBtn.onclick = () => {
+      selectedPresetIdx = pIdx;
       p.apply();
+      presetBtns.forEach((b, idx) => {
+        const active = idx === selectedPresetIdx;
+        b.style.background = active ? accentHex : "#f8fafc";
+        b.style.color = active ? "#ffffff" : "#111827";
+        b.style.borderColor = active ? accentHex : "#cbd5e1";
+      });
       syncAllControlsFromState();
       syncPreview();
     };
     presetWrap.appendChild(pBtn);
+    return pBtn;
   });
 
   textInput.oninput = syncPreview;
@@ -1379,7 +1436,7 @@ function openCustomTextStylePopup(config) {
   });
 
   glowCtrl = makeToggleColorBox(
-    "Glow (चमक)",
+    "Glow",
     st.glowEnabled,
     st.glowColor,
     accentHex,
@@ -1401,7 +1458,7 @@ function openCustomTextStylePopup(config) {
 
   const maxClearSlider = Math.max(1.2, Math.min(2.6, Number((st.fontSize * 0.08).toFixed(1))));
   borderCtrl = makeToggleColorBox(
-    "Clear Border (साफ़ बॉर्डर)",
+    "Clear Border",
     st.borderEnabled,
     st.borderColor,
     accentHex,
@@ -1422,7 +1479,7 @@ function openCustomTextStylePopup(config) {
   );
 
   bgCtrl = makeToggleColorBox(
-    "Background (बैकग्राउंड)",
+    "Background",
     st.bgEnabled,
     st.bgColor,
     accentHex,
@@ -2279,8 +2336,8 @@ function attachOwnerStoreEditHandlers() {
       const stripColorBtn = document.createElement("button");
       stripColorBtn.type = "button";
       stripColorBtn.className = "owner-inline-edit-btn";
-      stripColorBtn.textContent = "🎨 पट्टी रंग";
-      stripColorBtn.title = "पट्टी का रंग बदलें";
+      stripColorBtn.textContent = "Strip Colour";
+      stripColorBtn.title = "Change Strip Colour";
       const curBarBg = sec.barBgColor || "#f1f5f9";
       stripColorBtn.style.cssText =
         `margin-left:auto;padding:3px 8px;border:1px solid #94a3b8;border-radius:6px;background:${curBarBg};color:#111827;text-shadow:0 0 3px #ffffff;font-size:0.74rem;font-weight:700;cursor:pointer;`;
@@ -2393,7 +2450,7 @@ function attachOwnerStoreEditHandlers() {
           pricePencilBtn.type = "button";
           pricePencilBtn.className = "owner-inline-edit-btn";
           pricePencilBtn.textContent = "✎";
-          pricePencilBtn.title = "रकम, साइज और रंग बदलें";
+          pricePencilBtn.title = "Edit Amount, Size & Colour";
           pricePencilBtn.style.cssText =
             "padding:1px 5px;border:1px solid #cbd5e1;border-radius:5px;background:#fefce8;color:#854d0e;font-size:0.72rem;font-weight:700;line-height:1.1;cursor:pointer;flex-shrink:0;";
           pricePencilBtn.onclick = (e) => {
