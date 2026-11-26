@@ -330,9 +330,16 @@ function applyPriceVisualStyle(priceEl, item, defaultBoxPriceStyle) {
 
 function applyStripBarStyle(stripEl, sec) {
   if (!stripEl) return;
+
+  const topCol = sec && sec.barGradTop ? normalizeHexColor(sec.barGradTop, "") : "";
+  const botCol = sec && sec.barGradBottom ? normalizeHexColor(sec.barGradBottom, "") : "";
   const customBg = sec && sec.barBgColor ? normalizeHexColor(sec.barBgColor, "") : "";
 
-  if (customBg) {
+  if (topCol && botCol) {
+    const grad = `linear-gradient(to bottom, ${topCol} 0%, ${botCol} 100%)`;
+    stripEl.style.setProperty("background", grad, "important");
+    stripEl.style.setProperty("background-color", topCol, "important");
+  } else if (customBg) {
     stripEl.style.setProperty("background", customBg, "important");
     stripEl.style.setProperty("background-color", customBg, "important");
   }
@@ -345,28 +352,49 @@ function applyStripBarStyle(stripEl, sec) {
     stripEl.style.setProperty("align-items", "center", "important");
   }
 
-  const cs = window.getComputedStyle(stripEl);
-  const tl = cs.borderTopLeftRadius;
-  const bl = cs.borderBottomLeftRadius;
-  const bwLeft = parseFloat(cs.borderLeftWidth) || 0;
-  const bStyleLeft = cs.borderLeftStyle && cs.borderLeftStyle !== "none" ? cs.borderLeftStyle : "solid";
-  const bColorLeft = cs.borderLeftColor;
+  const sp = sec && sec.barSpacing && typeof sec.barSpacing === "object" ? sec.barSpacing : null;
+  if (sp) {
+    if (Number.isFinite(Number(sp.top))) stripEl.style.setProperty("padding-top", `${clampNum(sp.top, 0, 30, 6)}px`, "important");
+    if (Number.isFinite(Number(sp.bottom))) stripEl.style.setProperty("padding-bottom", `${clampNum(sp.bottom, 0, 30, 6)}px`, "important");
+    if (Number.isFinite(Number(sp.left))) stripEl.style.setProperty("padding-left", `${clampNum(sp.left, 0, 36, 10)}px`, "important");
+    if (Number.isFinite(Number(sp.right))) stripEl.style.setProperty("padding-right", `${clampNum(sp.right, 0, 36, 10)}px`, "important");
+  }
 
-  if (tl && tl !== "0px") {
-    stripEl.style.setProperty("border-top-right-radius", tl, "important");
-  }
-  if (bl && bl !== "0px") {
-    stripEl.style.setProperty("border-bottom-right-radius", bl, "important");
-  }
-  if (bwLeft > 0) {
-    stripEl.style.setProperty("border-right-width", `${bwLeft}px`, "important");
-    stripEl.style.setProperty("border-right-style", bStyleLeft, "important");
-    if (bColorLeft) {
-      stripEl.style.setProperty("border-right-color", bColorLeft, "important");
+  const shapeMode = (sec && sec.barShape) || "default";
+  if (shapeMode === "round") {
+    stripEl.style.setProperty("border-radius", "999px", "important");
+    stripEl.style.setProperty("clip-path", "none", "important");
+  } else if (shapeMode === "square") {
+    stripEl.style.setProperty("border-radius", "0px", "important");
+    stripEl.style.setProperty("clip-path", "none", "important");
+  } else if (shapeMode === "triangle") {
+    stripEl.style.setProperty("border-radius", "0px", "important");
+    stripEl.style.setProperty("clip-path", "polygon(0% 100%, 50% 0%, 100% 100%)", "important");
+  } else {
+    stripEl.style.setProperty("clip-path", "none", "important");
+    const cs = window.getComputedStyle(stripEl);
+    const tl = cs.borderTopLeftRadius;
+    const bl = cs.borderBottomLeftRadius;
+    const bwLeft = parseFloat(cs.borderLeftWidth) || 0;
+    const bStyleLeft = cs.borderLeftStyle && cs.borderLeftStyle !== "none" ? cs.borderLeftStyle : "solid";
+    const bColorLeft = cs.borderLeftColor;
+
+    if (tl && tl !== "0px") {
+      stripEl.style.setProperty("border-top-right-radius", tl, "important");
     }
-  }
-  if (cs.paddingLeft && cs.paddingLeft !== "0px") {
-    stripEl.style.setProperty("padding-right", cs.paddingLeft, "important");
+    if (bl && bl !== "0px") {
+      stripEl.style.setProperty("border-bottom-right-radius", bl, "important");
+    }
+    if (bwLeft > 0) {
+      stripEl.style.setProperty("border-right-width", `${bwLeft}px`, "important");
+      stripEl.style.setProperty("border-right-style", bStyleLeft, "important");
+      if (bColorLeft) {
+        stripEl.style.setProperty("border-right-color", bColorLeft, "important");
+      }
+    }
+    if ((!sp || !Number.isFinite(Number(sp.right))) && cs.paddingLeft && cs.paddingLeft !== "0px") {
+      stripEl.style.setProperty("padding-right", cs.paddingLeft, "important");
+    }
   }
 }
 
@@ -852,6 +880,10 @@ function buildInitialData() {
       items,
       titleStyle: null,
       barBgColor: "",
+      barGradTop: "",
+      barGradBottom: "",
+      barShape: "default",
+      barSpacing: null,
       barHidden: false,
       barHeight: 36,
       customBoxSizes: null,
@@ -890,6 +922,7 @@ function buildInitialData() {
     themeColor: "#0f766e",
     coverImg: "",
     coverSlots: [""],
+    coverHeight: null,
     coverSlotsLimit: MAX_COVER_SLOTS,
     ownerBoxLimit: MAX_OWNER_BOXES,
     indexBoxLimit: MAX_INDEX_BOXES,
@@ -1133,6 +1166,16 @@ function applyTitlePositionStyle() {
   }
 }
 
+function applyCoverHeightStyle(coverWrap, data) {
+  if (!coverWrap || !data) return;
+  if (Number.isFinite(Number(data.coverHeight)) && Number(data.coverHeight) > 0) {
+    const ch = clampNum(data.coverHeight, 110, 380, 170);
+    coverWrap.style.setProperty("height", `${ch}px`, "important");
+    coverWrap.style.setProperty("min-height", `${ch}px`, "important");
+    coverWrap.style.setProperty("max-height", `${ch}px`, "important");
+  }
+}
+
 function renderHeader() {
   const data = getWorkingStoreData();
   if (data.themeColor) {
@@ -1151,6 +1194,7 @@ function renderHeader() {
 
   coverWrap.style.position = "relative";
   coverWrap.style.overflow = "hidden";
+  applyCoverHeightStyle(coverWrap, data);
   applyTitlePositionStyle();
 
   const slots = Array.isArray(data.coverSlots) && data.coverSlots.length > 0 ? data.coverSlots : [""];
@@ -1187,7 +1231,7 @@ function renderHeader() {
     slide.className = "cover-slide-item";
     slide.dataset.slotIdx = String(idx % visibleSlots.length);
     slide.style.cssText =
-      "position:relative;flex:0 0 100%;width:100%;height:100%;min-height:150px;scroll-snap-align:start;background:#e2e8f0;display:flex;align-items:center;justify-content:center;overflow:hidden;";
+      "position:relative;flex:0 0 100%;width:100%;height:100%;scroll-snap-align:start;background:#e2e8f0;display:flex;align-items:center;justify-content:center;overflow:hidden;";
 
     if (src) {
       const img = document.createElement("img");
