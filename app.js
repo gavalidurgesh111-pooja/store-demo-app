@@ -1159,11 +1159,39 @@ function startCoverAutoScroll(track, slideCount) {
   }, 3000);
 }
 
+function ensureCoverStoreTitleElements(coverWrap) {
+  if (!coverWrap) return { overlayEl: null, titleEl: null, subEl: null };
+  let overlayEl = coverWrap.querySelector(".cover-overlay");
+  if (!overlayEl) {
+    overlayEl = document.createElement("div");
+    overlayEl.className = "cover-overlay";
+    coverWrap.appendChild(overlayEl);
+  }
+  overlayEl.style.setProperty("display", "inline-flex", "important");
+  overlayEl.style.setProperty("visibility", "visible", "important");
+  overlayEl.style.setProperty("opacity", "1", "important");
+
+  let titleEl = overlayEl.querySelector("#storeTitle") || document.getElementById("storeTitle");
+  if (!titleEl) {
+    titleEl = document.createElement("div");
+    titleEl.id = "storeTitle";
+    overlayEl.prepend(titleEl);
+  } else if (titleEl.parentElement !== overlayEl) {
+    overlayEl.prepend(titleEl);
+  }
+  titleEl.style.setProperty("display", "inline-block", "important");
+  titleEl.style.setProperty("visibility", "visible", "important");
+  titleEl.style.setProperty("opacity", "1", "important");
+
+  const subEl = overlayEl.querySelector("#storeSubtitle") || document.getElementById("storeSubtitle");
+  return { overlayEl, titleEl, subEl };
+}
+
 function applyTitlePositionStyle() {
   const data = getWorkingStoreData();
-  const overlayEl = document.querySelector(".cover-overlay");
-  const titleEl = document.getElementById("storeTitle");
-  const subEl = document.getElementById("storeSubtitle");
+  const coverWrap = document.querySelector(".cover-wrapper");
+  if (!coverWrap) return;
+  const { overlayEl, titleEl, subEl } = ensureCoverStoreTitleElements(coverWrap);
   if (!overlayEl) return;
 
   if (subEl && !subEl.textContent.trim()) {
@@ -1225,16 +1253,16 @@ function renderHeader() {
   if (data.themeColor) {
     document.documentElement.style.setProperty("--primary", data.themeColor);
   }
-  const titleEl = document.getElementById("storeTitle");
-  if (!titleEl) return;
-  titleEl.textContent = data.storeTitle !== undefined && data.storeTitle !== null && String(data.storeTitle).length > 0
-    ? String(data.storeTitle)
-    : "Store Name";
-  const subEl = document.getElementById("storeSubtitle");
-  if (subEl) subEl.textContent = data.storeSubtitle || "";
-
   const coverWrap = document.querySelector(".cover-wrapper");
   if (!coverWrap) return;
+
+  const { titleEl, subEl } = ensureCoverStoreTitleElements(coverWrap);
+  if (titleEl) {
+    titleEl.textContent = data.storeTitle !== undefined && data.storeTitle !== null && String(data.storeTitle).length > 0
+      ? String(data.storeTitle)
+      : "Store Name";
+  }
+  if (subEl) subEl.textContent = data.storeSubtitle || "";
 
   coverWrap.style.position = "relative";
   coverWrap.style.overflow = "hidden";
