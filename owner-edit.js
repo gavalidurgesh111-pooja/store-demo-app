@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V37");
+console.log("OWNER_EDIT_COMPLETE_V38");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -543,6 +543,16 @@ function openCoverManagerModal() {
   const prevHeight = data.coverHeight ?? null;
   let draftH = curHeight;
 
+  const syncCoverAndTitleWithHeight = (hVal) => {
+    data.coverHeight = hVal;
+    if (coverWrap && typeof applyCoverHeightStyle === "function") {
+      applyCoverHeightStyle(coverWrap, data);
+    }
+    if (typeof applyTitlePositionStyle === "function") {
+      applyTitlePositionStyle();
+    }
+  };
+
   const modal = document.createElement("div");
   modal.id = "ownerCoverManagerModal";
   modal.style.cssText =
@@ -577,10 +587,7 @@ function openCoverManagerModal() {
 
   const hSlider = makeLabeledSlider("Cover Height", 110, 380, 2, draftH, "px", accentHex, (val) => {
     draftH = val;
-    data.coverHeight = val;
-    if (coverWrap && typeof applyCoverHeightStyle === "function") {
-      applyCoverHeightStyle(coverWrap, data);
-    }
+    syncCoverAndTitleWithHeight(val);
   });
 
   const slidesBox = document.createElement("div");
@@ -2904,6 +2911,10 @@ function enableStoreNameDragOnCover(coverWrap, overlayEl) {
     const rx = Math.round(nx);
     const ry = Math.round(ny);
     data.titlePos = { x: rx, y: ry };
+    data.titlePosNorm = {
+      rx: maxX > 0 ? rx / maxX : 0,
+      ry: maxY > 0 ? ry / maxY : 0
+    };
     overlayEl.style.left = `${rx}px`;
     overlayEl.style.top = `${ry}px`;
   };
