@@ -486,7 +486,6 @@ function applyTextStyleToElement(el, rawStyle, defaults = {}) {
   el.style.textTransform = st.textTransform;
   el.style.color = st.color;
 
-  // स्पेस देने पर भी लाइन अपने आप नीचे न टूटे — केवल Enter (\n) पर ही अगली लाइन बने
   const hasExplicitLineBreak = String(el.textContent || "").includes("\n");
   el.style.setProperty("white-space", hasExplicitLineBreak ? "pre-line" : "pre", "important");
   el.style.setProperty("word-break", "normal", "important");
@@ -987,14 +986,14 @@ function renderSections() {
         };
         box.innerHTML = `
           ${imgMarkup(item.img, cleanItemName, false)}
-          <div class="item-info" style="width:100%;max-width:100%;min-width:0;overflow:hidden;box-sizing:border-box;">
-            <div class="item-name"></div>
-            <div class="item-price">${priceDisplay}</div>
+          <div class="item-info" style="text-align:left;width:100%;max-width:100%;min-width:0;overflow:hidden;box-sizing:border-box;">
+            <div class="item-name" style="text-align:left;"></div>
+            <div class="item-price" style="text-align:left;">${priceDisplay}</div>
           </div>
         `;
         const itemNameEl = box.querySelector(".item-name");
         itemNameEl.title = cleanItemName;
-        renderItemNameLines(itemNameEl, cleanItemName, "center");
+        renderItemNameLines(itemNameEl, cleanItemName, "left");
         applyTextStyleToElement(itemNameEl, item.nameStyle, {
           fontSize: boxSizes.productBox.fontSize,
           fontWeight: 600,
