@@ -209,8 +209,6 @@ function applyPriceVisualStyle(priceEl, item, defaultBoxPriceStyle) {
 
 function applyStripBarStyle(stripEl, sec) {
   if (!stripEl) return;
-  const data = getWorkingStoreData();
-  const themeAccent = (data && data.themeColor) || "#0f766e";
   const customBg = sec && sec.barBgColor ? normalizeHexColor(sec.barBgColor, "") : "";
 
   if (customBg) {
@@ -218,30 +216,27 @@ function applyStripBarStyle(stripEl, sec) {
     stripEl.style.setProperty("background-color", customBg, "important");
   }
 
+  // पट्टी के बाएँ और दाएँ कॉर्नर व साइड बॉर्डर को स्वतंत्र रूप से समरूप रखें (नाम के रंग से अलग)
   const cs = window.getComputedStyle(stripEl);
   const tl = cs.borderTopLeftRadius;
   const bl = cs.borderBottomLeftRadius;
   const bwLeft = parseFloat(cs.borderLeftWidth) || 0;
   const bStyleLeft = cs.borderLeftStyle && cs.borderLeftStyle !== "none" ? cs.borderLeftStyle : "solid";
-  const bColorLeft = cs.borderLeftColor && cs.borderLeftColor !== "rgba(0, 0, 0, 0)" ? cs.borderLeftColor : themeAccent;
+  const bColorLeft = cs.borderLeftColor;
 
-  const radiusTop = tl && tl !== "0px" ? tl : "10px";
-  const radiusBottom = bl && bl !== "0px" ? bl : "10px";
-  const sideWidth = bwLeft > 0 ? `${bwLeft}px` : "5px";
-
-  stripEl.style.setProperty("border-top-left-radius", radiusTop, "important");
-  stripEl.style.setProperty("border-bottom-left-radius", radiusBottom, "important");
-  stripEl.style.setProperty("border-top-right-radius", radiusTop, "important");
-  stripEl.style.setProperty("border-bottom-right-radius", radiusBottom, "important");
-
-  stripEl.style.setProperty("border-left-width", sideWidth, "important");
-  stripEl.style.setProperty("border-left-style", bStyleLeft, "important");
-  stripEl.style.setProperty("border-left-color", bColorLeft, "important");
-
-  stripEl.style.setProperty("border-right-width", sideWidth, "important");
-  stripEl.style.setProperty("border-right-style", bStyleLeft, "important");
-  stripEl.style.setProperty("border-right-color", bColorLeft, "important");
-
+  if (tl && tl !== "0px") {
+    stripEl.style.setProperty("border-top-right-radius", tl, "important");
+  }
+  if (bl && bl !== "0px") {
+    stripEl.style.setProperty("border-bottom-right-radius", bl, "important");
+  }
+  if (bwLeft > 0) {
+    stripEl.style.setProperty("border-right-width", `${bwLeft}px`, "important");
+    stripEl.style.setProperty("border-right-style", bStyleLeft, "important");
+    if (bColorLeft) {
+      stripEl.style.setProperty("border-right-color", bColorLeft, "important");
+    }
+  }
   if (cs.paddingLeft && cs.paddingLeft !== "0px") {
     stripEl.style.setProperty("padding-right", cs.paddingLeft, "important");
   }
