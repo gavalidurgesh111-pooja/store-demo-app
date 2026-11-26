@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V15");
+console.log("OWNER_EDIT_COMPLETE_V16");
 
 function openOwnerStoreEditView() {
   window.location.href = "index.html?ownerEdit=1";
@@ -12,6 +12,11 @@ function removeCustomPickerIfExists() {
 function removeBoxSizePanelIfExists() {
   clearBoxPreviewHighlights();
   const existing = document.getElementById("ownerBoxSizePanelModal");
+  if (existing) existing.remove();
+}
+
+function removePriceEditorModalIfExists() {
+  const existing = document.getElementById("ownerItemPriceEditorModal");
   if (existing) existing.remove();
 }
 
@@ -29,6 +34,7 @@ function removeOwnerStoreEditUI() {
   }
   removeCustomPickerIfExists();
   removeBoxSizePanelIfExists();
+  removePriceEditorModalIfExists();
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
 }
 
@@ -396,10 +402,153 @@ function createBlueKnobSlider(min, max, step, initialVal, onValueChange) {
   };
 }
 
+// ==================== INDIVIDUAL AMOUNT, SIZE & COLOUR POP-UP ====================
+function openItemAmountEditorModal(sIdx, itemId) {
+  removePriceEditorModalIfExists();
+  const data = getWorkingStoreData();
+  const sec = data.sections && data.sections[sIdx];
+  const item = sec && Array.isArray(sec.items) ? sec.items.find((i) => i.id === itemId) : null;
+  if (!item) return;
+
+  const accentHex = data.themeColor || "#0f766e";
+  const boxDefaults = normalizeBoxSizes(data.boxSizes);
+  const baseDefaults = sIdx === 0 ? boxDefaults.miniBox : boxDefaults.productBox;
+
+  const initialPriceText = item.priceText !== undefined && item.priceText !== null && String(item.priceText).trim() !== ""
+    ? String(item.priceText)
+    : String(item.price ?? 0);
+  let draftPriceSize = Number.isFinite(Number(item.priceFontSize)) && Number(item.priceFontSize) > 0
+    ? Number(item.priceFontSize)
+    : baseDefaults.priceFontSize;
+  let draftPriceColor = item.priceColor || baseDefaults.priceColor || "#111827";
+
+  const modal = document.createElement("div");
+  modal.id = "ownerItemPriceEditorModal";
+  modal.style.cssText =
+    "position:fixed;inset:0;z-index:140;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;padding:12px;";
+
+  const card = document.createElement("div");
+  card.style.cssText =
+    "width:100%;max-width:360px;background:#ffffff;border-radius:14px;padding:14px 16px;box-shadow:0 12px 30px rgba(0,0,0,0.35);display:flex;flex-direction:column;gap:12px;color:#111827;";
+
+  const header = document.createElement("div");
+  header.style.cssText =
+    "display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #e2e8f0;";
+
+  const title = document.createElement("span");
+  title.textContent = "रकम, साइज और रंग (Amount Style)";
+  title.style.cssText = "font-size:0.96rem;font-weight:800;color:#111827;";
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.textContent = "✕";
+  closeBtn.style.cssText =
+    "border:none;background:#f1f5f9;border-radius:8px;min-width:32px;min-height:32px;font-weight:700;color:#334155;cursor:pointer;";
+  closeBtn.onclick = () => modal.remove();
+
+  header.appendChild(title);
+  header.appendChild(closeBtn);
+
+  const amountInput = document.createElement("input");
+  amountInput.type = "text";
+  amountInput.value = initialPriceText;
+  amountInput.placeholder = "रकम लिखें (जैसे 99.50 या 150/-)";
+  amountInput.style.cssText =
+    "width:100%;min-height:40px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:1rem;font-weight:700;color:#111827;box-sizing:border-box;";
+
+  const previewBox = document.createElement("div");
+  previewBox.style.cssText =
+    "padding:10px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;text-align:center;";
+
+  const previewSpan = document.createElement("span");
+  previewBox.appendChild(previewSpan);
+
+  const syncPreview = () => {
+    const raw = amountInput.value.trim();
+    const disp = raw.length > 0 ? (raw.startsWith("₹") ? raw : `₹${raw}`) : "₹0";
+    previewSpan.textContent = disp;
+    previewSpan.style.fontSize = `${draftPriceSize}px`;
+    previewSpan.style.color = draftPriceColor;
+    previewSpan.style.fontWeight = "700";
+  };
+
+  amountInput.oninput = syncPreview;
+
+  const sizeSlider = makeLabeledSlider("रकम का साइज (Amount Size)", 9, 28, 1, draftPriceSize, "px", accentHex, (val) => {
+    draftPriceSize = val;
+    syncPreview();
+  });
+
+  const colorRow = document.createElement("div");
+  colorRow.style.cssText =
+    "display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;";
+
+  const colorLbl = document.createElement("span");
+  colorLbl.textContent = "रकम का रंग (Amount Colour)";
+  colorLbl.style.cssText = "font-size:0.84rem;font-weight:700;color:#334155;";
+
+  const pickColorBtn = document.createElement("button");
+  pickColorBtn.type = "button";
+  pickColorBtn.textContent = "रंग चुनें";
+  pickColorBtn.style.cssText =
+    `min-height:34px;padding:5px 12px;border:2px solid #cbd5e1;border-radius:8px;background:${draftPriceColor};color:#ffffff;text-shadow:0 1px 2px rgba(0,0,0,0.75);font-size:0.78rem;font-weight:700;cursor:pointer;`;
+  pickColorBtn.onclick = () => {
+    openStandaloneColorPicker(draftPriceColor, (hex) => {
+      draftPriceColor = hex;
+      pickColorBtn.style.background = hex;
+      syncPreview();
+    });
+  };
+
+  colorRow.appendChild(colorLbl);
+  colorRow.appendChild(pickColorBtn);
+
+  const footer = document.createElement("div");
+  footer.style.cssText = "display:flex;gap:8px;margin-top:4px;";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.style.cssText =
+    "flex:1;min-height:40px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:10px;background:#ffffff;color:#334155;font-weight:700;cursor:pointer;";
+  cancelBtn.onclick = () => modal.remove();
+
+  const applyBtn = document.createElement("button");
+  applyBtn.type = "button";
+  applyBtn.textContent = "Apply";
+  applyBtn.style.cssText =
+    `flex:1;min-height:40px;padding:8px 14px;border:none;border-radius:10px;background:${accentHex};color:#ffffff;font-weight:700;cursor:pointer;`;
+  applyBtn.onclick = () => {
+    const rawVal = amountInput.value.trim();
+    item.priceText = rawVal.length > 0 ? rawVal : "0";
+    const numMatch = rawVal.match(/(\d+(?:\.\d+)?)/);
+    item.price = numMatch ? Number(numMatch[1]) : 0;
+    item.priceFontSize = draftPriceSize;
+    item.priceColor = draftPriceColor;
+    modal.remove();
+    renderSections();
+    attachOwnerStoreEditHandlers();
+  };
+
+  footer.appendChild(cancelBtn);
+  footer.appendChild(applyBtn);
+
+  card.appendChild(header);
+  card.appendChild(amountInput);
+  card.appendChild(previewBox);
+  card.appendChild(sizeSlider);
+  card.appendChild(colorRow);
+  card.appendChild(footer);
+  modal.appendChild(card);
+  document.body.appendChild(modal);
+
+  syncPreview();
+}
+
 // ==================== BOX SIZE PANEL (छोटा बॉक्स और प्रोडक्ट बॉक्स) ====================
 const FALLBACK_BOX_SIZES = {
-  miniBox: { width: 92, height: 122, imgHeight: 74, fontSize: 12, bgColor: "#ffffff" },
-  productBox: { width: 150, height: 215, imgHeight: 125, fontSize: 14, bgColor: "#ffffff" }
+  miniBox: { width: 92, height: 122, imgHeight: 74, fontSize: 12, bgColor: "#ffffff", priceFontSize: 11, priceColor: "#111827" },
+  productBox: { width: 150, height: 215, imgHeight: 125, fontSize: 14, bgColor: "#ffffff", priceFontSize: 13, priceColor: "#111827" }
 };
 
 function getCurrentBoxSizesForEdit() {
@@ -437,41 +586,6 @@ function applyBoxSizePanelToDom(sizes) {
     window.applyBoxSizeStyles();
     return;
   }
-
-  const mini = sizes.miniBox;
-  const prod = sizes.productBox;
-
-  document.querySelectorAll(".mini-box").forEach((box) => {
-    box.style.flex = `0 0 ${mini.width}px`;
-    box.style.width = `${mini.width}px`;
-    box.style.minWidth = `${mini.width}px`;
-    box.style.maxWidth = `${mini.width}px`;
-    box.style.minHeight = `${mini.height}px`;
-    box.style.height = "auto";
-    box.style.setProperty("background", mini.bgColor || "#ffffff", "important");
-    box.style.setProperty("background-color", mini.bgColor || "#ffffff", "important");
-    const inner = box.querySelector(".mini-box-body");
-    if (inner) {
-      inner.style.setProperty("background", mini.bgColor || "#ffffff", "important");
-      inner.style.setProperty("background-color", mini.bgColor || "#ffffff", "important");
-    }
-  });
-
-  document.querySelectorAll(".item-box").forEach((box) => {
-    box.style.flex = `0 0 ${prod.width}px`;
-    box.style.width = `${prod.width}px`;
-    box.style.minWidth = `${prod.width}px`;
-    box.style.maxWidth = `${prod.width}px`;
-    box.style.minHeight = `${prod.height}px`;
-    box.style.height = "auto";
-    box.style.setProperty("background", prod.bgColor || "#ffffff", "important");
-    box.style.setProperty("background-color", prod.bgColor || "#ffffff", "important");
-    const inner = box.querySelector(".item-info");
-    if (inner) {
-      inner.style.setProperty("background", prod.bgColor || "#ffffff", "important");
-      inner.style.setProperty("background-color", prod.bgColor || "#ffffff", "important");
-    }
-  });
 }
 
 function openBoxSizePanelModal() {
@@ -542,7 +656,7 @@ function openBoxSizePanelModal() {
     badge.style.cssText = "font-size:0.74rem;font-weight:700;color:#475569;";
 
     const updateBadge = () => {
-      badge.textContent = `${targetObj.width}×${targetObj.height}px • Text ${targetObj.fontSize}px`;
+      badge.textContent = `${targetObj.width}×${targetObj.height}px • ₹ ${targetObj.priceFontSize}px`;
     };
     updateBadge();
 
@@ -609,8 +723,10 @@ function openBoxSizePanelModal() {
     addControlRow("चौड़ाई (Width)", "width", limits.wMin, limits.wMax, 1);
     addControlRow("ऊँचाई (Height)", "height", limits.hMin, limits.hMax, 1);
     addControlRow("फ़ोटो ऊँचाई (Image Height)", "imgHeight", limits.imgMin, limits.imgMax, 1);
-    addControlRow("टेक्स्ट फ़ॉन्ट साइज़ (Text Font Size)", "fontSize", limits.fontMin, limits.fontMax, 1);
+    addControlRow("नाम का फ़ॉन्ट साइज़ (Name Size)", "fontSize", limits.fontMin, limits.fontMax, 1);
+    addControlRow("रकम का साइज (Amount Size)", "priceFontSize", limits.priceMin, limits.priceMax, 1);
 
+    // बॉक्स के अंदरूनी रंग का बटन
     const bgRow = document.createElement("div");
     bgRow.style.cssText =
       "display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:4px;border-top:1px dashed #cbd5e1;";
@@ -648,11 +764,50 @@ function openBoxSizePanelModal() {
     bgRow.appendChild(bgColorBtn);
     secWrap.appendChild(bgRow);
 
+    // रकम के नंबर के रंग का बटन
+    const priceColorRow = document.createElement("div");
+    priceColorRow.style.cssText =
+      "display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:4px;border-top:1px dashed #cbd5e1;";
+
+    const priceColorLbl = document.createElement("span");
+    priceColorLbl.textContent = "रकम का रंग (Amount Colour)";
+    priceColorLbl.style.cssText = "font-size:0.78rem;font-weight:700;color:#334155;";
+
+    const priceColorBtn = document.createElement("button");
+    priceColorBtn.type = "button";
+    priceColorBtn.textContent = "रंग चुनें";
+
+    const syncPriceBtnStyle = () => {
+      const hex = targetObj.priceColor || "#111827";
+      priceColorBtn.style.background = hex;
+      const isLight = hex.toLowerCase() === "#ffffff";
+      priceColorBtn.style.color = isLight ? "#111827" : "#ffffff";
+      priceColorBtn.style.border = isLight ? "1px solid #94a3b8" : "2px solid #cbd5e1";
+    };
+    syncPriceBtnStyle();
+
+    priceColorBtn.style.cssText +=
+      "min-height:32px;padding:4px 10px;border-radius:8px;font-size:0.76rem;font-weight:700;cursor:pointer;";
+
+    priceColorBtn.onclick = () => {
+      openStandaloneColorPicker(targetObj.priceColor || "#111827", (hex) => {
+        targetObj.priceColor = hex;
+        syncPriceBtnStyle();
+        applyBoxSizePanelToDom(sizes);
+        highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex);
+      });
+    };
+
+    priceColorRow.appendChild(priceColorLbl);
+    priceColorRow.appendChild(priceColorBtn);
+    secWrap.appendChild(priceColorRow);
+
     return {
       secWrap,
       syncAll: () => {
         rows.forEach((r) => r.sync());
         syncBgBtnStyle();
+        syncPriceBtnStyle();
       }
     };
   }
@@ -665,7 +820,9 @@ function openBoxSizePanelModal() {
     imgMin: 44,
     imgMax: 160,
     fontMin: 9,
-    fontMax: 26
+    fontMax: 26,
+    priceMin: 9,
+    priceMax: 26
   });
 
   const prodSec = buildBoxSection("प्रोडक्ट बॉक्स (.item-box)", sizes.productBox, ".item-box", {
@@ -676,7 +833,9 @@ function openBoxSizePanelModal() {
     imgMin: 80,
     imgMax: 260,
     fontMin: 10,
-    fontMax: 30
+    fontMax: 30,
+    priceMin: 10,
+    priceMax: 28
   });
 
   const resetBtn = document.createElement("button");
@@ -1689,6 +1848,8 @@ function addBoxToSection(sIdx) {
     name: "Item",
     price: 0,
     priceText: "0",
+    priceFontSize: null,
+    priceColor: null,
     img: "",
     nameStyle: null
   });
@@ -1720,12 +1881,22 @@ function addBottomStoreRow() {
   const rowNum = data.sections.length + 1;
   const items = [];
   for (let i = 1; i <= 5; i++) {
-    items.push({ id: `${rowNum}-${Date.now()}-${i}`, name: "Item", price: 0, priceText: "0", img: "", nameStyle: null });
+    items.push({
+      id: `${rowNum}-${Date.now()}-${i}`,
+      name: "Item",
+      price: 0,
+      priceText: "0",
+      priceFontSize: null,
+      priceColor: null,
+      img: "",
+      nameStyle: null
+    });
   }
   data.sections.push({
     title: "Name",
     items,
-    titleStyle: null
+    titleStyle: null,
+    barBgColor: ""
   });
 
   renderSections();
@@ -1977,6 +2148,37 @@ function attachOwnerStoreEditHandlers() {
         });
       };
       stripTitle.insertAdjacentElement("afterend", secEditBtn);
+
+      // पट्टी का रंग (Strip Colour) बदलने का बटन
+      const stripColorBtn = document.createElement("button");
+      stripColorBtn.type = "button";
+      stripColorBtn.className = "owner-inline-edit-btn";
+      stripColorBtn.textContent = "🎨 पट्टी रंग";
+      stripColorBtn.title = "पट्टी का रंग बदलें";
+      const curBarBg = sec.barBgColor || "#f1f5f9";
+      stripColorBtn.style.cssText =
+        `margin-left:auto;padding:3px 8px;border:1px solid #94a3b8;border-radius:6px;background:${curBarBg};color:#111827;text-shadow:0 0 3px #ffffff;font-size:0.74rem;font-weight:700;cursor:pointer;`;
+      stripColorBtn.onclick = (e) => {
+        e.stopPropagation();
+        openStandaloneColorPicker(
+          sec.barBgColor || "#f1f5f9",
+          (hex) => {
+            sec.barBgColor = hex;
+            stripColorBtn.style.background = hex;
+            if (typeof applyStripBarStyle === "function") {
+              applyStripBarStyle(stripEl, sec);
+            }
+          },
+          (restoreHex) => {
+            sec.barBgColor = restoreHex;
+            stripColorBtn.style.background = restoreHex;
+            if (typeof applyStripBarStyle === "function") {
+              applyStripBarStyle(stripEl, sec);
+            }
+          }
+        );
+      };
+      stripEl.appendChild(stripColorBtn);
     }
 
     const topRowLimit = Math.min(MAX_TOP_ROW_BOXES, Math.max(0, Number(data.indexBoxLimit ?? MAX_TOP_ROW_BOXES)));
@@ -2008,8 +2210,8 @@ function attachOwnerStoreEditHandlers() {
       const priceEl = card.querySelector(".mini-box-price, .item-price");
 
       if (nameEl && !nameEl.parentElement.classList.contains("owner-item-inline-group")) {
-        const alignItemsVal = isMiniBox ? "flex-start" : "center";
-        const justifyVal = isMiniBox ? "flex-start" : "center";
+        const alignItemsVal = "flex-start";
+        const justifyVal = "flex-start";
 
         const groupWrap = document.createElement("div");
         groupWrap.className = "owner-item-inline-group";
@@ -2040,7 +2242,7 @@ function attachOwnerStoreEditHandlers() {
 
         nameEl.style.marginTop = "0";
         nameEl.style.minWidth = "0";
-        if (isMiniBox) nameEl.style.textAlign = "left";
+        nameEl.style.textAlign = "left";
         nameEl.parentNode.insertBefore(groupWrap, nameEl);
         nameLine.appendChild(nameEl);
         nameLine.appendChild(nameBtn);
@@ -2055,29 +2257,18 @@ function attachOwnerStoreEditHandlers() {
           pricePencilBtn.type = "button";
           pricePencilBtn.className = "owner-inline-edit-btn";
           pricePencilBtn.textContent = "✎";
-          pricePencilBtn.title = "Set Amount";
+          pricePencilBtn.title = "रकम, साइज और रंग बदलें";
           pricePencilBtn.style.cssText =
             "padding:1px 5px;border:1px solid #cbd5e1;border-radius:5px;background:#fefce8;color:#854d0e;font-size:0.72rem;font-weight:700;line-height:1.1;cursor:pointer;flex-shrink:0;";
           pricePencilBtn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();
-            const currentDisplay = item.priceText !== undefined && item.priceText !== null && String(item.priceText).trim() !== ""
-              ? String(item.priceText)
-              : String(item.price ?? 0);
-            const next = prompt("Set Amount (अंक, डॉट . या अन्य चिह्न लिखें):", currentDisplay);
-            if (next !== null) {
-              const rawVal = next.trim();
-              item.priceText = rawVal.length > 0 ? rawVal : "0";
-              const numMatch = rawVal.match(/(\d+(?:\.\d+)?)/);
-              item.price = numMatch ? Number(numMatch[1]) : 0;
-              renderSections();
-              attachOwnerStoreEditHandlers();
-            }
+            openItemAmountEditorModal(sIdx, item.id);
           };
 
           priceEl.style.marginTop = "0";
           priceEl.style.whiteSpace = "nowrap";
-          if (isMiniBox) priceEl.style.textAlign = "left";
+          priceEl.style.textAlign = "left";
           priceLine.appendChild(priceEl);
           priceLine.appendChild(pricePencilBtn);
           groupWrap.appendChild(priceLine);
