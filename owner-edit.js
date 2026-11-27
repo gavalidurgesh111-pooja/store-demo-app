@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V44");
+console.log("OWNER_EDIT_COMPLETE_V45");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -2415,7 +2415,7 @@ function openStoreNameEditorPopup() {
   });
 }
 
-// ==================== COVER CROP POP-UP EDITOR (#screenPhotoEditor) ====================
+// ==================== PHOTO CROP POP-UP EDITOR (#screenPhotoEditor) ====================
 let rawImageObj = null;
 let posX = 0, posY = 0, imgScale = 1, minScale = 1, maxScale = 2.5;
 let baseLeft = 0, baseTop = 0;
@@ -2423,6 +2423,39 @@ let isDraggingImg = false, startMouseX = 0, startMouseY = 0;
 let initialPinchDistance = null;
 let onCoverEditorDone = null;
 let coverEditorEventsBound = false;
+let activeCropConfig = { frameW: 290, frameH: 140, outW: 1080, outH: 520 };
+
+function getBoxCropFrameDimensions(data, sIdx) {
+  const sizes = typeof getEffectiveBoxSizesForSection === "function"
+    ? getEffectiveBoxSizesForSection(data, sIdx)
+    : normalizeBoxSizes(data && data.boxSizes);
+  const cfg = sIdx === 0 ? sizes.miniBox : sizes.productBox;
+  const maxW = 296;
+  const maxH = 165;
+  const rawW = Math.max(40, Number(cfg.width) || (sIdx === 0 ? 92 : 150));
+  const rawH = Math.max(36, Number(cfg.imgHeight) || (sIdx === 0 ? 74 : 125));
+  const scale = Math.min(maxW / rawW, maxH / rawH, 1.8);
+  return {
+    frameW: Math.max(56, Math.round(rawW * scale)),
+    frameH: Math.max(46, Math.round(rawH * scale)),
+    outW: Math.max(240, Math.round(rawW * 4)),
+    outH: Math.max(180, Math.round(rawH * 4))
+  };
+}
+
+function applyCropFrameSize(cropDims = null) {
+  const box = document.getElementById("cropFrameBox");
+  if (!box) return;
+  const cfg = cropDims || { frameW: 290, frameH: 140, outW: 1080, outH: 520 };
+  activeCropConfig = {
+    frameW: cfg.frameW || 290,
+    frameH: cfg.frameH || 140,
+    outW: cfg.outW || 1080,
+    outH: cfg.outH || 520
+  };
+  box.style.width = `${activeCropConfig.frameW}px`;
+  box.style.height = `${activeCropConfig.frameH}px`;
+}
 
 function ensureCoverEditorDOM() {
   let screen = document.getElementById("screenPhotoEditor");
@@ -2612,6 +2645,7 @@ function cancelEditor() {
 
 function confirmEditor() {
   const shouldReopenCover = Boolean(pendingOwnerEditSlot && pendingOwnerEditSlot.reopenCoverModal);
+  pendingOwnerEditSlot = null;
   const preview = document.getElementById("editorImagePreview");
   const box = document.getElementById("cropFrameBox")?.getBoundingClientRect();
   const cb = onCoverEditorDone;
@@ -2624,8 +2658,8 @@ function confirmEditor() {
 
   try {
     const canvas = document.createElement("canvas");
-    canvas.width = 1080;
-    canvas.height = 520;
+    canvas.width = activeCropConfig.outW || 1080;
+    canvas.height = activeCropConfig.outH || 520;
     const ctx = canvas.getContext("2d");
 
     const previewRect = preview.getBoundingClientRect();
@@ -2655,10 +2689,11 @@ function confirmEditor() {
   }
 }
 
-function openCoverPhotoEditor(file, onDone) {
+function openCoverPhotoEditor(file, onDone, cropDims = null) {
   if (!file || typeof onDone !== "function") return;
   onCoverEditorDone = onDone;
   ensureCoverEditorDOM();
+  applyCropFrameSize(cropDims);
 
   const screen = document.getElementById("screenPhotoEditor");
   const preview = document.getElementById("editorImagePreview");
@@ -2694,8 +2729,8 @@ function openCoverPhotoEditor(file, onDone) {
         const boxRect = box.getBoundingClientRect();
         const natW = rawImageObj.naturalWidth || rawImageObj.width || 1;
         const natH = rawImageObj.naturalHeight || rawImageObj.height || 1;
-        const boxW = boxRect.width || 290;
-        const boxH = boxRect.height || 140;
+        const boxW = boxRect.width || activeCropConfig.frameW || 290;
+        const boxH = boxRect.height || activeCropConfig.frameH || 140;
 
         minScale = Math.max(boxW / natW, boxH / natH) || 1;
         maxScale = minScale * 2.5;
@@ -2780,18 +2815,19 @@ function ensureOwnerInlineFileInput() {
         }
       });
     } else if (slotInfo.type === "item") {
-      pendingOwnerEditSlot = null;
-      const resizedUrl = await readImageAsDataURL(file, 500);
-      if (!resizedUrl) return;
       const data = getWorkingStoreData();
-      const { sIdx, itemId } = slotInfo;
-      const item = data.sections[sIdx]?.items?.find((i) => i.id === itemId);
-      if (item) {
-        item.img = resizedUrl;
-      }
-      renderHeader();
-      renderSections();
-      attachOwnerStoreEditHandlers();
+      const cropDims = getBoxCropFrameDimensions(data, slotInfo.sIdx);
+      openCoverPhotoEditor(file, (croppedUrl) => {
+        if (!croppedUrl) return;
+        const workingData = getWorkingStoreData();
+        const { sIdx, itemId } = slotInfo;
+        const item = workingData.sections[sIdx]?.items?.find((i) => i.id === itemId);
+        if (item) {
+          item.img = croppedUrl;
+        }
+        renderSections();
+        attachOwnerStoreEditHandlers();
+      }, cropDims);
     }
   };
 
