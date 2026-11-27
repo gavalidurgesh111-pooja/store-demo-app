@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V59");
+console.log("OWNER_EDIT_COMPLETE_V60");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -148,13 +148,14 @@ function removeOwnerStoreEditUI() {
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
 }
 
-// Keep Item Name & Price in their exact original position without shifting left/right on mini or product boxes
+// Restore Item Name & Price to their proper position on mini (.mini-box) & product (.item-box) after BG toggle
 function keepItemAndPricePositionFixed() {
   document.querySelectorAll(".mini-box:not(.user-photo-only-box), .item-box").forEach((card) => {
+    const isMini = card.classList.contains("mini-box");
     const nameEl = card.querySelector(".mini-box-name, .item-name");
     const priceEl = card.querySelector(".mini-box-price, .item-price");
 
-    const clearShift = (el) => {
+    const restoreEl = (el) => {
       if (!el) return;
       el.style.removeProperty("position");
       el.style.removeProperty("top");
@@ -166,12 +167,18 @@ function keepItemAndPricePositionFixed() {
       el.style.removeProperty("margin-right");
       el.style.removeProperty("transform");
       el.style.removeProperty("float");
-      el.style.removeProperty("text-align");
       el.style.removeProperty("align-self");
+      el.style.setProperty("position", "relative", "important");
+      el.style.setProperty("left", "0px", "important");
+      el.style.setProperty("right", "auto", "important");
+      el.style.setProperty("margin-left", "0px", "important");
+      el.style.setProperty("margin-right", "0px", "important");
+      el.style.setProperty("transform", "none", "important");
+      el.style.setProperty("text-align", isMini ? "center" : "left", "important");
     };
 
-    clearShift(nameEl);
-    clearShift(priceEl);
+    restoreEl(nameEl);
+    restoreEl(priceEl);
   });
 }
 
@@ -1581,6 +1588,13 @@ function openBoxSizePanelModal(targetRowIdx = null) {
     bgColorBtn.onclick = () => {
       openStandaloneColorPicker(targetObj.bgColor || "#ffffff", (hex) => {
         targetObj.bgColor = hex;
+        targetObj.textBgTransparent = false;
+        const bothNoBg = Boolean(sizes.miniBox.textBgTransparent && sizes.productBox.textBgTransparent);
+        const bothNormal = Boolean(!sizes.miniBox.textBgTransparent && !sizes.productBox.textBgTransparent);
+        selectedBulkMode = bothNoBg ? "noBg" : (bothNormal ? "normalBg" : null);
+        syncBulkButtonsState();
+        noBgChk.checked = false;
+        syncNoBgToggleActive();
         applyBoxSizePanelToDom(sizes, hasRowTarget ? targetRowIdx : null);
         highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex, hasRowTarget ? targetRowIdx : null);
       });
