@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V45");
+console.log("OWNER_EDIT_COMPLETE_V46");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -2422,6 +2422,7 @@ let baseLeft = 0, baseTop = 0;
 let isDraggingImg = false, startMouseX = 0, startMouseY = 0;
 let initialPinchDistance = null;
 let onCoverEditorDone = null;
+let onPhotoEditorRemove = null;
 let coverEditorEventsBound = false;
 let activeCropConfig = { frameW: 290, frameH: 140, outW: 1080, outH: 520 };
 
@@ -2457,6 +2458,21 @@ function applyCropFrameSize(cropDims = null) {
   box.style.height = `${activeCropConfig.frameH}px`;
 }
 
+function syncZoomControlsUI(scaleVal) {
+  const zoomRange = document.getElementById("photoZoomRange");
+  const zoomLabel = document.getElementById("photoZoomLabel");
+  if (zoomRange) {
+    zoomRange.min = String(minScale);
+    zoomRange.max = String(maxScale);
+    zoomRange.step = String(Math.max(0.01, (maxScale - minScale) / 100));
+    zoomRange.value = String(scaleVal);
+  }
+  if (zoomLabel) {
+    const pct = minScale > 0 ? Math.round((scaleVal / minScale) * 100) : 100;
+    zoomLabel.textContent = `${pct}%`;
+  }
+}
+
 function ensureCoverEditorDOM() {
   let screen = document.getElementById("screenPhotoEditor");
   if (!screen) {
@@ -2472,9 +2488,16 @@ function ensureCoverEditorDOM() {
           <img id="editorImagePreview" src="" alt="Preview" style="position:absolute;transform-origin:0 0;cursor:grab;user-select:none;z-index:5;display:block;max-width:none;max-height:none;will-change:transform;transform:translate3d(0px, 0px, 0px);" />
           <div class="crop-frame-box" id="cropFrameBox" style="width:290px;height:140px;border:2px solid #ffffff;box-shadow:0 0 0 9999px rgba(0, 0, 0, 0.52);position:relative;pointer-events:none;z-index:10;"></div>
         </div>
-        <div class="editor-bottom-bar" style="width:100%;height:48px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:0 22px;z-index:25;border-top:1px solid #e2e8f0;">
-          <button type="button" class="editor-bottom-btn" onclick="cancelEditor()" title="Cancel" style="background:#f8fafc;border:1px solid #e2e8f0;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#334155;font-weight:700;">X</button>
-          <button type="button" class="editor-bottom-btn" onclick="confirmEditor()" title="Save" style="background:#FFEDE5;border:1px solid #FDBA74;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0 12px;height:34px;border-radius:8px;color:#9A3412;font-weight:700;">OK</button>
+        <div style="width:100%;padding:8px 14px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;align-items:center;gap:8px;">
+          <button type="button" id="photoZoomOutBtn" title="Zoom Out" style="width:28px;height:28px;border:1px solid #cbd5e1;border-radius:6px;background:#ffffff;color:#111827;font-weight:800;cursor:pointer;line-height:1;">-</button>
+          <input type="range" id="photoZoomRange" style="flex:1;accent-color:#FF631C;cursor:pointer;" />
+          <button type="button" id="photoZoomInBtn" title="Zoom In" style="width:28px;height:28px;border:1px solid #cbd5e1;border-radius:6px;background:#ffffff;color:#111827;font-weight:800;cursor:pointer;line-height:1;">+</button>
+          <span id="photoZoomLabel" style="min-width:42px;text-align:right;font-size:0.75rem;font-weight:700;color:#334155;">100%</span>
+        </div>
+        <div class="editor-bottom-bar" style="width:100%;height:48px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:0 16px;z-index:25;border-top:1px solid #e2e8f0;gap:8px;">
+          <button type="button" class="editor-bottom-btn" onclick="cancelEditor()" title="Cancel" style="background:#f8fafc;border:1px solid #e2e8f0;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;color:#334155;font-weight:700;">X</button>
+          <button type="button" class="editor-bottom-btn" onclick="removeEditedPhoto()" title="Remove Photo" style="background:#fff5f5;border:1px solid #fecaca;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0 10px;height:34px;border-radius:8px;color:#b91c1c;font-weight:700;">Remove</button>
+          <button type="button" class="editor-bottom-btn" onclick="confirmEditor()" title="Save" style="background:#FFEDE5;border:1px solid #FDBA74;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0 14px;height:34px;border-radius:8px;color:#9A3412;font-weight:700;">Save</button>
         </div>
       </div>
     `;
@@ -2491,7 +2514,10 @@ function setEditorZoomAroundCenter(nextScale) {
   if (!preview || !area || !box || !rawImageObj) return;
 
   const clampedScale = Math.max(minScale, Math.min(maxScale, nextScale));
-  if (clampedScale === imgScale) return;
+  if (clampedScale === imgScale) {
+    syncZoomControlsUI(imgScale);
+    return;
+  }
 
   const areaRect = area.getBoundingClientRect();
   const boxRect = box.getBoundingClientRect();
@@ -2518,6 +2544,7 @@ function setEditorZoomAroundCenter(nextScale) {
   posX = boxCenterX - ratioX * newW - baseLeft;
   posY = boxCenterY - ratioY * newH - baseTop;
 
+  syncZoomControlsUI(imgScale);
   applySmartBoundaryAndSnap();
 }
 
@@ -2619,6 +2646,29 @@ function bindCoverEditorEvents() {
     const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
     setEditorZoomAroundCenter(imgScale * zoomFactor);
   }, { passive: false });
+
+  const zoomRange = document.getElementById("photoZoomRange");
+  const zoomInBtn = document.getElementById("photoZoomInBtn");
+  const zoomOutBtn = document.getElementById("photoZoomOutBtn");
+
+  if (zoomRange) {
+    zoomRange.addEventListener("input", () => {
+      if (!rawImageObj) return;
+      setEditorZoomAroundCenter(Number(zoomRange.value));
+    });
+  }
+  if (zoomInBtn) {
+    zoomInBtn.addEventListener("click", () => {
+      if (!rawImageObj) return;
+      setEditorZoomAroundCenter(imgScale * 1.15);
+    });
+  }
+  if (zoomOutBtn) {
+    zoomOutBtn.addEventListener("click", () => {
+      if (!rawImageObj) return;
+      setEditorZoomAroundCenter(imgScale / 1.15);
+    });
+  }
 }
 
 function cancelEditor() {
@@ -2635,9 +2685,37 @@ function cancelEditor() {
   if (screen) screen.style.display = "none";
   rawImageObj = null;
   onCoverEditorDone = null;
+  onPhotoEditorRemove = null;
   isDraggingImg = false;
   initialPinchDistance = null;
 
+  if (shouldReopenCover && OWNER_EDIT_MODE) {
+    openCoverManagerModal();
+  }
+}
+
+function removeEditedPhoto() {
+  const shouldReopenCover = Boolean(pendingOwnerEditSlot && pendingOwnerEditSlot.reopenCoverModal);
+  const removeCb = onPhotoEditorRemove;
+  pendingOwnerEditSlot = null;
+
+  const screen = document.getElementById("screenPhotoEditor");
+  const preview = document.getElementById("editorImagePreview");
+  if (preview) {
+    preview.onload = null;
+    preview.onerror = null;
+    preview.src = "";
+  }
+  if (screen) screen.style.display = "none";
+  rawImageObj = null;
+  onCoverEditorDone = null;
+  onPhotoEditorRemove = null;
+  isDraggingImg = false;
+  initialPinchDistance = null;
+
+  if (typeof removeCb === "function") {
+    removeCb();
+  }
   if (shouldReopenCover && OWNER_EDIT_MODE) {
     openCoverManagerModal();
   }
@@ -2650,6 +2728,7 @@ function confirmEditor() {
   const box = document.getElementById("cropFrameBox")?.getBoundingClientRect();
   const cb = onCoverEditorDone;
   onCoverEditorDone = null;
+  onPhotoEditorRemove = null;
 
   if (!rawImageObj || !preview || !box || !box.width || !box.height) {
     cancelEditor();
@@ -2689,9 +2768,10 @@ function confirmEditor() {
   }
 }
 
-function openCoverPhotoEditor(file, onDone, cropDims = null) {
+function openCoverPhotoEditor(file, onDone, cropDims = null, onRemove = null) {
   if (!file || typeof onDone !== "function") return;
   onCoverEditorDone = onDone;
+  onPhotoEditorRemove = typeof onRemove === "function" ? onRemove : null;
   ensureCoverEditorDOM();
   applyCropFrameSize(cropDims);
 
@@ -2733,8 +2813,9 @@ function openCoverPhotoEditor(file, onDone, cropDims = null) {
         const boxH = boxRect.height || activeCropConfig.frameH || 140;
 
         minScale = Math.max(boxW / natW, boxH / natH) || 1;
-        maxScale = minScale * 2.5;
+        maxScale = minScale * 3.0;
         imgScale = minScale;
+        syncZoomControlsUI(imgScale);
 
         const renderW = natW * imgScale;
         const renderH = natH * imgScale;
@@ -2799,35 +2880,62 @@ function ensureOwnerInlineFileInput() {
     }
 
     if (slotInfo.type === "cover") {
-      openCoverPhotoEditor(file, (adjustedUrl) => {
-        const data = getWorkingStoreData();
-        if (!Array.isArray(data.coverSlots)) data.coverSlots = [""];
-        const slotIdx = Number.isInteger(slotInfo.slotIdx) ? slotInfo.slotIdx : 0;
-        while (data.coverSlots.length <= slotIdx) {
-          data.coverSlots.push("");
+      const slotIdx = Number.isInteger(slotInfo.slotIdx) ? slotInfo.slotIdx : 0;
+      openCoverPhotoEditor(
+        file,
+        (adjustedUrl) => {
+          const data = getWorkingStoreData();
+          if (!Array.isArray(data.coverSlots)) data.coverSlots = [""];
+          while (data.coverSlots.length <= slotIdx) {
+            data.coverSlots.push("");
+          }
+          const wasFirstEmpty = slotIdx === 0 && !data.coverSlots[0];
+          data.coverSlots[slotIdx] = adjustedUrl;
+          data.coverImg = data.coverSlots.find(Boolean) || adjustedUrl;
+          syncCoverOnlyEditState();
+          if (wasFirstEmpty) {
+            peekNextCoverHint();
+          }
+        },
+        null,
+        () => {
+          const data = getWorkingStoreData();
+          if (!Array.isArray(data.coverSlots)) data.coverSlots = [""];
+          if (data.coverSlots[slotIdx] !== undefined) {
+            data.coverSlots[slotIdx] = "";
+            data.coverImg = data.coverSlots.find(Boolean) || "";
+          }
+          syncCoverOnlyEditState();
         }
-        const wasFirstEmpty = slotIdx === 0 && !data.coverSlots[0];
-        data.coverSlots[slotIdx] = adjustedUrl;
-        data.coverImg = data.coverSlots.find(Boolean) || adjustedUrl;
-        syncCoverOnlyEditState();
-        if (wasFirstEmpty) {
-          peekNextCoverHint();
-        }
-      });
+      );
     } else if (slotInfo.type === "item") {
       const data = getWorkingStoreData();
       const cropDims = getBoxCropFrameDimensions(data, slotInfo.sIdx);
-      openCoverPhotoEditor(file, (croppedUrl) => {
-        if (!croppedUrl) return;
-        const workingData = getWorkingStoreData();
-        const { sIdx, itemId } = slotInfo;
-        const item = workingData.sections[sIdx]?.items?.find((i) => i.id === itemId);
-        if (item) {
-          item.img = croppedUrl;
+      openCoverPhotoEditor(
+        file,
+        (croppedUrl) => {
+          if (!croppedUrl) return;
+          const workingData = getWorkingStoreData();
+          const { sIdx, itemId } = slotInfo;
+          const item = workingData.sections[sIdx]?.items?.find((i) => i.id === itemId);
+          if (item) {
+            item.img = croppedUrl;
+          }
+          renderSections();
+          attachOwnerStoreEditHandlers();
+        },
+        cropDims,
+        () => {
+          const workingData = getWorkingStoreData();
+          const { sIdx, itemId } = slotInfo;
+          const item = workingData.sections[sIdx]?.items?.find((i) => i.id === itemId);
+          if (item) {
+            item.img = "";
+          }
+          renderSections();
+          attachOwnerStoreEditHandlers();
         }
-        renderSections();
-        attachOwnerStoreEditHandlers();
-      }, cropDims);
+      );
     }
   };
 
