@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V55");
+console.log("OWNER_EDIT_COMPLETE_V56");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -148,6 +148,54 @@ function removeOwnerStoreEditUI() {
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
 }
 
+// Keep Item Name & Price in the exact same fixed position whether BG is added or removed
+function keepItemAndPricePositionFixed() {
+  document.querySelectorAll(".mini-box:not(.user-photo-only-box), .item-box").forEach((card) => {
+    const isMini = card.classList.contains("mini-box");
+    const nameEl = card.querySelector(".mini-box-name, .item-name");
+    const priceEl = card.querySelector(".mini-box-price, .item-price");
+
+    if (nameEl) {
+      nameEl.style.setProperty("width", "100%", "important");
+      nameEl.style.setProperty("padding-left", isMini ? "4px" : "8px", "important");
+      nameEl.style.setProperty("padding-right", isMini ? "4px" : "8px", "important");
+      nameEl.style.setProperty("box-sizing", "border-box", "important");
+      nameEl.style.setProperty("text-align", isMini ? "center" : "left", "important");
+      nameEl.style.setProperty("margin-left", "0px", "important");
+      nameEl.style.setProperty("margin-right", "0px", "important");
+      nameEl.style.setProperty("left", "auto", "important");
+      nameEl.style.setProperty("right", "auto", "important");
+      nameEl.style.setProperty("transform", "none", "important");
+    }
+
+    if (priceEl) {
+      priceEl.style.setProperty("width", "100%", "important");
+      priceEl.style.setProperty("padding-left", isMini ? "4px" : "8px", "important");
+      priceEl.style.setProperty("padding-right", isMini ? "4px" : "8px", "important");
+      priceEl.style.setProperty("box-sizing", "border-box", "important");
+      priceEl.style.setProperty("text-align", isMini ? "center" : "left", "important");
+      priceEl.style.setProperty("margin-left", "0px", "important");
+      priceEl.style.setProperty("margin-right", "0px", "important");
+      priceEl.style.setProperty("left", "auto", "important");
+      priceEl.style.setProperty("right", "auto", "important");
+      priceEl.style.setProperty("transform", "none", "important");
+    }
+  });
+}
+
+(function wrapApplyBoxSizeStylesForFixedPosition() {
+  if (typeof window.applyBoxSizeStyles === "function" && !window.applyBoxSizeStyles.__fixedPosWrapped) {
+    const origApply = window.applyBoxSizeStyles;
+    const wrapped = function () {
+      const res = origApply.apply(this, arguments);
+      keepItemAndPricePositionFixed();
+      return res;
+    };
+    wrapped.__fixedPosWrapped = true;
+    window.applyBoxSizeStyles = wrapped;
+  }
+})();
+
 function syncCoverOnlyEditState() {
   if (typeof renderHeader === "function") {
     renderHeader();
@@ -246,6 +294,7 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore,
     if (typeof onCancelRestore === "function") {
       onCancelRestore(previousColor);
     }
+    keepItemAndPricePositionFixed();
     modal.remove();
   };
 
@@ -310,13 +359,6 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore,
 
   const btnGroup = document.createElement("div");
   btnGroup.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;";
-
-  const cancelBtn = document.createElement("button");
-  cancelBtn.type = "button";
-  cancelBtn.textContent = "Cancel";
-  cancelBtn.style.cssText =
-    "padding:9px 14px;min-height:40px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#334155;font-weight:600;cursor:pointer;";
-  cancelBtn.onclick = closeModalAndRestore;
 
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
@@ -396,6 +438,7 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore,
   applyBtn.onclick = () => {
     const finalHex = syncColorUI();
     if (typeof onChooseColor === "function") onChooseColor(finalHex, true);
+    keepItemAndPricePositionFixed();
     modal.remove();
   };
 
@@ -403,6 +446,7 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore,
     applyAllBtn.onclick = () => {
       const finalHex = syncColorUI();
       options.onApplyAll(finalHex);
+      keepItemAndPricePositionFixed();
       modal.remove();
     };
   }
@@ -411,7 +455,6 @@ function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore,
   if (applyAllBtn) bindSoftToAccentButton(applyAllBtn);
 
   sliderWrap.appendChild(hueTrackWrap);
-  btnGroup.appendChild(cancelBtn);
   btnGroup.appendChild(applyBtn);
   if (applyAllBtn) btnGroup.appendChild(applyAllBtn);
   footer.appendChild(selectedNameText);
@@ -803,7 +846,7 @@ function openCoverManagerModal() {
   document.body.appendChild(modal);
 }
 
-// ==================== STRIP STYLE POP-UP (BOTTOM SHEET + SCROLLABLE) ====================
+// ==================== STRIP STYLE POP-UP (BOTTOM SHEET + SINGLE 'X') ====================
 function openStripHeightEditorModal(sIdx, stripEl) {
   removeStripHeightModalIfExists();
   const data = getWorkingStoreData();
@@ -1033,13 +1076,6 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   const footer = document.createElement("div");
   footer.style.cssText = "display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;";
 
-  const cancelBtn = document.createElement("button");
-  cancelBtn.type = "button";
-  cancelBtn.textContent = "Cancel";
-  cancelBtn.style.cssText =
-    "flex:1;min-height:38px;padding:7px 10px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;color:#334155;font-weight:700;cursor:pointer;";
-  cancelBtn.onclick = closeBtn.onclick;
-
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
   applyBtn.textContent = "Apply";
@@ -1074,7 +1110,6 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   };
   bindSoftToAccentButton(applyAllBtn);
 
-  footer.appendChild(cancelBtn);
   footer.appendChild(applyBtn);
   footer.appendChild(applyAllBtn);
 
@@ -1245,7 +1280,7 @@ function openCustomAdEditorModal(sIdx) {
   document.body.appendChild(modal);
 }
 
-// ==================== BOX SIZE & STYLE PANEL ====================
+// ==================== BOX SIZE & STYLE PANEL (SINGLE 'X' CANCEL) ====================
 const FALLBACK_BOX_SIZES = {
   miniBox: { width: 92, height: 122, imgHeight: 74, fontSize: 12, bgColor: "#ffffff", priceFontSize: 11, priceColor: "#111827", textBgTransparent: false },
   productBox: { width: 150, height: 215, imgHeight: 125, fontSize: 14, bgColor: "#ffffff", priceFontSize: 13, priceColor: "#111827", textBgTransparent: false }
@@ -1317,6 +1352,7 @@ function applyBoxSizePanelToDom(sizes, targetRowIdx = null) {
   if (typeof window.applyBoxSizeStyles === "function") {
     window.applyBoxSizeStyles();
   }
+  keepItemAndPricePositionFixed();
 }
 
 function resetBoxItemsNameAndPrice(dataObj, targetRowIdx = null) {
@@ -1699,13 +1735,6 @@ function openBoxSizePanelModal(targetRowIdx = null) {
   const footer = document.createElement("div");
   footer.style.cssText = "display:flex;gap:6px;margin-top:2px;flex-shrink:0;flex-wrap:wrap;";
 
-  const cancelBtn = document.createElement("button");
-  cancelBtn.type = "button";
-  cancelBtn.textContent = "Cancel";
-  cancelBtn.style.cssText =
-    "flex:1;min-height:40px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;color:#334155;font-size:0.82rem;font-weight:700;cursor:pointer;";
-  cancelBtn.onclick = restoreSnapshot;
-
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
   applyBtn.textContent = hasRowTarget ? `Apply Row ${targetRowIdx + 1}` : "Apply";
@@ -1741,7 +1770,6 @@ function openBoxSizePanelModal(targetRowIdx = null) {
   bindSoftToAccentButton(applyAllRowsBtn);
 
   footer.appendChild(resetBtn);
-  footer.appendChild(cancelBtn);
   footer.appendChild(applyBtn);
   footer.appendChild(applyAllRowsBtn);
 
@@ -1986,7 +2014,10 @@ function openCustomTextStylePopup(config) {
   topCloseBtn.textContent = "X";
   topCloseBtn.style.cssText =
     "border:none;background:#f8fafc;border-radius:8px;min-width:34px;min-height:34px;font-size:1rem;font-weight:700;color:#334155;cursor:pointer;";
-  topCloseBtn.onclick = () => modal.remove();
+  topCloseBtn.onclick = () => {
+    keepItemAndPricePositionFixed();
+    modal.remove();
+  };
 
   topBar.appendChild(heading);
   topBar.appendChild(topCloseBtn);
@@ -3571,6 +3602,7 @@ function attachOwnerStoreEditHandlers() {
   if (typeof syncStripBarCornerDesign === "function") {
     syncStripBarCornerDesign();
   }
+  keepItemAndPricePositionFixed();
 }
 
 if (document.body.getAttribute("data-page") === "store" && OWNER_EDIT_MODE) {
