@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V54");
+console.log("OWNER_EDIT_COMPLETE_V55");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -1293,39 +1293,13 @@ function clearBoxPreviewHighlights() {
   });
 }
 
-function restoreRowItemNamePosition(dataObj, targetRowIdx) {
-  if (!dataObj || !Array.isArray(dataObj.sections)) return;
-  const sec = dataObj.sections[targetRowIdx];
-  if (!sec || !Array.isArray(sec.items)) return;
-
-  sec.items.forEach((it) => {
-    if (it && it.nameStyle && typeof it.nameStyle === "object") {
-      it.nameStyle.bgEnabled = false;
-    }
-  });
-
-  const secEl = document.querySelector(`#sectionsContainer .row-section[data-section-index="${targetRowIdx}"]`);
-  if (!secEl) return;
-  secEl.querySelectorAll(".mini-box-name, .item-name").forEach((nameEl) => {
-    nameEl.style.setProperty("position", "relative", "important");
-    nameEl.style.setProperty("left", "0px", "important");
-    nameEl.style.setProperty("right", "auto", "important");
-    nameEl.style.setProperty("margin-left", "0px", "important");
-    nameEl.style.setProperty("text-align", "left", "important");
-    nameEl.style.setProperty("transform", "none", "important");
-  });
-}
-
 function applyBoxSizePanelToDom(sizes, targetRowIdx = null) {
   const data = getWorkingStoreData();
   if (typeof targetRowIdx === "number" && data.sections && data.sections[targetRowIdx]) {
-    const nextRowMini = { ...sizes.miniBox, textBgTransparent: false };
-    const nextRowProd = { ...sizes.productBox, textBgTransparent: false };
     data.sections[targetRowIdx].customBoxSizes = {
-      miniBox: nextRowMini,
-      productBox: nextRowProd
+      miniBox: { ...sizes.miniBox },
+      productBox: { ...sizes.productBox }
     };
-    restoreRowItemNamePosition(data, targetRowIdx);
   } else {
     data.boxSizes = {
       miniBox: { ...sizes.miniBox },
@@ -1342,9 +1316,6 @@ function applyBoxSizePanelToDom(sizes, targetRowIdx = null) {
   }
   if (typeof window.applyBoxSizeStyles === "function") {
     window.applyBoxSizeStyles();
-  }
-  if (typeof targetRowIdx === "number") {
-    restoreRowItemNamePosition(data, targetRowIdx);
   }
 }
 
@@ -1568,9 +1539,6 @@ function openBoxSizePanelModal(targetRowIdx = null) {
     bgColorBtn.onclick = () => {
       openStandaloneColorPicker(targetObj.bgColor || "#ffffff", (hex) => {
         targetObj.bgColor = hex;
-        if (hasRowTarget) {
-          targetObj.textBgTransparent = false;
-        }
         applyBoxSizePanelToDom(sizes, hasRowTarget ? targetRowIdx : null);
         highlightBoxPreview(selector, targetObj.width, targetObj.height, accentHex, hasRowTarget ? targetRowIdx : null);
       });
