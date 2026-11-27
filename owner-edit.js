@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V57");
+console.log("OWNER_EDIT_COMPLETE_V58");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -148,32 +148,29 @@ function removeOwnerStoreEditUI() {
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
 }
 
-// Keep Item Name & Price in the exact same fixed position on both mini (.mini-box) and product (.item-box)
+// Strict rule: Item Name & Price never leave their position on any box (.mini-box or .item-box) even when BG is removed
 function keepItemAndPricePositionFixed() {
   document.querySelectorAll(".mini-box:not(.user-photo-only-box), .item-box").forEach((card) => {
     const isMini = card.classList.contains("mini-box");
     const nameEl = card.querySelector(".mini-box-name, .item-name");
     const priceEl = card.querySelector(".mini-box-price, .item-price");
 
-    if (nameEl) {
-      nameEl.style.setProperty("position", "relative", "important");
-      nameEl.style.setProperty("left", "0px", "important");
-      nameEl.style.setProperty("right", "auto", "important");
-      nameEl.style.setProperty("margin-left", "0px", "important");
-      nameEl.style.setProperty("margin-right", "0px", "important");
-      nameEl.style.setProperty("transform", "none", "important");
-      nameEl.style.setProperty("text-align", isMini ? "center" : "left", "important");
-    }
+    const lockEl = (el) => {
+      if (!el) return;
+      el.style.setProperty("position", "relative", "important");
+      el.style.setProperty("top", "auto", "important");
+      el.style.setProperty("bottom", "auto", "important");
+      el.style.setProperty("left", "0px", "important");
+      el.style.setProperty("right", "auto", "important");
+      el.style.setProperty("margin", "0px", "important");
+      el.style.setProperty("transform", "none", "important");
+      el.style.setProperty("float", "none", "important");
+      el.style.setProperty("text-align", isMini ? "center" : "left", "important");
+      el.style.setProperty("align-self", isMini ? "center" : "stretch", "important");
+    };
 
-    if (priceEl) {
-      priceEl.style.setProperty("position", "relative", "important");
-      priceEl.style.setProperty("left", "0px", "important");
-      priceEl.style.setProperty("right", "auto", "important");
-      priceEl.style.setProperty("margin-left", "0px", "important");
-      priceEl.style.setProperty("margin-right", "0px", "important");
-      priceEl.style.setProperty("transform", "none", "important");
-      priceEl.style.setProperty("text-align", isMini ? "center" : "left", "important");
-    }
+    lockEl(nameEl);
+    lockEl(priceEl);
   });
 }
 
@@ -187,6 +184,19 @@ function keepItemAndPricePositionFixed() {
     };
     wrapped.__fixedPosWrapped = true;
     window.applyBoxSizeStyles = wrapped;
+  }
+})();
+
+(function wrapRenderSectionsForFixedPosition() {
+  if (typeof window.renderSections === "function" && !window.renderSections.__fixedPosWrapped) {
+    const origRender = window.renderSections;
+    const wrappedRender = function () {
+      const res = origRender.apply(this, arguments);
+      keepItemAndPricePositionFixed();
+      return res;
+    };
+    wrappedRender.__fixedPosWrapped = true;
+    window.renderSections = wrappedRender;
   }
 })();
 
