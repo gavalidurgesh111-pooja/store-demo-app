@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V51");
+console.log("OWNER_EDIT_COMPLETE_V52");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -584,7 +584,6 @@ function makeLabeledSlider(labelText, min, max, step, initialVal, unitSuffix, ac
 function lockBackgroundScrollOnBottomSheet(modalEl, cardEl) {
   if (!modalEl || !cardEl) return;
 
-  // Pressing on the pop-up card only scrolls inside the card and never leaks to the background page
   cardEl.addEventListener("touchmove", (e) => {
     e.stopPropagation();
   }, { passive: true });
@@ -593,7 +592,6 @@ function lockBackgroundScrollOnBottomSheet(modalEl, cardEl) {
     e.stopPropagation();
   }, { passive: true });
 
-  // Only touching/dragging the area ABOVE the pop-up scrolls the underlying store page
   let backdropTouchY = null;
   modalEl.addEventListener("touchstart", (e) => {
     if (cardEl.contains(e.target)) {
@@ -956,7 +954,7 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   ];
 
   const shapeControllers = [];
-  const shapeBtns = shapes.map((sh) => {
+  shapes.forEach((sh) => {
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = sh.label;
@@ -969,7 +967,6 @@ function openStripHeightEditorModal(sIdx, stripEl) {
       syncLiveStrip();
     };
     shapeGrid.appendChild(b);
-    return b;
   });
 
   const twoColBox = document.createElement("div");
@@ -1180,7 +1177,7 @@ function openCustomAdEditorModal(sIdx) {
   ];
 
   const modeControllers = [];
-  const modeBtns = modes.map((m) => {
+  modes.forEach((m) => {
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = m.label;
@@ -1192,7 +1189,6 @@ function openCustomAdEditorModal(sIdx) {
       modeControllers.forEach((c, idx) => c.setSelected(modes[idx].id === draftMoveMode));
     };
     moveRow.appendChild(b);
-    return b;
   });
 
   const footer = document.createElement("div");
@@ -1323,6 +1319,26 @@ function applyBoxSizePanelToDom(sizes, targetRowIdx = null) {
   }
 }
 
+function resetBoxItemsNameAndPrice(dataObj, targetRowIdx = null) {
+  if (!dataObj || !Array.isArray(dataObj.sections)) return;
+  const rowsToReset = typeof targetRowIdx === "number" && dataObj.sections[targetRowIdx]
+    ? [dataObj.sections[targetRowIdx]]
+    : dataObj.sections;
+
+  rowsToReset.forEach((sec) => {
+    if (!sec || !Array.isArray(sec.items)) return;
+    sec.items.forEach((it) => {
+      it.name = "Item";
+      it.price = 0;
+      it.priceText = "0";
+      it.priceFontSize = null;
+      it.priceColor = null;
+      it.nameStyle = null;
+      it.img = "";
+    });
+  });
+}
+
 function openBoxSizePanelModal(targetRowIdx = null) {
   removeBoxSizePanelIfExists();
 
@@ -1334,6 +1350,7 @@ function openBoxSizePanelModal(targetRowIdx = null) {
     ? JSON.parse(JSON.stringify(data.sections[targetRowIdx].customBoxSizes))
     : null;
   const snapshotGlobalSizes = JSON.parse(JSON.stringify(data.boxSizes));
+  const snapshotSectionsItems = JSON.parse(JSON.stringify((data.sections || []).map((s) => s.items || [])));
 
   const allNoBgSaved = Boolean(sizes.miniBox.textBgTransparent && sizes.productBox.textBgTransparent);
   const allNormalBgSaved = Boolean(!sizes.miniBox.textBgTransparent && !sizes.productBox.textBgTransparent);
@@ -1380,10 +1397,17 @@ function openBoxSizePanelModal(targetRowIdx = null) {
     if (hasRowTarget) {
       data.sections[targetRowIdx].customBoxSizes = snapshotRowSizes ? JSON.parse(JSON.stringify(snapshotRowSizes)) : null;
     }
+    (data.sections || []).forEach((s, idx) => {
+      if (snapshotSectionsItems[idx]) {
+        s.items = JSON.parse(JSON.stringify(snapshotSectionsItems[idx]));
+      }
+    });
     if (typeof window.applyBoxSizeStyles === "function") {
       window.applyBoxSizeStyles();
     }
     modal.remove();
+    renderSections();
+    attachOwnerStoreEditHandlers();
   };
 
   closeBtn.onclick = restoreSnapshot;
@@ -1663,7 +1687,10 @@ function openBoxSizePanelModal(targetRowIdx = null) {
     syncBulkButtonsState();
     miniSec.syncAll();
     prodSec.syncAll();
+    resetBoxItemsNameAndPrice(data, hasRowTarget ? targetRowIdx : null);
     applyBoxSizePanelToDom(sizes, hasRowTarget ? targetRowIdx : null);
+    renderSections();
+    attachOwnerStoreEditHandlers();
     highlightBoxPreview(".mini-box", sizes.miniBox.width, sizes.miniBox.height, accentHex, hasRowTarget ? targetRowIdx : null);
     highlightBoxPreview(".item-box", sizes.productBox.width, sizes.productBox.height, accentHex, hasRowTarget ? targetRowIdx : null);
   };
@@ -2014,7 +2041,6 @@ function openCustomTextStylePopup(config) {
     }
   }
 
-  // ---- NAME SECTION & ITS NEARBY CONTROLS ----
   const nameSectionBox = document.createElement("div");
   nameSectionBox.style.cssText =
     "border:1px solid #e2e8f0;background:#ffffff;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:10px;";
@@ -2196,7 +2222,7 @@ function openCustomTextStylePopup(config) {
         opt.value === st.fontFamily &&
         (opt.italic ? "italic" : "normal") === st.fontStyle &&
         Number(opt.weight) === Number(st.fontWeight) &&
-        Number(opt.letterSpacing) === Number(st.letterSpacing);
+        Number(o.letterSpacing) === Number(st.letterSpacing);
       ctrl.setSelected(active);
     });
     syncChooseFontBtnLabel();
@@ -2297,7 +2323,6 @@ function openCustomTextStylePopup(config) {
   nameSectionBox.appendChild(borderCtrl.box);
   nameSectionBox.appendChild(bgCtrl.box);
 
-  // ---- PHOTO SECTION & ITS NEARBY CONTROLS ----
   let boxPhotoWrap = null;
   let photoStatusBadge = null;
   if (isItemBox) {
@@ -2360,7 +2385,6 @@ function openCustomTextStylePopup(config) {
     boxPhotoWrap.appendChild(pBtnGroup);
   }
 
-  // ---- PRICE SECTION & ITS NEARBY LIVE CONTROLS ----
   let boxPriceWrap = null;
   let priceInput = null;
   let priceLiveBadge = null;
@@ -2447,7 +2471,6 @@ function openCustomTextStylePopup(config) {
     syncPriceLivePreview();
   }
 
-  // ---- FOOTER BUTTONS: RESET, APPLY, APPLY TO ALL (NO CANCEL) ----
   const footer = document.createElement("div");
   footer.style.cssText = "display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;";
 
@@ -3254,7 +3277,6 @@ function attachOwnerStoreEditHandlers() {
 
   const fixedEditorColor = getEditorFixedColor();
 
-  // Unified Editor Control Bar with balanced #FF631C accent and crisp white contrast
   const bar = document.createElement("div");
   bar.id = "ownerLiveSaveBar";
   bar.style.cssText =
@@ -3302,7 +3324,6 @@ function attachOwnerStoreEditHandlers() {
   topRow.appendChild(info);
   topRow.appendChild(primaryActions);
 
-  // Unified Tools Row (Cover controls live inside Cover Settings)
   const toolsRow = document.createElement("div");
   toolsRow.style.cssText = "display:flex;gap:6px;align-items:center;flex-wrap:wrap;";
 
@@ -3345,7 +3366,6 @@ function attachOwnerStoreEditHandlers() {
   bar.appendChild(toolsRow);
   document.body.prepend(bar);
 
-  // Keep cover area clean; only Store Name drag is active on cover
   const coverWrap = document.querySelector(".cover-wrapper");
   if (coverWrap) {
     coverWrap.style.position = "relative";
@@ -3362,7 +3382,6 @@ function attachOwnerStoreEditHandlers() {
     }
   }
 
-  // Row Controls
   const sectionEls = document.querySelectorAll("#sectionsContainer .row-section");
   sectionEls.forEach((secEl, sIdx) => {
     const sec = data.sections[sIdx];
@@ -3449,7 +3468,6 @@ function attachOwnerStoreEditHandlers() {
       secEl.prepend(restoreBarRow);
     }
 
-    // Single 'Edit' button per box; opens the unified bottom-sheet editor with Name, Photo & Price
     const topRowLimit = Math.min(MAX_TOP_ROW_BOXES, Math.max(0, Number(data.indexBoxLimit ?? MAX_TOP_ROW_BOXES)));
     const cards = secEl.querySelectorAll(".mini-box:not(.user-photo-only-box), .item-box");
     cards.forEach((card, idx) => {
