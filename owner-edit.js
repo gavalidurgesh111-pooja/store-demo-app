@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V43");
+console.log("OWNER_EDIT_COMPLETE_V44");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -146,6 +146,26 @@ function removeOwnerStoreEditUI() {
   removeCoverHeightModalIfExists();
   removeCoverManagerModalIfExists();
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
+}
+
+function syncCoverOnlyEditState() {
+  if (typeof renderHeader === "function") {
+    renderHeader();
+  }
+  const coverWrap = document.querySelector(".cover-wrapper");
+  if (coverWrap) {
+    coverWrap.style.position = "relative";
+    coverWrap.style.overflow = "hidden";
+    const overlayEl = typeof ensureCoverStoreTitleElements === "function"
+      ? ensureCoverStoreTitleElements(coverWrap).overlayEl
+      : coverWrap.querySelector(".cover-overlay");
+    const titleEl = document.getElementById("storeTitle");
+    if (overlayEl && titleEl) {
+      overlayEl.style.setProperty("z-index", "22", "important");
+      overlayEl.style.setProperty("display", "inline-flex", "important");
+      enableStoreNameDragOnCover(coverWrap, overlayEl);
+    }
+  }
 }
 
 function applyDraftThemeColor(hexColor) {
@@ -2754,8 +2774,7 @@ function ensureOwnerInlineFileInput() {
         const wasFirstEmpty = slotIdx === 0 && !data.coverSlots[0];
         data.coverSlots[slotIdx] = adjustedUrl;
         data.coverImg = data.coverSlots.find(Boolean) || adjustedUrl;
-        renderHeader();
-        attachOwnerStoreEditHandlers();
+        syncCoverOnlyEditState();
         if (wasFirstEmpty) {
           peekNextCoverHint();
         }
@@ -2791,8 +2810,7 @@ function addCoverInEditMode() {
     data.coverSlotsLimit = data.coverSlots.length + 1;
   }
   data.coverSlots.push("");
-  renderHeader();
-  attachOwnerStoreEditHandlers();
+  syncCoverOnlyEditState();
   const track = document.getElementById("coverSliderTrack");
   if (track) {
     track.scrollTo({ left: track.scrollWidth, behavior: "smooth" });
@@ -2814,8 +2832,7 @@ function removeCoverSlotAt(slotIdx) {
     data.coverImg = data.coverSlots.find(Boolean) || "";
   }
 
-  renderHeader();
-  attachOwnerStoreEditHandlers();
+  syncCoverOnlyEditState();
 }
 
 function addBoxToSection(sIdx) {
