@@ -392,16 +392,16 @@ function applyStripBarStyle(stripEl, sec) {
 
   if (shapeMode === "square") {
     stripEl.style.setProperty("border-radius", "0px", "important");
-    stripEl.style.setProperty("border-top", `2px solid ${edgeColor}`, "important");
-    stripEl.style.setProperty("border-bottom", `2px solid ${edgeColor}`, "important");
+    stripEl.style.setProperty("border-top", "none", "important");
+    stripEl.style.setProperty("border-bottom", "none", "important");
     stripEl.style.setProperty("border-left", `10px solid ${edgeColor}`, "important");
     stripEl.style.setProperty("border-right", `10px solid ${edgeColor}`, "important");
     stripEl.style.setProperty("padding-left", `${padLeft !== null ? padLeft : 14}px`, "important");
     stripEl.style.setProperty("padding-right", `${padRight !== null ? padRight : 14}px`, "important");
   } else if (shapeMode === "round") {
     stripEl.style.setProperty("border-radius", "999px", "important");
-    stripEl.style.setProperty("border-top", `2px solid ${edgeColor}`, "important");
-    stripEl.style.setProperty("border-bottom", `2px solid ${edgeColor}`, "important");
+    stripEl.style.setProperty("border-top", "none", "important");
+    stripEl.style.setProperty("border-bottom", "none", "important");
     stripEl.style.setProperty("border-left", `10px solid ${edgeColor}`, "important");
     stripEl.style.setProperty("border-right", `10px solid ${edgeColor}`, "important");
     stripEl.style.setProperty("padding-left", `${padLeft !== null ? padLeft : 16}px`, "important");
@@ -2357,7 +2357,7 @@ if (currentPage === "store") {
     overlay = document.createElement("div");
     overlay.id = POPUP_ID;
     overlay.style.cssText =
-      "display:none;position:fixed;inset:0;z-index:99998;background:rgba(15,23,42,0.65);align-items:center;justify-content:center;padding:16px;";
+      "display:none;position:fixed;inset:0;z-index:99998;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;padding:16px;";
 
     overlay.innerHTML = `
       <div style="width:100%;max-width:340px;background:#ffffff;border-radius:14px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,0.35);display:flex;flex-direction:column;gap:12px;">
