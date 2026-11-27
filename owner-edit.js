@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V48");
+console.log("OWNER_EDIT_COMPLETE_V49");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -1735,7 +1735,7 @@ function makeToggleColorBox(titleText, enabledVal, colorVal, accentHex, onToggle
   return { box, extraWrap, chk, colorBtn, syncToggleHighlight };
 }
 
-function getTargetBoxPriceElement(sIdx, itemId) {
+function getTargetBoxCard(sIdx, itemId) {
   const secEl = document.querySelector(`#sectionsContainer .row-section[data-section-index="${sIdx}"]`);
   if (!secEl) return null;
   const data = getWorkingStoreData();
@@ -1746,8 +1746,54 @@ function getTargetBoxPriceElement(sIdx, itemId) {
   const idx = list.findIndex((i) => i.id === itemId);
   if (idx < 0) return null;
   const cards = secEl.querySelectorAll(".mini-box:not(.user-photo-only-box), .item-box");
-  const card = cards[idx];
+  return cards[idx] || null;
+}
+
+function getTargetBoxPriceElement(sIdx, itemId) {
+  const card = getTargetBoxCard(sIdx, itemId);
   return card ? card.querySelector(".mini-box-price, .item-price") : null;
+}
+
+function syncTargetBoxPhotoOnScreen(sIdx, itemId, imgUrl) {
+  const card = getTargetBoxCard(sIdx, itemId);
+  if (!card) return;
+  const data = getWorkingStoreData();
+  const sizes = typeof getEffectiveBoxSizesForSection === "function"
+    ? getEffectiveBoxSizesForSection(data, sIdx)
+    : normalizeBoxSizes(data.boxSizes);
+  const isMini = sIdx === 0;
+  const cfg = isMini ? sizes.miniBox : sizes.productBox;
+  const h = cfg.imgHeight;
+  const radius = cfg.textBgTransparent ? "10px" : "0px";
+  const kind = isMini ? "mini" : "product";
+
+  const existingImg = card.querySelector("img");
+  const existingPh = card.querySelector(`[data-box-placeholder="${kind}"]`);
+
+  if (imgUrl) {
+    if (existingImg) {
+      existingImg.src = imgUrl;
+      existingImg.style.height = `${h}px`;
+      existingImg.style.borderRadius = radius;
+      existingImg.style.display = "block";
+    } else if (existingPh) {
+      const newImg = document.createElement("img");
+      newImg.src = imgUrl;
+      newImg.alt = "Item";
+      newImg.style.cssText = `width:100%;height:${h}px;object-fit:cover;display:block;border-radius:${radius};`;
+      existingPh.replaceWith(newImg);
+    }
+  } else {
+    if (existingImg) {
+      const newPh = document.createElement("div");
+      newPh.setAttribute("data-box-placeholder", kind);
+      newPh.style.cssText = `width:100%;height:${h}px;background:#e5e7eb;border-radius:${radius};`;
+      existingImg.replaceWith(newPh);
+    } else if (existingPh) {
+      existingPh.style.height = `${h}px`;
+      existingPh.style.borderRadius = radius;
+    }
+  }
 }
 
 // ==================== UNIFIED BOTTOM-SHEET EDITOR (#ownerStoreNameModal) ====================
@@ -2232,7 +2278,8 @@ function openCustomTextStylePopup(config) {
         sIdx: config.sIdx,
         itemId: config.itemId,
         reopenBoxEditModal: true,
-        modalTitle: config.modalTitle
+        modalTitle: config.modalTitle,
+        modalScrollTop: card.scrollTop || 0
       };
       fileInput.value = "";
       fileInput.click();
@@ -2247,7 +2294,8 @@ function openCustomTextStylePopup(config) {
     removePhotoBtn.onclick = () => {
       draftItemImg = "";
       itemObj.img = "";
-      photoStatusBadge.textContent = "No Photo";
+      if (photoStatusBadge) photoStatusBadge.textContent = "No Photo";
+      syncTargetBoxPhotoOnScreen(config.sIdx, config.itemId, "");
     };
 
     pBtnGroup.appendChild(pickPhotoBtn);
@@ -2343,7 +2391,7 @@ function openCustomTextStylePopup(config) {
     syncPriceLivePreview();
   }
 
-  // ---- FOOTER BUTTONS: RESET, CANCEL, APPLY, APPLY TO ALL ----
+  // ---- FOOTER BUTTONS: RESET, APPLY, APPLY TO ALL (NO CANCEL) ----
   const footer = document.createElement("div");
   footer.style.cssText = "display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;";
 
@@ -2371,6 +2419,8 @@ function openCustomTextStylePopup(config) {
 
     if (isItemBox) {
       draftItemImg = "";
+      itemObj.img = "";
+      syncTargetBoxPhotoOnScreen(config.sIdx, config.itemId, "");
       if (photoStatusBadge) photoStatusBadge.textContent = "No Photo";
       draftPriceText = "0";
       if (priceInput) priceInput.value = "0";
@@ -2393,33 +2443,6 @@ function openCustomTextStylePopup(config) {
     }
   };
   bindSoftToAccentButton(resetBtn);
-
-  const cancelBtn = document.createElement("button");
-  cancelBtn.type = "button";
-  cancelBtn.textContent = "Cancel";
-  cancelBtn.style.cssText =
-    "flex:1;min-height:42px;padding:8px 12px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;color:#334155;font-weight:700;cursor:pointer;";
-  cancelBtn.onclick = () => {
-    if (isItemBox) {
-      const origPrice = itemObj.priceText !== undefined && itemObj.priceText !== null && String(itemObj.priceText).trim() !== ""
-        ? String(itemObj.priceText)
-        : String(itemObj.price ?? 0);
-      const origSize = Number.isFinite(Number(itemObj.priceFontSize)) && Number(itemObj.priceFontSize) > 0
-        ? Number(itemObj.priceFontSize)
-        : basePriceDefaults.priceFontSize;
-      const origColor = itemObj.priceColor || basePriceDefaults.priceColor || "#111827";
-      const disp = origPrice.trim().length > 0
-        ? (origPrice.trim().startsWith("₹") || origPrice.trim().startsWith("$") ? origPrice.trim() : `₹${origPrice.trim()}`)
-        : "₹0";
-      const domPriceEl = getTargetBoxPriceElement(config.sIdx, config.itemId);
-      if (domPriceEl) {
-        domPriceEl.textContent = disp;
-        domPriceEl.style.setProperty("font-size", `${origSize}px`, "important");
-        domPriceEl.style.setProperty("color", origColor, "important");
-      }
-    }
-    modal.remove();
-  };
 
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
@@ -2496,7 +2519,6 @@ function openCustomTextStylePopup(config) {
   bindSoftToAccentButton(applyAllBtn);
 
   footer.appendChild(resetBtn);
-  footer.appendChild(cancelBtn);
   footer.appendChild(applyBtn);
   if (!isStore) {
     footer.appendChild(applyAllBtn);
@@ -2510,6 +2532,10 @@ function openCustomTextStylePopup(config) {
 
   modal.appendChild(card);
   document.body.appendChild(modal);
+
+  if (typeof config.initialScrollTop === "number" && config.initialScrollTop > 0) {
+    card.scrollTop = config.initialScrollTop;
+  }
 
   syncAllControlsFromState();
   syncPreview();
@@ -2758,6 +2784,21 @@ function bindCoverEditorEvents() {
   }, { passive: false });
 }
 
+function reopenAfterPhotoEditor(slotInfo) {
+  if (!OWNER_EDIT_MODE || !slotInfo) return;
+  if (slotInfo.reopenCoverModal) {
+    openCoverManagerModal();
+  } else if (slotInfo.reopenBoxEditModal) {
+    openCustomTextStylePopup({
+      targetType: "item",
+      sIdx: slotInfo.sIdx,
+      itemId: slotInfo.itemId,
+      modalTitle: slotInfo.modalTitle || "Item Edit",
+      initialScrollTop: slotInfo.modalScrollTop || 0
+    });
+  }
+}
+
 function cancelEditor() {
   const slotInfo = pendingOwnerEditSlot ? { ...pendingOwnerEditSlot } : null;
   pendingOwnerEditSlot = null;
@@ -2775,18 +2816,7 @@ function cancelEditor() {
   isDraggingImg = false;
   pinchStartDist = 0;
 
-  if (OWNER_EDIT_MODE) {
-    if (slotInfo && slotInfo.reopenCoverModal) {
-      openCoverManagerModal();
-    } else if (slotInfo && slotInfo.reopenBoxEditModal) {
-      openCustomTextStylePopup({
-        targetType: "item",
-        sIdx: slotInfo.sIdx,
-        itemId: slotInfo.itemId,
-        modalTitle: slotInfo.modalTitle || "Item Edit"
-      });
-    }
-  }
+  reopenAfterPhotoEditor(slotInfo);
 }
 
 function confirmEditor() {
@@ -2836,18 +2866,7 @@ function confirmEditor() {
     if (typeof cb === "function") {
       cb(croppedUrl);
     }
-    if (OWNER_EDIT_MODE) {
-      if (slotInfo && slotInfo.reopenCoverModal) {
-        openCoverManagerModal();
-      } else if (slotInfo && slotInfo.reopenBoxEditModal) {
-        openCustomTextStylePopup({
-          targetType: "item",
-          sIdx: slotInfo.sIdx,
-          itemId: slotInfo.itemId,
-          modalTitle: slotInfo.modalTitle || "Item Edit"
-        });
-      }
-    }
+    reopenAfterPhotoEditor(slotInfo);
   } catch (err) {
     cancelEditor();
     alert("Photo crop failed. Try another photo.");
@@ -2990,8 +3009,7 @@ function ensureOwnerInlineFileInput() {
         if (item) {
           item.img = croppedUrl;
         }
-        renderSections();
-        attachOwnerStoreEditHandlers();
+        syncTargetBoxPhotoOnScreen(sIdx, itemId, croppedUrl);
       }, cropDims);
     }
   };
