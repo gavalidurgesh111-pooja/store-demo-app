@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V46");
+console.log("OWNER_EDIT_COMPLETE_V47");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -210,7 +210,6 @@ function getColorNameFromHsv(h, s, v) {
 function openStandaloneColorPicker(initialColor, onChooseColor, onCancelRestore, options = {}) {
   removeCustomPickerIfExists();
   const previousColor = initialColor || getEditorFixedColor();
-  const actionHex = getEditorFixedColor();
   let hue = 0;
   let sat = 0.85;
   let val = 0.85;
@@ -630,7 +629,6 @@ function openCoverManagerModal() {
   title.textContent = "Cover Settings";
   title.style.cssText = "font-size:0.96rem;font-weight:800;color:#111827;";
 
-  // X: Close pop-up only without applying unapplied changes
   const closeBtn = document.createElement("button");
   closeBtn.type = "button";
   closeBtn.textContent = "X";
@@ -689,7 +687,6 @@ function openCoverManagerModal() {
     const rowBtns = document.createElement("div");
     rowBtns.style.cssText = "display:flex;gap:6px;";
 
-    // Keep Cover Settings open while picking & editing photo in pop-up
     const uploadBtn = document.createElement("button");
     uploadBtn.type = "button";
     uploadBtn.textContent = "Upload Photo";
@@ -722,7 +719,6 @@ function openCoverManagerModal() {
   const footer = document.createElement("div");
   footer.style.cssText = "display:flex;gap:8px;margin-top:2px;";
 
-  // Reset Height: Restore owner's given default size immediately, keep pop-up open until Apply / Save
   const resetBtn = document.createElement("button");
   resetBtn.type = "button";
   resetBtn.textContent = "Reset Height";
@@ -738,7 +734,6 @@ function openCoverManagerModal() {
   };
   bindSoftToAccentButton(resetBtn);
 
-  // Apply: Apply selected height and close pop-up (persisted to storage when top Save is pressed)
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
   applyBtn.textContent = "Apply";
@@ -1058,7 +1053,6 @@ function openCustomAdEditorModal(sIdx) {
   const sec = data.sections && data.sections[sIdx];
   if (!sec) return;
 
-  const accentHex = getEditorFixedColor();
   const existingAd = sec.customAd && typeof sec.customAd === "object" ? sec.customAd : {};
 
   let draftWidth = existingAd.width || "100%";
@@ -1203,174 +1197,6 @@ function openCustomAdEditorModal(sIdx) {
   card.appendChild(footer);
   modal.appendChild(card);
   document.body.appendChild(modal);
-}
-
-// ==================== INDIVIDUAL AMOUNT, SIZE & COLOR POP-UP ====================
-function openItemAmountEditorModal(sIdx, itemId) {
-  removePriceEditorModalIfExists();
-  const data = getWorkingStoreData();
-  const sec = data.sections && data.sections[sIdx];
-  const item = sec && Array.isArray(sec.items) ? sec.items.find((i) => i.id === itemId) : null;
-  if (!item) return;
-
-  const accentHex = getEditorFixedColor();
-  const boxDefaults = getEffectiveBoxSizesForSection(data, sIdx);
-  const baseDefaults = sIdx === 0 ? boxDefaults.miniBox : boxDefaults.productBox;
-
-  const initialPriceText = item.priceText !== undefined && item.priceText !== null && String(item.priceText).trim() !== ""
-    ? String(item.priceText)
-    : String(item.price ?? 0);
-  let draftPriceSize = Number.isFinite(Number(item.priceFontSize)) && Number(item.priceFontSize) > 0
-    ? Number(item.priceFontSize)
-    : baseDefaults.priceFontSize;
-  let draftPriceColor = item.priceColor || baseDefaults.priceColor || "#111827";
-
-  const modal = document.createElement("div");
-  modal.id = "ownerItemPriceEditorModal";
-  modal.style.cssText =
-    "position:fixed;inset:0;z-index:140;background:rgba(15,23,42,0.55);display:flex;align-items:center;justify-content:center;padding:12px;";
-
-  const card = document.createElement("div");
-  card.style.cssText =
-    "width:100%;max-width:380px;background:#ffffff;border-radius:14px;padding:14px 16px;box-shadow:0 12px 30px rgba(15,23,42,0.28);display:flex;flex-direction:column;gap:12px;color:#111827;";
-
-  const header = document.createElement("div");
-  header.style.cssText =
-    "display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;border-bottom:1px solid #e2e8f0;";
-
-  const title = document.createElement("span");
-  title.textContent = "Price & Style";
-  title.style.cssText = "font-size:0.96rem;font-weight:800;color:#111827;";
-
-  const closeBtn = document.createElement("button");
-  closeBtn.type = "button";
-  closeBtn.textContent = "X";
-  closeBtn.style.cssText =
-    "border:none;background:#f8fafc;border-radius:8px;min-width:32px;min-height:32px;font-weight:700;color:#334155;cursor:pointer;";
-  closeBtn.onclick = () => modal.remove();
-
-  header.appendChild(title);
-  header.appendChild(closeBtn);
-
-  const amountInput = document.createElement("input");
-  amountInput.type = "text";
-  amountInput.value = initialPriceText;
-  amountInput.placeholder = "Enter price (e.g. 99.50 or 150/-)";
-  amountInput.style.cssText =
-    "width:100%;min-height:40px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:1rem;font-weight:700;color:#111827;box-sizing:border-box;";
-
-  const previewBox = document.createElement("div");
-  previewBox.style.cssText =
-    "padding:10px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;text-align:center;";
-
-  const previewSpan = document.createElement("span");
-  previewBox.appendChild(previewSpan);
-
-  const syncPreview = () => {
-    const raw = amountInput.value.trim();
-    const disp = raw.length > 0 ? (raw.startsWith("₹") || raw.startsWith("$") ? raw : `₹${raw}`) : "₹0";
-    previewSpan.textContent = disp;
-    previewSpan.style.fontSize = `${draftPriceSize}px`;
-    previewSpan.style.color = draftPriceColor;
-    previewSpan.style.fontWeight = "700";
-  };
-
-  amountInput.oninput = syncPreview;
-
-  const sizeSlider = makeLabeledSlider("Price Size", 9, 28, 1, draftPriceSize, "px", accentHex, (val) => {
-    draftPriceSize = val;
-    syncPreview();
-  });
-
-  const colorRow = document.createElement("div");
-  colorRow.style.cssText =
-    "display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;";
-
-  const colorLbl = document.createElement("span");
-  colorLbl.textContent = "Price Color";
-  colorLbl.style.cssText = "font-size:0.84rem;font-weight:700;color:#334155;";
-
-  const pickColorBtn = document.createElement("button");
-  pickColorBtn.type = "button";
-  pickColorBtn.textContent = "Pick Color";
-  pickColorBtn.style.cssText =
-    "min-height:34px;padding:5px 12px;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;";
-  pickColorBtn.onclick = () => {
-    openStandaloneColorPicker(draftPriceColor, (hex) => {
-      draftPriceColor = hex;
-      syncPreview();
-    });
-  };
-  bindSoftToAccentButton(pickColorBtn);
-
-  colorRow.appendChild(colorLbl);
-  colorRow.appendChild(pickColorBtn);
-
-  const saveSingleItemAmount = () => {
-    const rawVal = amountInput.value.trim();
-    item.priceText = rawVal.length > 0 ? rawVal : "0";
-    const numMatch = rawVal.match(/(\d+(?:\.\d+)?)/);
-    item.price = numMatch ? Number(numMatch[1]) : 0;
-    item.priceFontSize = draftPriceSize;
-    item.priceColor = draftPriceColor;
-  };
-
-  const footer = document.createElement("div");
-  footer.style.cssText = "display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;";
-
-  const cancelBtn = document.createElement("button");
-  cancelBtn.type = "button";
-  cancelBtn.textContent = "Cancel";
-  cancelBtn.style.cssText =
-    "flex:1;min-height:40px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;color:#334155;font-weight:700;cursor:pointer;";
-  cancelBtn.onclick = () => modal.remove();
-
-  const applyBtn = document.createElement("button");
-  applyBtn.type = "button";
-  applyBtn.textContent = "Apply";
-  applyBtn.style.cssText =
-    "flex:1;min-height:40px;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer;";
-  applyBtn.onclick = () => {
-    saveSingleItemAmount();
-    modal.remove();
-    renderSections();
-    attachOwnerStoreEditHandlers();
-  };
-  bindSoftToAccentButton(applyBtn);
-
-  const applyAllBtn = document.createElement("button");
-  applyAllBtn.type = "button";
-  applyAllBtn.textContent = "Apply to All";
-  applyAllBtn.style.cssText =
-    "flex:1;min-height:40px;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer;";
-  applyAllBtn.onclick = () => {
-    saveSingleItemAmount();
-    (data.sections || []).forEach((s) => {
-      (s.items || []).forEach((it) => {
-        it.priceFontSize = draftPriceSize;
-        it.priceColor = draftPriceColor;
-      });
-    });
-    modal.remove();
-    renderSections();
-    attachOwnerStoreEditHandlers();
-  };
-  bindSoftToAccentButton(applyAllBtn);
-
-  footer.appendChild(cancelBtn);
-  footer.appendChild(applyBtn);
-  footer.appendChild(applyAllBtn);
-
-  card.appendChild(header);
-  card.appendChild(amountInput);
-  card.appendChild(previewBox);
-  card.appendChild(sizeSlider);
-  card.appendChild(colorRow);
-  card.appendChild(footer);
-  modal.appendChild(card);
-  document.body.appendChild(modal);
-
-  syncPreview();
 }
 
 // ==================== BOX SIZE & STYLE PANEL ====================
@@ -1909,6 +1735,7 @@ function makeToggleColorBox(titleText, enabledVal, colorVal, accentHex, onToggle
   return { box, extraWrap, chk, colorBtn, syncToggleHighlight };
 }
 
+// ==================== UNIFIED BOTTOM-SHEET EDITOR (#ownerStoreNameModal) ====================
 function openCustomTextStylePopup(config) {
   const existing = document.getElementById("ownerStoreNameModal");
   if (existing) existing.remove();
@@ -1920,6 +1747,7 @@ function openCustomTextStylePopup(config) {
   const isSection = config.targetType === "section";
   const secObj = isSection || config.targetType === "item" ? data.sections[config.sIdx] : null;
   const itemObj = config.targetType === "item" ? secObj?.items?.find((i) => i.id === config.itemId) : null;
+  const isItemBox = Boolean(itemObj && typeof config.sIdx === "number");
 
   let currentText = "";
   let defaultSize = 14;
@@ -1966,25 +1794,48 @@ function openCustomTextStylePopup(config) {
   st.fontSize = Math.max(minSize, Math.min(maxSize, st.fontSize));
   st.borderWidth = getSafeThinBorderWidth(st.fontSize, st.borderWidth);
 
+  const boxDefaults = isItemBox ? getEffectiveBoxSizesForSection(data, config.sIdx) : null;
+  const basePriceDefaults = isItemBox
+    ? (config.sIdx === 0 ? boxDefaults.miniBox : boxDefaults.productBox)
+    : null;
+
+  let draftPriceText = isItemBox
+    ? (itemObj.priceText !== undefined && itemObj.priceText !== null && String(itemObj.priceText).trim() !== ""
+      ? String(itemObj.priceText)
+      : String(itemObj.price ?? 0))
+    : "";
+  let draftPriceSize = isItemBox
+    ? (Number.isFinite(Number(itemObj.priceFontSize)) && Number(itemObj.priceFontSize) > 0
+      ? Number(itemObj.priceFontSize)
+      : basePriceDefaults.priceFontSize)
+    : 13;
+  let draftPriceColor = isItemBox
+    ? (itemObj.priceColor || basePriceDefaults.priceColor || "#111827")
+    : "#111827";
+  let draftItemImg = isItemBox ? (itemObj.img || "") : "";
+
+  const isBottomSheet = isItemBox || isSection;
   const modal = document.createElement("div");
   modal.id = "ownerStoreNameModal";
-  modal.style.cssText =
-    "position:fixed;inset:0;z-index:125;background:rgba(15,23,42,0.58);display:flex;align-items:flex-start;justify-content:center;padding:8px;overflow-y:auto;";
+  modal.style.cssText = isBottomSheet
+    ? "position:fixed;inset:0;z-index:125;background:transparent;display:flex;align-items:flex-end;justify-content:center;padding:0;pointer-events:none;"
+    : "position:fixed;inset:0;z-index:125;background:rgba(15,23,42,0.58);display:flex;align-items:flex-start;justify-content:center;padding:8px;overflow-y:auto;";
 
   const card = document.createElement("div");
-  card.style.cssText =
-    "width:100%;max-width:100%;background:#ffffff;border-radius:14px;padding:12px 14px 16px;box-shadow:0 12px 32px rgba(15,23,42,0.28);display:flex;flex-direction:column;gap:12px;";
+  card.style.cssText = isBottomSheet
+    ? "width:100%;max-width:480px;height:54vh;max-height:54vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#ffffff;border-top:2px solid #e2e8f0;border-radius:16px 16px 0 0;padding:10px 14px 18px;box-shadow:0 -10px 28px rgba(15,23,42,0.22);display:flex;flex-direction:column;gap:12px;pointer-events:auto;"
+    : "width:100%;max-width:100%;background:#ffffff;border-radius:14px;padding:12px 14px 16px;box-shadow:0 12px 32px rgba(15,23,42,0.28);display:flex;flex-direction:column;gap:12px;";
 
   const stickyHeader = document.createElement("div");
   stickyHeader.style.cssText =
-    "position:sticky;top:0;z-index:20;background:#ffffff;padding-bottom:8px;border-bottom:1px solid #e2e8f0;display:flex;flex-direction:column;gap:8px;";
+    `position:sticky;top:${isBottomSheet ? "-10px" : "0"};z-index:20;background:#ffffff;padding-bottom:8px;border-bottom:1px solid #e2e8f0;display:flex;flex-direction:column;gap:8px;`;
 
   const topBar = document.createElement("div");
   topBar.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:8px;";
 
   const heading = document.createElement("div");
-  heading.textContent = config.modalTitle || "Name & Style";
-  heading.style.cssText = "font-size:1.02rem;font-weight:800;color:#111827;";
+  heading.textContent = config.modalTitle || "Edit";
+  heading.style.cssText = "font-size:0.98rem;font-weight:800;color:#111827;";
 
   const topCloseBtn = document.createElement("button");
   topCloseBtn.type = "button";
@@ -1997,15 +1848,15 @@ function openCustomTextStylePopup(config) {
   topBar.appendChild(topCloseBtn);
 
   const textInput = document.createElement("textarea");
-  textInput.rows = 3;
+  textInput.rows = 2;
   textInput.value = currentText;
   textInput.placeholder = "Enter name (Press Enter for a new line)";
   textInput.style.cssText =
-    "width:100%;min-height:68px;max-height:140px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:0.96rem;line-height:1.35;color:#111827;box-sizing:border-box;resize:vertical;overflow:auto;font-family:inherit;";
+    "width:100%;min-height:54px;max-height:120px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:0.92rem;line-height:1.35;color:#111827;box-sizing:border-box;resize:vertical;overflow:auto;font-family:inherit;";
 
   const previewBox = document.createElement("div");
   previewBox.style.cssText =
-    `padding:10px 12px;border-radius:10px;background:${isStore ? "#1e293b" : "#f8fafc"};border:1px solid #e2e8f0;min-height:48px;max-height:120px;overflow:auto;display:flex;align-items:center;justify-content:center;text-align:center;`;
+    `padding:8px 12px;border-radius:10px;background:${isStore ? "#1e293b" : "#f8fafc"};border:1px solid #e2e8f0;min-height:42px;max-height:105px;overflow:auto;display:flex;align-items:center;justify-content:center;text-align:center;`;
 
   const previewText = document.createElement("span");
   previewText.style.cssText = "display:inline-block;line-height:1.2;white-space:pre-line;word-break:normal;";
@@ -2052,6 +1903,111 @@ function openCustomTextStylePopup(config) {
       previewText.style.padding = "0px";
       previewText.style.borderRadius = "0px";
     }
+  }
+
+  // Photo & Remove section inside the single bottom pop-up for boxes
+  let boxPhotoWrap = null;
+  let photoStatusBadge = null;
+  if (isItemBox) {
+    boxPhotoWrap = document.createElement("div");
+    boxPhotoWrap.style.cssText =
+      "border:1px solid #e2e8f0;background:#f8fafc;border-radius:12px;padding:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;";
+
+    photoStatusBadge = document.createElement("span");
+    photoStatusBadge.textContent = draftItemImg ? "Photo Set" : "No Photo";
+    photoStatusBadge.style.cssText = "font-size:0.82rem;font-weight:700;color:#334155;";
+
+    const pBtnGroup = document.createElement("div");
+    pBtnGroup.style.cssText = "display:flex;gap:6px;align-items:center;";
+
+    const pickPhotoBtn = document.createElement("button");
+    pickPhotoBtn.type = "button";
+    pickPhotoBtn.textContent = "Photo";
+    pickPhotoBtn.style.cssText =
+      "min-height:34px;padding:5px 12px;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;";
+    pickPhotoBtn.onclick = () => {
+      const fileInput = ensureOwnerInlineFileInput();
+      pendingOwnerEditSlot = {
+        type: "item",
+        sIdx: config.sIdx,
+        itemId: config.itemId,
+        reopenBoxEditModal: true,
+        modalTitle: config.modalTitle
+      };
+      fileInput.value = "";
+      fileInput.click();
+    };
+    bindSoftToAccentButton(pickPhotoBtn);
+
+    const removePhotoBtn = document.createElement("button");
+    removePhotoBtn.type = "button";
+    removePhotoBtn.textContent = "Remove";
+    removePhotoBtn.style.cssText =
+      "min-height:34px;padding:5px 10px;border:1px solid #fecaca;border-radius:8px;background:#fff5f5;color:#b91c1c;font-size:0.78rem;font-weight:700;cursor:pointer;";
+    removePhotoBtn.onclick = () => {
+      draftItemImg = "";
+      itemObj.img = "";
+      photoStatusBadge.textContent = "No Photo";
+    };
+
+    pBtnGroup.appendChild(pickPhotoBtn);
+    pBtnGroup.appendChild(removePhotoBtn);
+    boxPhotoWrap.appendChild(photoStatusBadge);
+    boxPhotoWrap.appendChild(pBtnGroup);
+  }
+
+  // Price & Price Style section inside the single bottom pop-up for boxes
+  let boxPriceWrap = null;
+  let priceInput = null;
+  if (isItemBox) {
+    boxPriceWrap = document.createElement("div");
+    boxPriceWrap.style.cssText =
+      "border:1px solid #e2e8f0;background:#f8fafc;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;";
+
+    const priceTopLbl = document.createElement("span");
+    priceTopLbl.textContent = "Price";
+    priceTopLbl.style.cssText = "font-size:0.84rem;font-weight:800;color:#111827;";
+
+    priceInput = document.createElement("input");
+    priceInput.type = "text";
+    priceInput.value = draftPriceText;
+    priceInput.placeholder = "Enter price (e.g. 99 or 150/-)";
+    priceInput.style.cssText =
+      "width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.9rem;font-weight:700;color:#111827;background:#ffffff;box-sizing:border-box;";
+    priceInput.oninput = () => {
+      draftPriceText = priceInput.value;
+    };
+
+    const pSizeSlider = makeLabeledSlider("Price Size", 9, 28, 1, draftPriceSize, "px", accentHex, (val) => {
+      draftPriceSize = val;
+    });
+
+    const pColorRow = document.createElement("div");
+    pColorRow.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:8px;";
+
+    const pColorLbl = document.createElement("span");
+    pColorLbl.textContent = "Price Color";
+    pColorLbl.style.cssText = "font-size:0.8rem;font-weight:700;color:#334155;";
+
+    const pColorBtn = document.createElement("button");
+    pColorBtn.type = "button";
+    pColorBtn.textContent = "Pick Color";
+    pColorBtn.style.cssText =
+      "min-height:32px;padding:4px 10px;border-radius:8px;font-size:0.76rem;font-weight:700;cursor:pointer;";
+    pColorBtn.onclick = () => {
+      openStandaloneColorPicker(draftPriceColor, (hex) => {
+        draftPriceColor = hex;
+      });
+    };
+    bindSoftToAccentButton(pColorBtn);
+
+    pColorRow.appendChild(pColorLbl);
+    pColorRow.appendChild(pColorBtn);
+
+    boxPriceWrap.appendChild(priceTopLbl);
+    boxPriceWrap.appendChild(priceInput);
+    boxPriceWrap.appendChild(pSizeSlider);
+    boxPriceWrap.appendChild(pColorRow);
   }
 
   const presetWrap = document.createElement("div");
@@ -2105,7 +2061,7 @@ function openCustomTextStylePopup(config) {
     pBtn.type = "button";
     pBtn.textContent = p.label;
     pBtn.style.cssText =
-      "min-height:40px;padding:8px 10px;border-radius:10px;font-size:0.84rem;font-weight:700;cursor:pointer;";
+      "min-height:38px;padding:6px 10px;border-radius:10px;font-size:0.82rem;font-weight:700;cursor:pointer;";
     const ctrl = bindSoftToAccentButton(pBtn, { isSelected: false });
     presetControllers.push(ctrl);
     pBtn.onclick = () => {
@@ -2320,20 +2276,20 @@ function openCustomTextStylePopup(config) {
   cancelBtn.type = "button";
   cancelBtn.textContent = "Cancel";
   cancelBtn.style.cssText =
-    "flex:1;min-height:44px;padding:9px 12px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;color:#334155;font-weight:700;cursor:pointer;";
+    "flex:1;min-height:42px;padding:8px 12px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;color:#334155;font-weight:700;cursor:pointer;";
   cancelBtn.onclick = () => modal.remove();
 
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
   applyBtn.textContent = "Apply";
   applyBtn.style.cssText =
-    "flex:1;min-height:44px;padding:9px 14px;border-radius:10px;font-weight:700;cursor:pointer;";
+    "flex:1;min-height:42px;padding:8px 14px;border-radius:10px;font-weight:700;cursor:pointer;";
 
   const applyAllBtn = document.createElement("button");
   applyAllBtn.type = "button";
   applyAllBtn.textContent = "Apply to All";
   applyAllBtn.style.cssText =
-    "flex:1;min-height:44px;padding:9px 14px;border-radius:10px;font-weight:700;cursor:pointer;";
+    "flex:1;min-height:42px;padding:8px 14px;border-radius:10px;font-weight:700;cursor:pointer;";
 
   const commitStyleSelection = (applyToAll) => {
     const rawEnteredText = textInput.value;
@@ -2366,10 +2322,23 @@ function openCustomTextStylePopup(config) {
     } else if (itemObj) {
       itemObj.name = finalText;
       itemObj.nameStyle = { ...st };
+      if (isItemBox) {
+        const rawPrice = priceInput ? priceInput.value.trim() : draftPriceText.trim();
+        itemObj.priceText = rawPrice.length > 0 ? rawPrice : "0";
+        const numMatch = rawPrice.match(/(\d+(?:\.\d+)?)/);
+        itemObj.price = numMatch ? Number(numMatch[1]) : 0;
+        itemObj.priceFontSize = draftPriceSize;
+        itemObj.priceColor = draftPriceColor;
+        itemObj.img = draftItemImg;
+      }
       if (applyToAll) {
         (data.sections || []).forEach((s) => {
           (s.items || []).forEach((it) => {
             it.nameStyle = { ...st };
+            if (isItemBox) {
+              it.priceFontSize = draftPriceSize;
+              it.priceColor = draftPriceColor;
+            }
           });
         });
       }
@@ -2391,6 +2360,8 @@ function openCustomTextStylePopup(config) {
   }
 
   card.appendChild(stickyHeader);
+  if (boxPhotoWrap) card.appendChild(boxPhotoWrap);
+  if (boxPriceWrap) card.appendChild(boxPriceWrap);
   card.appendChild(presetWrap);
   card.appendChild(mainColorRow);
   card.appendChild(fontWrap);
@@ -2417,12 +2388,11 @@ function openStoreNameEditorPopup() {
 
 // ==================== PHOTO CROP POP-UP EDITOR (#screenPhotoEditor) ====================
 let rawImageObj = null;
-let posX = 0, posY = 0, imgScale = 1, minScale = 1, maxScale = 2.5;
+let posX = 0, posY = 0, imgScale = 1, minScale = 1, maxScale = 3.0;
 let baseLeft = 0, baseTop = 0;
 let isDraggingImg = false, startMouseX = 0, startMouseY = 0;
-let initialPinchDistance = null;
+let pinchStartDist = 0, pinchStartScale = 1;
 let onCoverEditorDone = null;
-let onPhotoEditorRemove = null;
 let coverEditorEventsBound = false;
 let activeCropConfig = { frameW: 290, frameH: 140, outW: 1080, outH: 520 };
 
@@ -2458,21 +2428,6 @@ function applyCropFrameSize(cropDims = null) {
   box.style.height = `${activeCropConfig.frameH}px`;
 }
 
-function syncZoomControlsUI(scaleVal) {
-  const zoomRange = document.getElementById("photoZoomRange");
-  const zoomLabel = document.getElementById("photoZoomLabel");
-  if (zoomRange) {
-    zoomRange.min = String(minScale);
-    zoomRange.max = String(maxScale);
-    zoomRange.step = String(Math.max(0.01, (maxScale - minScale) / 100));
-    zoomRange.value = String(scaleVal);
-  }
-  if (zoomLabel) {
-    const pct = minScale > 0 ? Math.round((scaleVal / minScale) * 100) : 100;
-    zoomLabel.textContent = `${pct}%`;
-  }
-}
-
 function ensureCoverEditorDOM() {
   let screen = document.getElementById("screenPhotoEditor");
   if (!screen) {
@@ -2488,15 +2443,8 @@ function ensureCoverEditorDOM() {
           <img id="editorImagePreview" src="" alt="Preview" style="position:absolute;transform-origin:0 0;cursor:grab;user-select:none;z-index:5;display:block;max-width:none;max-height:none;will-change:transform;transform:translate3d(0px, 0px, 0px);" />
           <div class="crop-frame-box" id="cropFrameBox" style="width:290px;height:140px;border:2px solid #ffffff;box-shadow:0 0 0 9999px rgba(0, 0, 0, 0.52);position:relative;pointer-events:none;z-index:10;"></div>
         </div>
-        <div style="width:100%;padding:8px 14px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;align-items:center;gap:8px;">
-          <button type="button" id="photoZoomOutBtn" title="Zoom Out" style="width:28px;height:28px;border:1px solid #cbd5e1;border-radius:6px;background:#ffffff;color:#111827;font-weight:800;cursor:pointer;line-height:1;">-</button>
-          <input type="range" id="photoZoomRange" style="flex:1;accent-color:#FF631C;cursor:pointer;" />
-          <button type="button" id="photoZoomInBtn" title="Zoom In" style="width:28px;height:28px;border:1px solid #cbd5e1;border-radius:6px;background:#ffffff;color:#111827;font-weight:800;cursor:pointer;line-height:1;">+</button>
-          <span id="photoZoomLabel" style="min-width:42px;text-align:right;font-size:0.75rem;font-weight:700;color:#334155;">100%</span>
-        </div>
-        <div class="editor-bottom-bar" style="width:100%;height:48px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:0 16px;z-index:25;border-top:1px solid #e2e8f0;gap:8px;">
-          <button type="button" class="editor-bottom-btn" onclick="cancelEditor()" title="Cancel" style="background:#f8fafc;border:1px solid #e2e8f0;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;color:#334155;font-weight:700;">X</button>
-          <button type="button" class="editor-bottom-btn" onclick="removeEditedPhoto()" title="Remove Photo" style="background:#fff5f5;border:1px solid #fecaca;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0 10px;height:34px;border-radius:8px;color:#b91c1c;font-weight:700;">Remove</button>
+        <div class="editor-bottom-bar" style="width:100%;height:48px;background:#ffffff;display:flex;justify-content:space-between;align-items:center;padding:0 22px;z-index:25;border-top:1px solid #e2e8f0;">
+          <button type="button" class="editor-bottom-btn" onclick="cancelEditor()" title="Cancel" style="background:#f8fafc;border:1px solid #e2e8f0;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;color:#334155;font-weight:700;">X</button>
           <button type="button" class="editor-bottom-btn" onclick="confirmEditor()" title="Save" style="background:#FFEDE5;border:1px solid #FDBA74;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0 14px;height:34px;border-radius:8px;color:#9A3412;font-weight:700;">Save</button>
         </div>
       </div>
@@ -2514,10 +2462,7 @@ function setEditorZoomAroundCenter(nextScale) {
   if (!preview || !area || !box || !rawImageObj) return;
 
   const clampedScale = Math.max(minScale, Math.min(maxScale, nextScale));
-  if (clampedScale === imgScale) {
-    syncZoomControlsUI(imgScale);
-    return;
-  }
+  if (clampedScale === imgScale) return;
 
   const areaRect = area.getBoundingClientRect();
   const boxRect = box.getBoundingClientRect();
@@ -2544,7 +2489,6 @@ function setEditorZoomAroundCenter(nextScale) {
   posX = boxCenterX - ratioX * newW - baseLeft;
   posY = boxCenterY - ratioY * newH - baseTop;
 
-  syncZoomControlsUI(imgScale);
   applySmartBoundaryAndSnap();
 }
 
@@ -2589,6 +2533,12 @@ function applySmartBoundaryAndSnap() {
   posY = clampedTopRel - baseTop;
   preview.style.transition = "none";
   preview.style.transform = `translate3d(${posX}px, ${posY}px, 0px)`;
+}
+
+function getTouchDistance(t1, t2) {
+  const dx = t1.clientX - t2.clientX;
+  const dy = t1.clientY - t2.clientY;
+  return Math.hypot(dx, dy);
 }
 
 function bindCoverEditorEvents() {
@@ -2640,39 +2590,40 @@ function bindCoverEditorEvents() {
   editorArea.addEventListener("pointerup", finishDrag);
   editorArea.addEventListener("pointercancel", finishDrag);
 
+  editorArea.addEventListener("touchstart", (e) => {
+    if (!rawImageObj) return;
+    if (e.touches.length === 2) {
+      isDraggingImg = false;
+      pinchStartDist = getTouchDistance(e.touches[0], e.touches[1]);
+      pinchStartScale = imgScale;
+    }
+  }, { passive: false });
+
+  editorArea.addEventListener("touchmove", (e) => {
+    if (!rawImageObj) return;
+    if (e.touches.length === 2 && pinchStartDist > 0) {
+      e.preventDefault();
+      const dist = getTouchDistance(e.touches[0], e.touches[1]);
+      setEditorZoomAroundCenter(pinchStartScale * (dist / pinchStartDist));
+    }
+  }, { passive: false });
+
+  editorArea.addEventListener("touchend", (e) => {
+    if (e.touches.length < 2) {
+      pinchStartDist = 0;
+    }
+  });
+
   editorArea.addEventListener("wheel", (e) => {
     if (!rawImageObj) return;
     e.preventDefault();
     const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
     setEditorZoomAroundCenter(imgScale * zoomFactor);
   }, { passive: false });
-
-  const zoomRange = document.getElementById("photoZoomRange");
-  const zoomInBtn = document.getElementById("photoZoomInBtn");
-  const zoomOutBtn = document.getElementById("photoZoomOutBtn");
-
-  if (zoomRange) {
-    zoomRange.addEventListener("input", () => {
-      if (!rawImageObj) return;
-      setEditorZoomAroundCenter(Number(zoomRange.value));
-    });
-  }
-  if (zoomInBtn) {
-    zoomInBtn.addEventListener("click", () => {
-      if (!rawImageObj) return;
-      setEditorZoomAroundCenter(imgScale * 1.15);
-    });
-  }
-  if (zoomOutBtn) {
-    zoomOutBtn.addEventListener("click", () => {
-      if (!rawImageObj) return;
-      setEditorZoomAroundCenter(imgScale / 1.15);
-    });
-  }
 }
 
 function cancelEditor() {
-  const shouldReopenCover = Boolean(pendingOwnerEditSlot && pendingOwnerEditSlot.reopenCoverModal);
+  const slotInfo = pendingOwnerEditSlot ? { ...pendingOwnerEditSlot } : null;
   pendingOwnerEditSlot = null;
 
   const screen = document.getElementById("screenPhotoEditor");
@@ -2685,50 +2636,30 @@ function cancelEditor() {
   if (screen) screen.style.display = "none";
   rawImageObj = null;
   onCoverEditorDone = null;
-  onPhotoEditorRemove = null;
   isDraggingImg = false;
-  initialPinchDistance = null;
+  pinchStartDist = 0;
 
-  if (shouldReopenCover && OWNER_EDIT_MODE) {
-    openCoverManagerModal();
-  }
-}
-
-function removeEditedPhoto() {
-  const shouldReopenCover = Boolean(pendingOwnerEditSlot && pendingOwnerEditSlot.reopenCoverModal);
-  const removeCb = onPhotoEditorRemove;
-  pendingOwnerEditSlot = null;
-
-  const screen = document.getElementById("screenPhotoEditor");
-  const preview = document.getElementById("editorImagePreview");
-  if (preview) {
-    preview.onload = null;
-    preview.onerror = null;
-    preview.src = "";
-  }
-  if (screen) screen.style.display = "none";
-  rawImageObj = null;
-  onCoverEditorDone = null;
-  onPhotoEditorRemove = null;
-  isDraggingImg = false;
-  initialPinchDistance = null;
-
-  if (typeof removeCb === "function") {
-    removeCb();
-  }
-  if (shouldReopenCover && OWNER_EDIT_MODE) {
-    openCoverManagerModal();
+  if (OWNER_EDIT_MODE) {
+    if (slotInfo && slotInfo.reopenCoverModal) {
+      openCoverManagerModal();
+    } else if (slotInfo && slotInfo.reopenBoxEditModal) {
+      openCustomTextStylePopup({
+        targetType: "item",
+        sIdx: slotInfo.sIdx,
+        itemId: slotInfo.itemId,
+        modalTitle: slotInfo.modalTitle || "Item Edit"
+      });
+    }
   }
 }
 
 function confirmEditor() {
-  const shouldReopenCover = Boolean(pendingOwnerEditSlot && pendingOwnerEditSlot.reopenCoverModal);
+  const slotInfo = pendingOwnerEditSlot ? { ...pendingOwnerEditSlot } : null;
   pendingOwnerEditSlot = null;
   const preview = document.getElementById("editorImagePreview");
   const box = document.getElementById("cropFrameBox")?.getBoundingClientRect();
   const cb = onCoverEditorDone;
   onCoverEditorDone = null;
-  onPhotoEditorRemove = null;
 
   if (!rawImageObj || !preview || !box || !box.width || !box.height) {
     cancelEditor();
@@ -2755,12 +2686,31 @@ function confirmEditor() {
     ctx.drawImage(rawImageObj, sX, sY, sW, sH, 0, 0, canvas.width, canvas.height);
     const croppedUrl = canvas.toDataURL("image/jpeg", 0.85);
 
-    cancelEditor();
+    const screen = document.getElementById("screenPhotoEditor");
+    if (preview) {
+      preview.onload = null;
+      preview.onerror = null;
+      preview.src = "";
+    }
+    if (screen) screen.style.display = "none";
+    rawImageObj = null;
+    isDraggingImg = false;
+    pinchStartDist = 0;
+
     if (typeof cb === "function") {
       cb(croppedUrl);
     }
-    if (shouldReopenCover && OWNER_EDIT_MODE) {
-      openCoverManagerModal();
+    if (OWNER_EDIT_MODE) {
+      if (slotInfo && slotInfo.reopenCoverModal) {
+        openCoverManagerModal();
+      } else if (slotInfo && slotInfo.reopenBoxEditModal) {
+        openCustomTextStylePopup({
+          targetType: "item",
+          sIdx: slotInfo.sIdx,
+          itemId: slotInfo.itemId,
+          modalTitle: slotInfo.modalTitle || "Item Edit"
+        });
+      }
     }
   } catch (err) {
     cancelEditor();
@@ -2768,10 +2718,9 @@ function confirmEditor() {
   }
 }
 
-function openCoverPhotoEditor(file, onDone, cropDims = null, onRemove = null) {
+function openCoverPhotoEditor(file, onDone, cropDims = null) {
   if (!file || typeof onDone !== "function") return;
   onCoverEditorDone = onDone;
-  onPhotoEditorRemove = typeof onRemove === "function" ? onRemove : null;
   ensureCoverEditorDOM();
   applyCropFrameSize(cropDims);
 
@@ -2815,7 +2764,6 @@ function openCoverPhotoEditor(file, onDone, cropDims = null, onRemove = null) {
         minScale = Math.max(boxW / natW, boxH / natH) || 1;
         maxScale = minScale * 3.0;
         imgScale = minScale;
-        syncZoomControlsUI(imgScale);
 
         const renderW = natW * imgScale;
         const renderH = natH * imgScale;
@@ -2880,62 +2828,35 @@ function ensureOwnerInlineFileInput() {
     }
 
     if (slotInfo.type === "cover") {
-      const slotIdx = Number.isInteger(slotInfo.slotIdx) ? slotInfo.slotIdx : 0;
-      openCoverPhotoEditor(
-        file,
-        (adjustedUrl) => {
-          const data = getWorkingStoreData();
-          if (!Array.isArray(data.coverSlots)) data.coverSlots = [""];
-          while (data.coverSlots.length <= slotIdx) {
-            data.coverSlots.push("");
-          }
-          const wasFirstEmpty = slotIdx === 0 && !data.coverSlots[0];
-          data.coverSlots[slotIdx] = adjustedUrl;
-          data.coverImg = data.coverSlots.find(Boolean) || adjustedUrl;
-          syncCoverOnlyEditState();
-          if (wasFirstEmpty) {
-            peekNextCoverHint();
-          }
-        },
-        null,
-        () => {
-          const data = getWorkingStoreData();
-          if (!Array.isArray(data.coverSlots)) data.coverSlots = [""];
-          if (data.coverSlots[slotIdx] !== undefined) {
-            data.coverSlots[slotIdx] = "";
-            data.coverImg = data.coverSlots.find(Boolean) || "";
-          }
-          syncCoverOnlyEditState();
+      openCoverPhotoEditor(file, (adjustedUrl) => {
+        const data = getWorkingStoreData();
+        if (!Array.isArray(data.coverSlots)) data.coverSlots = [""];
+        const slotIdx = Number.isInteger(slotInfo.slotIdx) ? slotInfo.slotIdx : 0;
+        while (data.coverSlots.length <= slotIdx) {
+          data.coverSlots.push("");
         }
-      );
+        const wasFirstEmpty = slotIdx === 0 && !data.coverSlots[0];
+        data.coverSlots[slotIdx] = adjustedUrl;
+        data.coverImg = data.coverSlots.find(Boolean) || adjustedUrl;
+        syncCoverOnlyEditState();
+        if (wasFirstEmpty) {
+          peekNextCoverHint();
+        }
+      });
     } else if (slotInfo.type === "item") {
       const data = getWorkingStoreData();
       const cropDims = getBoxCropFrameDimensions(data, slotInfo.sIdx);
-      openCoverPhotoEditor(
-        file,
-        (croppedUrl) => {
-          if (!croppedUrl) return;
-          const workingData = getWorkingStoreData();
-          const { sIdx, itemId } = slotInfo;
-          const item = workingData.sections[sIdx]?.items?.find((i) => i.id === itemId);
-          if (item) {
-            item.img = croppedUrl;
-          }
-          renderSections();
-          attachOwnerStoreEditHandlers();
-        },
-        cropDims,
-        () => {
-          const workingData = getWorkingStoreData();
-          const { sIdx, itemId } = slotInfo;
-          const item = workingData.sections[sIdx]?.items?.find((i) => i.id === itemId);
-          if (item) {
-            item.img = "";
-          }
-          renderSections();
-          attachOwnerStoreEditHandlers();
+      openCoverPhotoEditor(file, (croppedUrl) => {
+        if (!croppedUrl) return;
+        const workingData = getWorkingStoreData();
+        const { sIdx, itemId } = slotInfo;
+        const item = workingData.sections[sIdx]?.items?.find((i) => i.id === itemId);
+        if (item) {
+          item.img = croppedUrl;
         }
-      );
+        renderSections();
+        attachOwnerStoreEditHandlers();
+      }, cropDims);
     }
   };
 
@@ -3119,7 +3040,6 @@ function attachOwnerStoreEditHandlers() {
   if (!OWNER_EDIT_MODE || document.body.getAttribute("data-page") === "owner") return;
 
   const data = getWorkingStoreData();
-  const fileInput = ensureOwnerInlineFileInput();
   removeOwnerStoreEditUI();
 
   const fixedEditorColor = getEditorFixedColor();
@@ -3319,6 +3239,7 @@ function attachOwnerStoreEditHandlers() {
       secEl.prepend(restoreBarRow);
     }
 
+    // Single 'Edit' button per box; opens the unified bottom-sheet editor with Name, Photo, Remove & Price
     const topRowLimit = Math.min(MAX_TOP_ROW_BOXES, Math.max(0, Number(data.indexBoxLimit ?? MAX_TOP_ROW_BOXES)));
     const cards = secEl.querySelectorAll(".mini-box:not(.user-photo-only-box), .item-box");
     cards.forEach((card, idx) => {
@@ -3327,87 +3248,24 @@ function attachOwnerStoreEditHandlers() {
 
       card.style.position = "relative";
 
-      const photoBtn = document.createElement("button");
-      photoBtn.type = "button";
-      photoBtn.className = "owner-inline-edit-btn";
-      photoBtn.textContent = "Photo";
-      photoBtn.title = "Change Item Photo";
-      photoBtn.style.cssText =
-        `position:absolute;top:6px;right:6px;z-index:4;padding:2px 6px;border:1px solid ${SOFT_POPUP_BTN_BORDER};border-radius:5px;background:${SOFT_POPUP_BTN_BG};color:${SOFT_POPUP_BTN_TEXT};font-size:0.68rem;font-weight:700;cursor:pointer;`;
-      photoBtn.onclick = (e) => {
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "owner-inline-edit-btn";
+      editBtn.textContent = "Edit";
+      editBtn.title = "Edit Name, Photo & Price";
+      editBtn.style.cssText =
+        `position:absolute;top:6px;right:6px;z-index:4;padding:2px 7px;border:1px solid ${SOFT_POPUP_BTN_BORDER};border-radius:5px;background:${SOFT_POPUP_BTN_BG};color:${SOFT_POPUP_BTN_TEXT};font-size:0.68rem;font-weight:700;cursor:pointer;`;
+      editBtn.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        pendingOwnerEditSlot = { type: "item", sIdx, itemId: item.id };
-        fileInput.value = "";
-        fileInput.click();
+        openCustomTextStylePopup({
+          targetType: "item",
+          sIdx,
+          itemId: item.id,
+          modalTitle: `Row ${sIdx + 1} Item Edit`
+        });
       };
-      card.appendChild(photoBtn);
-
-      const nameEl = card.querySelector(".mini-box-name, .item-name");
-      const priceEl = card.querySelector(".mini-box-price, .item-price");
-
-      if (nameEl && !nameEl.parentElement.classList.contains("owner-item-inline-group")) {
-        const groupWrap = document.createElement("div");
-        groupWrap.className = "owner-item-inline-group";
-        groupWrap.style.cssText =
-          "display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;margin-top:2px;";
-
-        const nameLine = document.createElement("div");
-        nameLine.style.cssText =
-          "display:flex;align-items:center;justify-content:flex-start;gap:4px;flex-wrap:nowrap;width:100%;";
-
-        const nameBtn = document.createElement("button");
-        nameBtn.type = "button";
-        nameBtn.className = "owner-inline-edit-btn";
-        nameBtn.textContent = "Edit";
-        nameBtn.title = "Edit Name & Style";
-        nameBtn.style.cssText =
-          "padding:1px 5px;border:1px solid #e2e8f0;border-radius:4px;background:#f8fafc;color:#111827;font-size:0.66rem;font-weight:700;line-height:1.1;cursor:pointer;flex-shrink:0;";
-        nameBtn.onclick = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          openCustomTextStylePopup({
-            targetType: "item",
-            sIdx,
-            itemId: item.id,
-            modalTitle: "Item Name & Style"
-          });
-        };
-
-        nameEl.style.marginTop = "0";
-        nameEl.style.minWidth = "0";
-        nameEl.style.textAlign = "left";
-        nameEl.parentNode.insertBefore(groupWrap, nameEl);
-        nameLine.appendChild(nameEl);
-        nameLine.appendChild(nameBtn);
-        groupWrap.appendChild(nameLine);
-
-        if (priceEl) {
-          const priceLine = document.createElement("div");
-          priceLine.style.cssText =
-            "display:flex;align-items:center;justify-content:flex-start;gap:4px;flex-wrap:nowrap;width:100%;";
-
-          const pricePencilBtn = document.createElement("button");
-          pricePencilBtn.type = "button";
-          pricePencilBtn.className = "owner-inline-edit-btn";
-          pricePencilBtn.textContent = "Price";
-          pricePencilBtn.title = "Edit Price, Size & Color";
-          pricePencilBtn.style.cssText =
-            `padding:1px 5px;border:1px solid ${SOFT_POPUP_BTN_BORDER};border-radius:4px;background:${SOFT_POPUP_BTN_BG};color:${SOFT_POPUP_BTN_TEXT};font-size:0.66rem;font-weight:700;line-height:1.1;cursor:pointer;flex-shrink:0;`;
-          pricePencilBtn.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openItemAmountEditorModal(sIdx, item.id);
-          };
-
-          priceEl.style.marginTop = "0";
-          priceEl.style.whiteSpace = "nowrap";
-          priceEl.style.textAlign = "left";
-          priceLine.appendChild(priceEl);
-          priceLine.appendChild(pricePencilBtn);
-          groupWrap.appendChild(priceLine);
-        }
-      }
+      card.appendChild(editBtn);
     });
 
     const boxContainerEl = sIdx === 0 ? secEl.querySelector(".five-boxes-row") : secEl.querySelector(".scroll-row");
