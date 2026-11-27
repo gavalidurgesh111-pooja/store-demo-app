@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V49");
+console.log("OWNER_EDIT_COMPLETE_V50");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -1796,6 +1796,52 @@ function syncTargetBoxPhotoOnScreen(sIdx, itemId, imgUrl) {
   }
 }
 
+function lockBackgroundScrollOnBottomSheet(modalEl, cardEl) {
+  if (!modalEl || !cardEl) return;
+
+  // Pressing on the pop-up card only scrolls inside the card and never leaks to the background page
+  cardEl.addEventListener("touchmove", (e) => {
+    e.stopPropagation();
+  }, { passive: true });
+
+  cardEl.addEventListener("wheel", (e) => {
+    e.stopPropagation();
+  }, { passive: true });
+
+  // Only touching/dragging the area ABOVE the pop-up scrolls the underlying store page
+  let backdropTouchY = null;
+  modalEl.addEventListener("touchstart", (e) => {
+    if (cardEl.contains(e.target)) {
+      backdropTouchY = null;
+      return;
+    }
+    if (e.touches && e.touches.length === 1) {
+      backdropTouchY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+
+  modalEl.addEventListener("touchmove", (e) => {
+    if (cardEl.contains(e.target) || backdropTouchY === null) return;
+    if (e.touches && e.touches.length === 1) {
+      const curY = e.touches[0].clientY;
+      const dy = backdropTouchY - curY;
+      backdropTouchY = curY;
+      window.scrollBy(0, dy);
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  modalEl.addEventListener("touchend", () => {
+    backdropTouchY = null;
+  }, { passive: true });
+
+  modalEl.addEventListener("wheel", (e) => {
+    if (cardEl.contains(e.target)) return;
+    window.scrollBy(0, e.deltaY);
+    e.preventDefault();
+  }, { passive: false });
+}
+
 // ==================== UNIFIED BOTTOM-SHEET EDITOR (#ownerStoreNameModal) ====================
 function openCustomTextStylePopup(config) {
   const existing = document.getElementById("ownerStoreNameModal");
@@ -1879,13 +1925,17 @@ function openCustomTextStylePopup(config) {
   const modal = document.createElement("div");
   modal.id = "ownerStoreNameModal";
   modal.style.cssText = isBottomSheet
-    ? "position:fixed;inset:0;z-index:125;background:transparent;display:flex;align-items:flex-end;justify-content:center;padding:0;pointer-events:none;"
+    ? "position:fixed;inset:0;z-index:125;background:transparent;display:flex;align-items:flex-end;justify-content:center;padding:0;pointer-events:auto;touch-action:none;"
     : "position:fixed;inset:0;z-index:125;background:rgba(15,23,42,0.58);display:flex;align-items:flex-start;justify-content:center;padding:8px;overflow-y:auto;";
 
   const card = document.createElement("div");
   card.style.cssText = isBottomSheet
-    ? "width:100%;max-width:480px;height:54vh;max-height:54vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#ffffff;border-top:2px solid #e2e8f0;border-radius:16px 16px 0 0;padding:10px 14px 18px;box-shadow:0 -10px 28px rgba(15,23,42,0.22);display:flex;flex-direction:column;gap:12px;pointer-events:auto;"
+    ? "width:100%;max-width:480px;height:54vh;max-height:54vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#ffffff;border-top:2px solid #e2e8f0;border-radius:16px 16px 0 0;padding:10px 14px 18px;box-shadow:0 -10px 28px rgba(15,23,42,0.22);display:flex;flex-direction:column;gap:12px;pointer-events:auto;"
     : "width:100%;max-width:100%;background:#ffffff;border-radius:14px;padding:12px 14px 16px;box-shadow:0 12px 32px rgba(15,23,42,0.28);display:flex;flex-direction:column;gap:12px;";
+
+  if (isBottomSheet) {
+    lockBackgroundScrollOnBottomSheet(modal, card);
+  }
 
   const stickyHeader = document.createElement("div");
   stickyHeader.style.cssText =
