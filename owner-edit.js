@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V58");
+console.log("OWNER_EDIT_COMPLETE_V59");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -148,29 +148,30 @@ function removeOwnerStoreEditUI() {
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
 }
 
-// Strict rule: Item Name & Price never leave their position on any box (.mini-box or .item-box) even when BG is removed
+// Keep Item Name & Price in their exact original position without shifting left/right on mini or product boxes
 function keepItemAndPricePositionFixed() {
   document.querySelectorAll(".mini-box:not(.user-photo-only-box), .item-box").forEach((card) => {
-    const isMini = card.classList.contains("mini-box");
     const nameEl = card.querySelector(".mini-box-name, .item-name");
     const priceEl = card.querySelector(".mini-box-price, .item-price");
 
-    const lockEl = (el) => {
+    const clearShift = (el) => {
       if (!el) return;
-      el.style.setProperty("position", "relative", "important");
-      el.style.setProperty("top", "auto", "important");
-      el.style.setProperty("bottom", "auto", "important");
-      el.style.setProperty("left", "0px", "important");
-      el.style.setProperty("right", "auto", "important");
-      el.style.setProperty("margin", "0px", "important");
-      el.style.setProperty("transform", "none", "important");
-      el.style.setProperty("float", "none", "important");
-      el.style.setProperty("text-align", isMini ? "center" : "left", "important");
-      el.style.setProperty("align-self", isMini ? "center" : "stretch", "important");
+      el.style.removeProperty("position");
+      el.style.removeProperty("top");
+      el.style.removeProperty("bottom");
+      el.style.removeProperty("left");
+      el.style.removeProperty("right");
+      el.style.removeProperty("margin");
+      el.style.removeProperty("margin-left");
+      el.style.removeProperty("margin-right");
+      el.style.removeProperty("transform");
+      el.style.removeProperty("float");
+      el.style.removeProperty("text-align");
+      el.style.removeProperty("align-self");
     };
 
-    lockEl(nameEl);
-    lockEl(priceEl);
+    clearShift(nameEl);
+    clearShift(priceEl);
   });
 }
 
