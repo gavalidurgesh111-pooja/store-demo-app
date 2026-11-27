@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V62");
+console.log("OWNER_EDIT_COMPLETE_V63");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -148,27 +148,27 @@ function removeOwnerStoreEditUI() {
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
 }
 
-// Strict rule: keep initial size & position intact without shifting when BG is added or removed
+// Strict rule: Name & Price never leave their position on BG removal or single-row BG changes
 function keepItemAndPricePositionFixed() {
   document.querySelectorAll(".mini-box:not(.user-photo-only-box), .item-box").forEach((card) => {
     const nameEl = card.querySelector(".mini-box-name, .item-name");
     const priceEl = card.querySelector(".mini-box-price, .item-price");
 
-    const preserveInitial = (el) => {
+    const lockPosition = (el) => {
       if (!el) return;
-      if (!el.dataset.initLocked) {
-        el.dataset.initLocked = "1";
-      }
-      el.style.removeProperty("left");
-      el.style.removeProperty("right");
-      el.style.removeProperty("top");
-      el.style.removeProperty("bottom");
-      el.style.removeProperty("transform");
-      el.style.removeProperty("float");
+      el.style.setProperty("position", "relative", "important");
+      el.style.setProperty("top", "auto", "important");
+      el.style.setProperty("bottom", "auto", "important");
+      el.style.setProperty("left", "0px", "important");
+      el.style.setProperty("right", "auto", "important");
+      el.style.setProperty("margin-left", "0px", "important");
+      el.style.setProperty("margin-right", "0px", "important");
+      el.style.setProperty("transform", "none", "important");
+      el.style.setProperty("float", "none", "important");
     };
 
-    preserveInitial(nameEl);
-    preserveInitial(priceEl);
+    lockPosition(nameEl);
+    lockPosition(priceEl);
   });
 }
 
