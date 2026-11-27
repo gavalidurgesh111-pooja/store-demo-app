@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V50");
+console.log("OWNER_EDIT_COMPLETE_V51");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -581,6 +581,52 @@ function makeLabeledSlider(labelText, min, max, step, initialVal, unitSuffix, ac
   return wrap;
 }
 
+function lockBackgroundScrollOnBottomSheet(modalEl, cardEl) {
+  if (!modalEl || !cardEl) return;
+
+  // Pressing on the pop-up card only scrolls inside the card and never leaks to the background page
+  cardEl.addEventListener("touchmove", (e) => {
+    e.stopPropagation();
+  }, { passive: true });
+
+  cardEl.addEventListener("wheel", (e) => {
+    e.stopPropagation();
+  }, { passive: true });
+
+  // Only touching/dragging the area ABOVE the pop-up scrolls the underlying store page
+  let backdropTouchY = null;
+  modalEl.addEventListener("touchstart", (e) => {
+    if (cardEl.contains(e.target)) {
+      backdropTouchY = null;
+      return;
+    }
+    if (e.touches && e.touches.length === 1) {
+      backdropTouchY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+
+  modalEl.addEventListener("touchmove", (e) => {
+    if (cardEl.contains(e.target) || backdropTouchY === null) return;
+    if (e.touches && e.touches.length === 1) {
+      const curY = e.touches[0].clientY;
+      const dy = backdropTouchY - curY;
+      backdropTouchY = curY;
+      window.scrollBy(0, dy);
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  modalEl.addEventListener("touchend", () => {
+    backdropTouchY = null;
+  }, { passive: true });
+
+  modalEl.addEventListener("wheel", (e) => {
+    if (cardEl.contains(e.target)) return;
+    window.scrollBy(0, e.deltaY);
+    e.preventDefault();
+  }, { passive: false });
+}
+
 // ==================== UNIFIED COVER MANAGER PANEL ====================
 const INITIAL_OWNER_COVER_HEIGHT = (() => {
   const wrap = document.querySelector(".cover-wrapper");
@@ -615,11 +661,13 @@ function openCoverManagerModal() {
   const modal = document.createElement("div");
   modal.id = "ownerCoverManagerModal";
   modal.style.cssText =
-    "position:fixed;inset:0;z-index:145;background:transparent;display:flex;align-items:flex-end;justify-content:center;padding:0;pointer-events:none;";
+    "position:fixed;inset:0;z-index:145;background:transparent;display:flex;align-items:flex-end;justify-content:center;padding:0;pointer-events:auto;touch-action:none;";
 
   const card = document.createElement("div");
   card.style.cssText =
-    "width:100%;max-width:480px;max-height:52vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#ffffff;border-top:2px solid #e2e8f0;border-radius:16px 16px 0 0;padding:12px 16px 18px;box-shadow:0 -10px 28px rgba(15,23,42,0.18);display:flex;flex-direction:column;gap:12px;color:#111827;pointer-events:auto;";
+    "width:100%;max-width:480px;max-height:52vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#ffffff;border-top:2px solid #e2e8f0;border-radius:16px 16px 0 0;padding:12px 16px 18px;box-shadow:0 -10px 28px rgba(15,23,42,0.18);display:flex;flex-direction:column;gap:12px;color:#111827;pointer-events:auto;";
+
+  lockBackgroundScrollOnBottomSheet(modal, card);
 
   const header = document.createElement("div");
   header.style.cssText =
@@ -790,11 +838,13 @@ function openStripHeightEditorModal(sIdx, stripEl) {
   const modal = document.createElement("div");
   modal.id = "ownerStripHeightEditorModal";
   modal.style.cssText =
-    "position:fixed;inset:0;z-index:145;background:transparent;display:flex;align-items:flex-end;justify-content:center;padding:0;pointer-events:none;";
+    "position:fixed;inset:0;z-index:145;background:transparent;display:flex;align-items:flex-end;justify-content:center;padding:0;pointer-events:auto;touch-action:none;";
 
   const card = document.createElement("div");
   card.style.cssText =
-    "width:100%;max-width:480px;height:48vh;max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#ffffff;border-top:2px solid #e2e8f0;border-radius:16px 16px 0 0;padding:10px 14px 18px;box-shadow:0 -10px 28px rgba(15,23,42,0.18);display:flex;flex-direction:column;gap:10px;color:#111827;pointer-events:auto;";
+    "width:100%;max-width:480px;height:48vh;max-height:50vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;background:#ffffff;border-top:2px solid #e2e8f0;border-radius:16px 16px 0 0;padding:10px 14px 18px;box-shadow:0 -10px 28px rgba(15,23,42,0.18);display:flex;flex-direction:column;gap:10px;color:#111827;pointer-events:auto;";
+
+  lockBackgroundScrollOnBottomSheet(modal, card);
 
   const header = document.createElement("div");
   header.style.cssText =
@@ -1292,11 +1342,13 @@ function openBoxSizePanelModal(targetRowIdx = null) {
   const modal = document.createElement("div");
   modal.id = "ownerBoxSizePanelModal";
   modal.style.cssText =
-    "position:fixed;inset:0;z-index:135;background:transparent;display:flex;align-items:flex-end;justify-content:center;padding:0;pointer-events:none;";
+    "position:fixed;inset:0;z-index:135;background:transparent;display:flex;align-items:flex-end;justify-content:center;padding:0;pointer-events:auto;touch-action:none;";
 
   const card = document.createElement("div");
   card.style.cssText =
-    "width:100%;max-width:480px;height:46vh;max-height:48vh;background:#ffffff;border-top:2px solid #e2e8f0;border-radius:16px 16px 0 0;padding:10px 14px 18px;box-shadow:0 -10px 28px rgba(15,23,42,0.18);display:flex;flex-direction:column;gap:10px;color:#111827;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;pointer-events:auto;";
+    "width:100%;max-width:480px;height:46vh;max-height:48vh;background:#ffffff;border-top:2px solid #e2e8f0;border-radius:16px 16px 0 0;padding:10px 14px 18px;box-shadow:0 -10px 28px rgba(15,23,42,0.18);display:flex;flex-direction:column;gap:10px;color:#111827;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;pointer-events:auto;";
+
+  lockBackgroundScrollOnBottomSheet(modal, card);
 
   const header = document.createElement("div");
   header.style.cssText =
@@ -1794,52 +1846,6 @@ function syncTargetBoxPhotoOnScreen(sIdx, itemId, imgUrl) {
       existingPh.style.borderRadius = radius;
     }
   }
-}
-
-function lockBackgroundScrollOnBottomSheet(modalEl, cardEl) {
-  if (!modalEl || !cardEl) return;
-
-  // Pressing on the pop-up card only scrolls inside the card and never leaks to the background page
-  cardEl.addEventListener("touchmove", (e) => {
-    e.stopPropagation();
-  }, { passive: true });
-
-  cardEl.addEventListener("wheel", (e) => {
-    e.stopPropagation();
-  }, { passive: true });
-
-  // Only touching/dragging the area ABOVE the pop-up scrolls the underlying store page
-  let backdropTouchY = null;
-  modalEl.addEventListener("touchstart", (e) => {
-    if (cardEl.contains(e.target)) {
-      backdropTouchY = null;
-      return;
-    }
-    if (e.touches && e.touches.length === 1) {
-      backdropTouchY = e.touches[0].clientY;
-    }
-  }, { passive: true });
-
-  modalEl.addEventListener("touchmove", (e) => {
-    if (cardEl.contains(e.target) || backdropTouchY === null) return;
-    if (e.touches && e.touches.length === 1) {
-      const curY = e.touches[0].clientY;
-      const dy = backdropTouchY - curY;
-      backdropTouchY = curY;
-      window.scrollBy(0, dy);
-      e.preventDefault();
-    }
-  }, { passive: false });
-
-  modalEl.addEventListener("touchend", () => {
-    backdropTouchY = null;
-  }, { passive: true });
-
-  modalEl.addEventListener("wheel", (e) => {
-    if (cardEl.contains(e.target)) return;
-    window.scrollBy(0, e.deltaY);
-    e.preventDefault();
-  }, { passive: false });
 }
 
 // ==================== UNIFIED BOTTOM-SHEET EDITOR (#ownerStoreNameModal) ====================
