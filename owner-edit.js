@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V41");
+console.log("OWNER_EDIT_COMPLETE_V42");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -563,6 +563,12 @@ function makeLabeledSlider(labelText, min, max, step, initialVal, unitSuffix, ac
 }
 
 // ==================== UNIFIED COVER MANAGER PANEL ====================
+const INITIAL_OWNER_COVER_HEIGHT = (() => {
+  const wrap = document.querySelector(".cover-wrapper");
+  const measured = wrap ? Math.round(wrap.getBoundingClientRect().height) : 0;
+  return measured >= 110 && measured <= 380 ? measured : 170;
+})();
+
 function openCoverManagerModal() {
   removeCoverManagerModalIfExists();
   const data = getWorkingStoreData();
@@ -570,15 +576,15 @@ function openCoverManagerModal() {
   const fileInput = ensureOwnerInlineFileInput();
   const accentHex = getEditorFixedColor();
 
-  const DEFAULT_COVER_H = 170;
+  const ownerDefaultCoverH = INITIAL_OWNER_COVER_HEIGHT;
   const savedCoverHeight = data.coverHeight ?? null;
   let draftH = Number.isFinite(Number(savedCoverHeight)) && Number(savedCoverHeight) > 0
-    ? Number(savedCoverHeight)
-    : DEFAULT_COVER_H;
+    ? clampNum(savedCoverHeight, 110, 380, ownerDefaultCoverH)
+    : ownerDefaultCoverH;
 
   const setVisualCoverHeight = (hVal) => {
     if (!coverWrap) return;
-    const ch = clampNum(hVal, 110, 380, DEFAULT_COVER_H);
+    const ch = clampNum(hVal, 110, 380, ownerDefaultCoverH);
     coverWrap.style.setProperty("height", `${ch}px`, "important");
     coverWrap.style.setProperty("min-height", `${ch}px`, "important");
     coverWrap.style.setProperty("max-height", `${ch}px`, "important");
@@ -604,14 +610,15 @@ function openCoverManagerModal() {
   title.textContent = "Cover Settings";
   title.style.cssText = "font-size:0.96rem;font-weight:800;color:#111827;";
 
-  // X button ONLY closes the pop-up without saving or changing cover height
+  // X: Close pop-up only without applying unapplied changes
   const closeBtn = document.createElement("button");
   closeBtn.type = "button";
   closeBtn.textContent = "X";
   closeBtn.style.cssText =
     "border:none;background:#f8fafc;border-radius:8px;min-width:32px;min-height:32px;font-weight:700;color:#334155;cursor:pointer;";
   closeBtn.onclick = () => {
-    setVisualCoverHeight(savedCoverHeight ?? DEFAULT_COVER_H);
+    data.coverHeight = savedCoverHeight;
+    setVisualCoverHeight(savedCoverHeight ?? ownerDefaultCoverH);
     modal.remove();
   };
 
@@ -695,23 +702,23 @@ function openCoverManagerModal() {
   const footer = document.createElement("div");
   footer.style.cssText = "display:flex;gap:8px;margin-top:2px;";
 
-  // Reset Height immediately resets slider & height to 170px, keeps pop-up open until Apply / Save
+  // Reset Height: Restore owner's given default size immediately, keep pop-up open until Apply / Save
   const resetBtn = document.createElement("button");
   resetBtn.type = "button";
   resetBtn.textContent = "Reset Height";
   resetBtn.style.cssText =
     "min-height:38px;padding:7px 12px;border-radius:8px;font-size:0.82rem;font-weight:700;cursor:pointer;";
   resetBtn.onclick = () => {
-    draftH = DEFAULT_COVER_H;
+    draftH = ownerDefaultCoverH;
     data.coverHeight = null;
     if (typeof hSlider.setSliderValue === "function") {
-      hSlider.setSliderValue(DEFAULT_COVER_H);
+      hSlider.setSliderValue(ownerDefaultCoverH);
     }
-    setVisualCoverHeight(DEFAULT_COVER_H);
+    setVisualCoverHeight(ownerDefaultCoverH);
   };
   bindSoftToAccentButton(resetBtn);
 
-  // Apply sets the chosen height and closes the pop-up
+  // Apply: Apply selected height and close pop-up
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
   applyBtn.textContent = "Apply";
