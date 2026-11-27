@@ -536,17 +536,29 @@ function applyBoxSizeStyles() {
     const secItems = (sec && Array.isArray(sec.items)) ? sec.items : [];
 
     if (sIdx === 0) {
+      const fiveRow = secEl.querySelector(".five-boxes-row");
+      if (fiveRow) {
+        fiveRow.style.setProperty("overflow-x", "auto", "important");
+        fiveRow.style.setProperty("flex-wrap", "nowrap", "important");
+      }
+
       secEl.querySelectorAll(".mini-box:not(.user-photo-only-box)").forEach((box, idx) => {
         const item = secItems[idx] || null;
-        box.style.flex = `0 0 ${sizes.miniBox.width}px`;
-        box.style.width = `${sizes.miniBox.width}px`;
-        box.style.minWidth = `${sizes.miniBox.width}px`;
-        box.style.maxWidth = `${sizes.miniBox.width}px`;
-        box.style.height = "auto";
+        const w = sizes.miniBox.width;
+        const h = sizes.miniBox.height;
+
+        box.style.setProperty("box-sizing", "border-box", "important");
+        box.style.setProperty("flex", `0 0 ${w}px`, "important");
+        box.style.setProperty("width", `${w}px`, "important");
+        box.style.setProperty("min-width", `${w}px`, "important");
+        box.style.setProperty("max-width", `${w}px`, "important");
+
         if (sizes.miniBox.textBgTransparent) {
-          box.style.minHeight = "0px";
+          box.style.setProperty("height", "auto", "important");
+          box.style.setProperty("min-height", "0px", "important");
         } else {
-          box.style.minHeight = `${sizes.miniBox.height}px`;
+          box.style.setProperty("height", `${h}px`, "important");
+          box.style.setProperty("min-height", `${h}px`, "important");
         }
 
         applyInnerBoxColor(box, ".mini-box-body", sizes.miniBox);
@@ -598,26 +610,36 @@ function applyBoxSizeStyles() {
 
       const userProfileBox = secEl.querySelector(".mini-box.user-photo-only-box");
       if (userProfileBox) {
-        userProfileBox.style.flex = `0 0 ${sizes.miniBox.width}px`;
-        userProfileBox.style.width = `${sizes.miniBox.width}px`;
-        userProfileBox.style.minWidth = `${sizes.miniBox.width}px`;
-        userProfileBox.style.maxWidth = `${sizes.miniBox.width}px`;
-        userProfileBox.style.minHeight = `${sizes.miniBox.height}px`;
+        const w = sizes.miniBox.width;
+        const h = sizes.miniBox.height;
+        userProfileBox.style.setProperty("box-sizing", "border-box", "important");
+        userProfileBox.style.setProperty("flex", `0 0 ${w}px`, "important");
+        userProfileBox.style.setProperty("width", `${w}px`, "important");
+        userProfileBox.style.setProperty("min-width", `${w}px`, "important");
+        userProfileBox.style.setProperty("max-width", `${w}px`, "important");
+        userProfileBox.style.setProperty("height", `${h}px`, "important");
+        userProfileBox.style.setProperty("min-height", `${h}px`, "important");
       }
       return;
     }
 
     secEl.querySelectorAll(".item-box").forEach((box, idx) => {
       const item = secItems[idx] || null;
-      box.style.flex = `0 0 ${sizes.productBox.width}px`;
-      box.style.width = `${sizes.productBox.width}px`;
-      box.style.minWidth = `${sizes.productBox.width}px`;
-      box.style.maxWidth = `${sizes.productBox.width}px`;
-      box.style.height = "auto";
+      const w = sizes.productBox.width;
+      const h = sizes.productBox.height;
+
+      box.style.setProperty("box-sizing", "border-box", "important");
+      box.style.setProperty("flex", `0 0 ${w}px`, "important");
+      box.style.setProperty("width", `${w}px`, "important");
+      box.style.setProperty("min-width", `${w}px`, "important");
+      box.style.setProperty("max-width", `${w}px`, "important");
+
       if (sizes.productBox.textBgTransparent) {
-        box.style.minHeight = "0px";
+        box.style.setProperty("height", "auto", "important");
+        box.style.setProperty("min-height", "0px", "important");
       } else {
-        box.style.minHeight = `${sizes.productBox.height}px`;
+        box.style.setProperty("height", `${h}px`, "important");
+        box.style.setProperty("min-height", `${h}px`, "important");
       }
 
       applyInnerBoxColor(box, ".item-info", sizes.productBox);
