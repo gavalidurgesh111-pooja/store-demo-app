@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V61");
+console.log("OWNER_EDIT_COMPLETE_V62");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -3386,7 +3386,6 @@ function attachOwnerStoreEditHandlers() {
 
   toolsRow.appendChild(makeToolBtn("Store Name", () => openStoreNameEditorPopup()));
   toolsRow.appendChild(makeToolBtn("Cover", () => openCoverManagerModal()));
-  toolsRow.appendChild(makeToolBtn("All Boxes", () => openBoxSizePanelModal(null)));
   toolsRow.appendChild(makeToolBtn("Theme Color", () => openCustomColourPickerModal()));
   toolsRow.appendChild(
     makeToolBtn(
