@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V60");
+console.log("OWNER_EDIT_COMPLETE_V61");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -148,37 +148,27 @@ function removeOwnerStoreEditUI() {
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
 }
 
-// Restore Item Name & Price to their proper position on mini (.mini-box) & product (.item-box) after BG toggle
+// Strict rule: keep initial size & position intact without shifting when BG is added or removed
 function keepItemAndPricePositionFixed() {
   document.querySelectorAll(".mini-box:not(.user-photo-only-box), .item-box").forEach((card) => {
-    const isMini = card.classList.contains("mini-box");
     const nameEl = card.querySelector(".mini-box-name, .item-name");
     const priceEl = card.querySelector(".mini-box-price, .item-price");
 
-    const restoreEl = (el) => {
+    const preserveInitial = (el) => {
       if (!el) return;
-      el.style.removeProperty("position");
-      el.style.removeProperty("top");
-      el.style.removeProperty("bottom");
+      if (!el.dataset.initLocked) {
+        el.dataset.initLocked = "1";
+      }
       el.style.removeProperty("left");
       el.style.removeProperty("right");
-      el.style.removeProperty("margin");
-      el.style.removeProperty("margin-left");
-      el.style.removeProperty("margin-right");
+      el.style.removeProperty("top");
+      el.style.removeProperty("bottom");
       el.style.removeProperty("transform");
       el.style.removeProperty("float");
-      el.style.removeProperty("align-self");
-      el.style.setProperty("position", "relative", "important");
-      el.style.setProperty("left", "0px", "important");
-      el.style.setProperty("right", "auto", "important");
-      el.style.setProperty("margin-left", "0px", "important");
-      el.style.setProperty("margin-right", "0px", "important");
-      el.style.setProperty("transform", "none", "important");
-      el.style.setProperty("text-align", isMini ? "center" : "left", "important");
     };
 
-    restoreEl(nameEl);
-    restoreEl(priceEl);
+    preserveInitial(nameEl);
+    preserveInitial(priceEl);
   });
 }
 
