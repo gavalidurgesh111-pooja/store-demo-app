@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V52");
+console.log("OWNER_EDIT_COMPLETE_V53");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -2222,7 +2222,7 @@ function openCustomTextStylePopup(config) {
         opt.value === st.fontFamily &&
         (opt.italic ? "italic" : "normal") === st.fontStyle &&
         Number(opt.weight) === Number(st.fontWeight) &&
-        Number(o.letterSpacing) === Number(st.letterSpacing);
+        Number(opt.letterSpacing) === Number(st.letterSpacing);
       ctrl.setSelected(active);
     });
     syncChooseFontBtnLabel();
