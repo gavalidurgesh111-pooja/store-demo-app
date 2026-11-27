@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V42");
+console.log("OWNER_EDIT_COMPLETE_V43");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -669,14 +669,14 @@ function openCoverManagerModal() {
     const rowBtns = document.createElement("div");
     rowBtns.style.cssText = "display:flex;gap:6px;";
 
+    // Keep Cover Settings open while picking & editing photo in pop-up
     const uploadBtn = document.createElement("button");
     uploadBtn.type = "button";
     uploadBtn.textContent = "Upload Photo";
     uploadBtn.style.cssText =
       "padding:4px 9px;border-radius:6px;font-size:0.74rem;font-weight:700;cursor:pointer;";
     uploadBtn.onclick = () => {
-      modal.remove();
-      pendingOwnerEditSlot = { type: "cover", slotIdx: idx };
+      pendingOwnerEditSlot = { type: "cover", slotIdx: idx, reopenCoverModal: true };
       fileInput.value = "";
       fileInput.click();
     };
@@ -718,7 +718,7 @@ function openCoverManagerModal() {
   };
   bindSoftToAccentButton(resetBtn);
 
-  // Apply: Apply selected height and close pop-up
+  // Apply: Apply selected height and close pop-up (persisted to storage when top Save is pressed)
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
   applyBtn.textContent = "Apply";
@@ -2569,6 +2569,9 @@ function bindCoverEditorEvents() {
 }
 
 function cancelEditor() {
+  const shouldReopenCover = Boolean(pendingOwnerEditSlot && pendingOwnerEditSlot.reopenCoverModal);
+  pendingOwnerEditSlot = null;
+
   const screen = document.getElementById("screenPhotoEditor");
   const preview = document.getElementById("editorImagePreview");
   if (preview) {
@@ -2581,9 +2584,14 @@ function cancelEditor() {
   onCoverEditorDone = null;
   isDraggingImg = false;
   initialPinchDistance = null;
+
+  if (shouldReopenCover && OWNER_EDIT_MODE) {
+    openCoverManagerModal();
+  }
 }
 
 function confirmEditor() {
+  const shouldReopenCover = Boolean(pendingOwnerEditSlot && pendingOwnerEditSlot.reopenCoverModal);
   const preview = document.getElementById("editorImagePreview");
   const box = document.getElementById("cropFrameBox")?.getBoundingClientRect();
   const cb = onCoverEditorDone;
@@ -2617,6 +2625,9 @@ function confirmEditor() {
     cancelEditor();
     if (typeof cb === "function") {
       cb(croppedUrl);
+    }
+    if (shouldReopenCover && OWNER_EDIT_MODE) {
+      openCoverManagerModal();
     }
   } catch (err) {
     cancelEditor();
@@ -2725,10 +2736,12 @@ function ensureOwnerInlineFileInput() {
   input.onchange = async (e) => {
     const file = e.target.files && e.target.files[0];
     const slotInfo = pendingOwnerEditSlot ? { ...pendingOwnerEditSlot } : null;
-    pendingOwnerEditSlot = null;
     e.target.value = "";
 
-    if (!file || !slotInfo) return;
+    if (!file || !slotInfo) {
+      pendingOwnerEditSlot = null;
+      return;
+    }
 
     if (slotInfo.type === "cover") {
       openCoverPhotoEditor(file, (adjustedUrl) => {
@@ -2748,6 +2761,7 @@ function ensureOwnerInlineFileInput() {
         }
       });
     } else if (slotInfo.type === "item") {
+      pendingOwnerEditSlot = null;
       const resizedUrl = await readImageAsDataURL(file, 500);
       if (!resizedUrl) return;
       const data = getWorkingStoreData();
