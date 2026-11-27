@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V40");
+console.log("OWNER_EDIT_COMPLETE_V41");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -529,6 +529,39 @@ function createBlueKnobSlider(min, max, step, initialVal, onValueChange) {
   };
 }
 
+function makeLabeledSlider(labelText, min, max, step, initialVal, unitSuffix, accentHex, onChange) {
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "display:flex;flex-direction:column;gap:6px;";
+
+  const top = document.createElement("div");
+  top.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
+
+  const lbl = document.createElement("span");
+  lbl.textContent = labelText;
+  lbl.style.cssText = "font-size:0.84rem;font-weight:700;color:#334155;";
+
+  const valBadge = document.createElement("span");
+  valBadge.textContent = `${initialVal}${unitSuffix}`;
+  valBadge.style.cssText = `font-size:0.84rem;font-weight:700;color:${SOFT_POPUP_BTN_TEXT};`;
+
+  const knobSlider = createBlueKnobSlider(min, max, step, initialVal, (num) => {
+    valBadge.textContent = `${num}${unitSuffix}`;
+    onChange(num);
+  });
+
+  top.appendChild(lbl);
+  top.appendChild(valBadge);
+  wrap.appendChild(top);
+  wrap.appendChild(knobSlider.element);
+
+  wrap.setSliderValue = (num) => {
+    knobSlider.setValue(num);
+    valBadge.textContent = `${knobSlider.getValue()}${unitSuffix}`;
+  };
+
+  return wrap;
+}
+
 // ==================== UNIFIED COVER MANAGER PANEL ====================
 function openCoverManagerModal() {
   removeCoverManagerModalIfExists();
@@ -538,9 +571,9 @@ function openCoverManagerModal() {
   const accentHex = getEditorFixedColor();
 
   const DEFAULT_COVER_H = 170;
-  const snapshotCoverHeight = data.coverHeight ?? null;
-  let draftH = Number.isFinite(Number(snapshotCoverHeight)) && Number(snapshotCoverHeight) > 0
-    ? Number(snapshotCoverHeight)
+  const savedCoverHeight = data.coverHeight ?? null;
+  let draftH = Number.isFinite(Number(savedCoverHeight)) && Number(savedCoverHeight) > 0
+    ? Number(savedCoverHeight)
     : DEFAULT_COVER_H;
 
   const setVisualCoverHeight = (hVal) => {
@@ -571,19 +604,16 @@ function openCoverManagerModal() {
   title.textContent = "Cover Settings";
   title.style.cssText = "font-size:0.96rem;font-weight:800;color:#111827;";
 
-  const cancelAndClose = () => {
-    data.coverHeight = snapshotCoverHeight;
-    modal.remove();
-    renderHeader();
-    attachOwnerStoreEditHandlers();
-  };
-
+  // X button ONLY closes the pop-up without saving or changing cover height
   const closeBtn = document.createElement("button");
   closeBtn.type = "button";
   closeBtn.textContent = "X";
   closeBtn.style.cssText =
     "border:none;background:#f8fafc;border-radius:8px;min-width:32px;min-height:32px;font-weight:700;color:#334155;cursor:pointer;";
-  closeBtn.onclick = cancelAndClose;
+  closeBtn.onclick = () => {
+    setVisualCoverHeight(savedCoverHeight ?? DEFAULT_COVER_H);
+    modal.remove();
+  };
 
   header.appendChild(title);
   header.appendChild(closeBtn);
@@ -610,7 +640,6 @@ function openCoverManagerModal() {
   addSlideBtn.style.cssText =
     "padding:5px 10px;border-radius:8px;font-size:0.76rem;font-weight:700;cursor:pointer;";
   addSlideBtn.onclick = () => {
-    data.coverHeight = draftH;
     addCoverInEditMode();
     openCoverManagerModal();
   };
@@ -639,7 +668,6 @@ function openCoverManagerModal() {
     uploadBtn.style.cssText =
       "padding:4px 9px;border-radius:6px;font-size:0.74rem;font-weight:700;cursor:pointer;";
     uploadBtn.onclick = () => {
-      data.coverHeight = draftH;
       modal.remove();
       pendingOwnerEditSlot = { type: "cover", slotIdx: idx };
       fileInput.value = "";
@@ -653,7 +681,6 @@ function openCoverManagerModal() {
     delBtn.style.cssText =
       "padding:4px 8px;border:1px solid #fecaca;border-radius:6px;background:#fff5f5;color:#b91c1c;font-size:0.74rem;font-weight:700;cursor:pointer;";
     delBtn.onclick = () => {
-      data.coverHeight = draftH;
       removeCoverSlotAt(idx);
       openCoverManagerModal();
     };
@@ -668,6 +695,7 @@ function openCoverManagerModal() {
   const footer = document.createElement("div");
   footer.style.cssText = "display:flex;gap:8px;margin-top:2px;";
 
+  // Reset Height immediately resets slider & height to 170px, keeps pop-up open until Apply / Save
   const resetBtn = document.createElement("button");
   resetBtn.type = "button";
   resetBtn.textContent = "Reset Height";
@@ -676,12 +704,14 @@ function openCoverManagerModal() {
   resetBtn.onclick = () => {
     draftH = DEFAULT_COVER_H;
     data.coverHeight = null;
-    modal.remove();
-    renderHeader();
-    attachOwnerStoreEditHandlers();
+    if (typeof hSlider.setSliderValue === "function") {
+      hSlider.setSliderValue(DEFAULT_COVER_H);
+    }
+    setVisualCoverHeight(DEFAULT_COVER_H);
   };
   bindSoftToAccentButton(resetBtn);
 
+  // Apply sets the chosen height and closes the pop-up
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
   applyBtn.textContent = "Apply";
@@ -689,9 +719,8 @@ function openCoverManagerModal() {
     "flex:1;min-height:38px;padding:7px 14px;border-radius:8px;font-size:0.84rem;font-weight:700;cursor:pointer;";
   applyBtn.onclick = () => {
     data.coverHeight = draftH;
+    setVisualCoverHeight(draftH);
     modal.remove();
-    renderHeader();
-    attachOwnerStoreEditHandlers();
   };
   bindSoftToAccentButton(applyBtn);
 
@@ -1791,33 +1820,6 @@ function openBoxSizePanelModal(targetRowIdx = null) {
   card.appendChild(footer);
   modal.appendChild(card);
   document.body.appendChild(modal);
-}
-
-function makeLabeledSlider(labelText, min, max, step, initialVal, unitSuffix, accentHex, onChange) {
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "display:flex;flex-direction:column;gap:6px;";
-
-  const top = document.createElement("div");
-  top.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
-
-  const lbl = document.createElement("span");
-  lbl.textContent = labelText;
-  lbl.style.cssText = "font-size:0.84rem;font-weight:700;color:#334155;";
-
-  const valBadge = document.createElement("span");
-  valBadge.textContent = `${initialVal}${unitSuffix}`;
-  valBadge.style.cssText = `font-size:0.84rem;font-weight:700;color:${SOFT_POPUP_BTN_TEXT};`;
-
-  const knobSlider = createBlueKnobSlider(min, max, step, initialVal, (num) => {
-    valBadge.textContent = `${num}${unitSuffix}`;
-    onChange(num);
-  });
-
-  top.appendChild(lbl);
-  top.appendChild(valBadge);
-  wrap.appendChild(top);
-  wrap.appendChild(knobSlider.element);
-  return wrap;
 }
 
 function makeToggleColorBox(titleText, enabledVal, colorVal, accentHex, onToggle, onColorChange) {
