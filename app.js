@@ -328,14 +328,25 @@ function applyPriceVisualStyle(priceEl, item, defaultBoxPriceStyle) {
   }
 }
 
+function getActiveThemeColor(data) {
+  if (data && typeof data.themeColor === "string" && /^#[0-9a-fA-F]{6}$/.test(data.themeColor.trim())) {
+    return data.themeColor.trim();
+  }
+  const cssVar = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(cssVar)) {
+    return cssVar;
+  }
+  return "#0f766e";
+}
+
 function applyStripBarStyle(stripEl, sec) {
   if (!stripEl) return;
 
+  const data = getWorkingStoreData();
+  const themeCol = getActiveThemeColor(data);
   const topCol = sec && sec.barGradTop ? normalizeHexColor(sec.barGradTop, "") : "";
   const botCol = sec && sec.barGradBottom ? normalizeHexColor(sec.barGradBottom, "") : "";
   const customBg = sec && sec.barBgColor ? normalizeHexColor(sec.barBgColor, "") : "";
-  const data = getWorkingStoreData();
-  const accentColor = (data && data.themeColor) || "#0f766e";
 
   const fillBg = (topCol && botCol)
     ? `linear-gradient(to bottom, ${topCol} 0%, ${botCol} 100%)`
@@ -376,40 +387,40 @@ function applyStripBarStyle(stripEl, sec) {
   stripEl.querySelectorAll(".strip-side-edge-cap").forEach((el) => el.remove());
   stripEl.style.removeProperty("clip-path");
 
-  const edgeColor = topCol || customBg || accentColor;
   const shapeMode = (sec && sec.barShape) || "default";
+  const edgeColor = shapeMode === "default" ? (topCol || customBg || themeCol) : themeCol;
 
   if (shapeMode === "square") {
     stripEl.style.setProperty("border-radius", "0px", "important");
-    stripEl.style.setProperty("border-top", "none", "important");
-    stripEl.style.setProperty("border-bottom", "none", "important");
-    stripEl.style.setProperty("border-left", `8px solid ${edgeColor}`, "important");
-    stripEl.style.setProperty("border-right", `8px solid ${edgeColor}`, "important");
+    stripEl.style.setProperty("border-top", `2px solid ${edgeColor}`, "important");
+    stripEl.style.setProperty("border-bottom", `2px solid ${edgeColor}`, "important");
+    stripEl.style.setProperty("border-left", `10px solid ${edgeColor}`, "important");
+    stripEl.style.setProperty("border-right", `10px solid ${edgeColor}`, "important");
     stripEl.style.setProperty("padding-left", `${padLeft !== null ? padLeft : 14}px`, "important");
     stripEl.style.setProperty("padding-right", `${padRight !== null ? padRight : 14}px`, "important");
   } else if (shapeMode === "round") {
     stripEl.style.setProperty("border-radius", "999px", "important");
-    stripEl.style.setProperty("border-top", "none", "important");
-    stripEl.style.setProperty("border-bottom", "none", "important");
-    stripEl.style.setProperty("border-left", `8px solid ${edgeColor}`, "important");
-    stripEl.style.setProperty("border-right", `8px solid ${edgeColor}`, "important");
+    stripEl.style.setProperty("border-top", `2px solid ${edgeColor}`, "important");
+    stripEl.style.setProperty("border-bottom", `2px solid ${edgeColor}`, "important");
+    stripEl.style.setProperty("border-left", `10px solid ${edgeColor}`, "important");
+    stripEl.style.setProperty("border-right", `10px solid ${edgeColor}`, "important");
     stripEl.style.setProperty("padding-left", `${padLeft !== null ? padLeft : 16}px`, "important");
     stripEl.style.setProperty("padding-right", `${padRight !== null ? padRight : 16}px`, "important");
   } else if (shapeMode === "triangle") {
     stripEl.style.setProperty("border-radius", "0px", "important");
     stripEl.style.setProperty("border", "none", "important");
-    stripEl.style.setProperty("padding-left", `${(padLeft !== null ? padLeft : 10) + 16}px`, "important");
-    stripEl.style.setProperty("padding-right", `${(padRight !== null ? padRight : 10) + 16}px`, "important");
+    stripEl.style.setProperty("padding-left", `${(padLeft !== null ? padLeft : 10) + 18}px`, "important");
+    stripEl.style.setProperty("padding-right", `${(padRight !== null ? padRight : 10) + 18}px`, "important");
 
     const leftCap = document.createElement("span");
     leftCap.className = "strip-side-edge-cap";
     leftCap.style.cssText =
-      `position:absolute;left:0;top:0;bottom:0;width:16px;background:${edgeColor};clip-path:polygon(100% 0%, 0% 50%, 100% 100%);pointer-events:none;z-index:1;`;
+      `position:absolute;left:0;top:0;bottom:0;width:18px;background:${edgeColor};clip-path:polygon(100% 0%, 0% 50%, 100% 100%);pointer-events:none;z-index:1;`;
 
     const rightCap = document.createElement("span");
     rightCap.className = "strip-side-edge-cap";
     rightCap.style.cssText =
-      `position:absolute;right:0;top:0;bottom:0;width:16px;background:${edgeColor};clip-path:polygon(0% 0%, 100% 50%, 0% 100%);pointer-events:none;z-index:1;`;
+      `position:absolute;right:0;top:0;bottom:0;width:18px;background:${edgeColor};clip-path:polygon(0% 0%, 100% 50%, 0% 100%);pointer-events:none;z-index:1;`;
 
     stripEl.appendChild(leftCap);
     stripEl.appendChild(rightCap);
@@ -2346,7 +2357,7 @@ if (currentPage === "store") {
     overlay = document.createElement("div");
     overlay.id = POPUP_ID;
     overlay.style.cssText =
-      "display:none;position:fixed;inset:0;z-index:99998;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;padding:16px;";
+      "display:none;position:fixed;inset:0;z-index:99998;background:rgba(15,23,42,0.65);align-items:center;justify-content:center;padding:16px;";
 
     overlay.innerHTML = `
       <div style="width:100%;max-width:340px;background:#ffffff;border-radius:14px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,0.35);display:flex;flex-direction:column;gap:12px;">
