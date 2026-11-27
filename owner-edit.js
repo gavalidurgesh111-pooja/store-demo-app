@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V47");
+console.log("OWNER_EDIT_COMPLETE_V48");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -1735,6 +1735,21 @@ function makeToggleColorBox(titleText, enabledVal, colorVal, accentHex, onToggle
   return { box, extraWrap, chk, colorBtn, syncToggleHighlight };
 }
 
+function getTargetBoxPriceElement(sIdx, itemId) {
+  const secEl = document.querySelector(`#sectionsContainer .row-section[data-section-index="${sIdx}"]`);
+  if (!secEl) return null;
+  const data = getWorkingStoreData();
+  const sec = data.sections && data.sections[sIdx];
+  if (!sec || !Array.isArray(sec.items)) return null;
+  const topRowLimit = Math.min(MAX_TOP_ROW_BOXES, Math.max(0, Number(data.indexBoxLimit ?? MAX_TOP_ROW_BOXES)));
+  const list = sIdx === 0 ? sec.items.slice(0, topRowLimit) : sec.items;
+  const idx = list.findIndex((i) => i.id === itemId);
+  if (idx < 0) return null;
+  const cards = secEl.querySelectorAll(".mini-box:not(.user-photo-only-box), .item-box");
+  const card = cards[idx];
+  return card ? card.querySelector(".mini-box-price, .item-price") : null;
+}
+
 // ==================== UNIFIED BOTTOM-SHEET EDITOR (#ownerStoreNameModal) ====================
 function openCustomTextStylePopup(config) {
   const existing = document.getElementById("ownerStoreNameModal");
@@ -1828,7 +1843,7 @@ function openCustomTextStylePopup(config) {
 
   const stickyHeader = document.createElement("div");
   stickyHeader.style.cssText =
-    `position:sticky;top:${isBottomSheet ? "-10px" : "0"};z-index:20;background:#ffffff;padding-bottom:8px;border-bottom:1px solid #e2e8f0;display:flex;flex-direction:column;gap:8px;`;
+    `position:sticky;top:${isBottomSheet ? "-10px" : "0"};z-index:20;background:#ffffff;padding-bottom:8px;border-bottom:1px solid #e2e8f0;display:flex;flex-direction:column;gap:6px;`;
 
   const topBar = document.createElement("div");
   topBar.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:8px;";
@@ -1847,13 +1862,6 @@ function openCustomTextStylePopup(config) {
   topBar.appendChild(heading);
   topBar.appendChild(topCloseBtn);
 
-  const textInput = document.createElement("textarea");
-  textInput.rows = 2;
-  textInput.value = currentText;
-  textInput.placeholder = "Enter name (Press Enter for a new line)";
-  textInput.style.cssText =
-    "width:100%;min-height:54px;max-height:120px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:0.92rem;line-height:1.35;color:#111827;box-sizing:border-box;resize:vertical;overflow:auto;font-family:inherit;";
-
   const previewBox = document.createElement("div");
   previewBox.style.cssText =
     `padding:8px 12px;border-radius:10px;background:${isStore ? "#1e293b" : "#f8fafc"};border:1px solid #e2e8f0;min-height:42px;max-height:105px;overflow:auto;display:flex;align-items:center;justify-content:center;text-align:center;`;
@@ -1863,7 +1871,6 @@ function openCustomTextStylePopup(config) {
   previewBox.appendChild(previewText);
 
   stickyHeader.appendChild(topBar);
-  stickyHeader.appendChild(textInput);
   stickyHeader.appendChild(previewBox);
 
   let glowCtrl;
@@ -1905,110 +1912,22 @@ function openCustomTextStylePopup(config) {
     }
   }
 
-  // Photo & Remove section inside the single bottom pop-up for boxes
-  let boxPhotoWrap = null;
-  let photoStatusBadge = null;
-  if (isItemBox) {
-    boxPhotoWrap = document.createElement("div");
-    boxPhotoWrap.style.cssText =
-      "border:1px solid #e2e8f0;background:#f8fafc;border-radius:12px;padding:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;";
+  // ---- NAME SECTION & ITS NEARBY CONTROLS ----
+  const nameSectionBox = document.createElement("div");
+  nameSectionBox.style.cssText =
+    "border:1px solid #e2e8f0;background:#ffffff;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:10px;";
 
-    photoStatusBadge = document.createElement("span");
-    photoStatusBadge.textContent = draftItemImg ? "Photo Set" : "No Photo";
-    photoStatusBadge.style.cssText = "font-size:0.82rem;font-weight:700;color:#334155;";
+  const nameSecHead = document.createElement("span");
+  nameSecHead.textContent = "Name & Style";
+  nameSecHead.style.cssText = `font-size:0.86rem;font-weight:800;color:${SOFT_POPUP_BTN_TEXT};`;
 
-    const pBtnGroup = document.createElement("div");
-    pBtnGroup.style.cssText = "display:flex;gap:6px;align-items:center;";
-
-    const pickPhotoBtn = document.createElement("button");
-    pickPhotoBtn.type = "button";
-    pickPhotoBtn.textContent = "Photo";
-    pickPhotoBtn.style.cssText =
-      "min-height:34px;padding:5px 12px;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;";
-    pickPhotoBtn.onclick = () => {
-      const fileInput = ensureOwnerInlineFileInput();
-      pendingOwnerEditSlot = {
-        type: "item",
-        sIdx: config.sIdx,
-        itemId: config.itemId,
-        reopenBoxEditModal: true,
-        modalTitle: config.modalTitle
-      };
-      fileInput.value = "";
-      fileInput.click();
-    };
-    bindSoftToAccentButton(pickPhotoBtn);
-
-    const removePhotoBtn = document.createElement("button");
-    removePhotoBtn.type = "button";
-    removePhotoBtn.textContent = "Remove";
-    removePhotoBtn.style.cssText =
-      "min-height:34px;padding:5px 10px;border:1px solid #fecaca;border-radius:8px;background:#fff5f5;color:#b91c1c;font-size:0.78rem;font-weight:700;cursor:pointer;";
-    removePhotoBtn.onclick = () => {
-      draftItemImg = "";
-      itemObj.img = "";
-      photoStatusBadge.textContent = "No Photo";
-    };
-
-    pBtnGroup.appendChild(pickPhotoBtn);
-    pBtnGroup.appendChild(removePhotoBtn);
-    boxPhotoWrap.appendChild(photoStatusBadge);
-    boxPhotoWrap.appendChild(pBtnGroup);
-  }
-
-  // Price & Price Style section inside the single bottom pop-up for boxes
-  let boxPriceWrap = null;
-  let priceInput = null;
-  if (isItemBox) {
-    boxPriceWrap = document.createElement("div");
-    boxPriceWrap.style.cssText =
-      "border:1px solid #e2e8f0;background:#f8fafc;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;";
-
-    const priceTopLbl = document.createElement("span");
-    priceTopLbl.textContent = "Price";
-    priceTopLbl.style.cssText = "font-size:0.84rem;font-weight:800;color:#111827;";
-
-    priceInput = document.createElement("input");
-    priceInput.type = "text";
-    priceInput.value = draftPriceText;
-    priceInput.placeholder = "Enter price (e.g. 99 or 150/-)";
-    priceInput.style.cssText =
-      "width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.9rem;font-weight:700;color:#111827;background:#ffffff;box-sizing:border-box;";
-    priceInput.oninput = () => {
-      draftPriceText = priceInput.value;
-    };
-
-    const pSizeSlider = makeLabeledSlider("Price Size", 9, 28, 1, draftPriceSize, "px", accentHex, (val) => {
-      draftPriceSize = val;
-    });
-
-    const pColorRow = document.createElement("div");
-    pColorRow.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:8px;";
-
-    const pColorLbl = document.createElement("span");
-    pColorLbl.textContent = "Price Color";
-    pColorLbl.style.cssText = "font-size:0.8rem;font-weight:700;color:#334155;";
-
-    const pColorBtn = document.createElement("button");
-    pColorBtn.type = "button";
-    pColorBtn.textContent = "Pick Color";
-    pColorBtn.style.cssText =
-      "min-height:32px;padding:4px 10px;border-radius:8px;font-size:0.76rem;font-weight:700;cursor:pointer;";
-    pColorBtn.onclick = () => {
-      openStandaloneColorPicker(draftPriceColor, (hex) => {
-        draftPriceColor = hex;
-      });
-    };
-    bindSoftToAccentButton(pColorBtn);
-
-    pColorRow.appendChild(pColorLbl);
-    pColorRow.appendChild(pColorBtn);
-
-    boxPriceWrap.appendChild(priceTopLbl);
-    boxPriceWrap.appendChild(priceInput);
-    boxPriceWrap.appendChild(pSizeSlider);
-    boxPriceWrap.appendChild(pColorRow);
-  }
+  const textInput = document.createElement("textarea");
+  textInput.rows = 2;
+  textInput.value = currentText;
+  textInput.placeholder = "Enter name (Press Enter for a new line)";
+  textInput.style.cssText =
+    "width:100%;min-height:52px;max-height:110px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:0.92rem;line-height:1.35;color:#111827;box-sizing:border-box;resize:vertical;overflow:auto;font-family:inherit;";
+  textInput.oninput = syncPreview;
 
   const presetWrap = document.createElement("div");
   presetWrap.style.cssText = "display:grid;grid-template-columns:repeat(2,1fr);gap:8px;";
@@ -2056,12 +1975,12 @@ function openCustomTextStylePopup(config) {
   ];
 
   const presetControllers = [];
-  const presetBtns = presets.map((p, pIdx) => {
+  presets.forEach((p, pIdx) => {
     const pBtn = document.createElement("button");
     pBtn.type = "button";
     pBtn.textContent = p.label;
     pBtn.style.cssText =
-      "min-height:38px;padding:6px 10px;border-radius:10px;font-size:0.82rem;font-weight:700;cursor:pointer;";
+      "min-height:36px;padding:6px 10px;border-radius:10px;font-size:0.82rem;font-weight:700;cursor:pointer;";
     const ctrl = bindSoftToAccentButton(pBtn, { isSelected: false });
     presetControllers.push(ctrl);
     pBtn.onclick = () => {
@@ -2072,24 +1991,21 @@ function openCustomTextStylePopup(config) {
       syncPreview();
     };
     presetWrap.appendChild(pBtn);
-    return pBtn;
   });
-
-  textInput.oninput = syncPreview;
 
   const mainColorRow = document.createElement("div");
   mainColorRow.style.cssText =
-    "display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid #e2e8f0;background:#f8fafc;border-radius:12px;padding:10px 12px;";
+    "display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid #e2e8f0;background:#f8fafc;border-radius:10px;padding:8px 10px;";
 
   const mainColorLbl = document.createElement("span");
   mainColorLbl.textContent = "Text Color";
-  mainColorLbl.style.cssText = "font-size:0.88rem;font-weight:700;color:#111827;cursor:pointer;flex:1;";
+  mainColorLbl.style.cssText = "font-size:0.84rem;font-weight:700;color:#111827;cursor:pointer;flex:1;";
 
   textColorTriggerBtn = document.createElement("button");
   textColorTriggerBtn.type = "button";
   textColorTriggerBtn.textContent = "Pick Color";
   textColorTriggerBtn.style.cssText =
-    "min-height:36px;padding:6px 12px;border-radius:8px;font-size:0.82rem;font-weight:700;cursor:pointer;";
+    "min-height:34px;padding:5px 12px;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;";
 
   const triggerTextColorPicker = () => {
     openStandaloneColorPicker(st.color || "#ffffff", (hex) => {
@@ -2107,20 +2023,20 @@ function openCustomTextStylePopup(config) {
 
   const fontWrap = document.createElement("div");
   fontWrap.style.cssText =
-    "display:flex;flex-direction:column;gap:8px;border:1px solid #e2e8f0;background:#f8fafc;border-radius:12px;padding:10px 12px;";
+    "display:flex;flex-direction:column;gap:8px;border:1px solid #e2e8f0;background:#f8fafc;border-radius:10px;padding:8px 10px;";
 
   const fontHeader = document.createElement("div");
   fontHeader.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:8px;";
 
   const fontLbl = document.createElement("span");
   fontLbl.textContent = "Font Style (100)";
-  fontLbl.style.cssText = "font-size:0.88rem;font-weight:700;color:#111827;";
+  fontLbl.style.cssText = "font-size:0.84rem;font-weight:700;color:#111827;";
 
   const toggleFontListBtn = document.createElement("button");
   toggleFontListBtn.type = "button";
   toggleFontListBtn.textContent = "Choose Font";
   toggleFontListBtn.style.cssText =
-    "padding:5px 10px;min-height:34px;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;max-width:62%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";
+    "padding:5px 10px;min-height:32px;border-radius:8px;font-size:0.76rem;font-weight:700;cursor:pointer;max-width:62%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";
   const fontToggleCtrl = bindSoftToAccentButton(toggleFontListBtn);
 
   fontHeader.appendChild(fontLbl);
@@ -2128,7 +2044,7 @@ function openCustomTextStylePopup(config) {
 
   const fontScrollBox = document.createElement("div");
   fontScrollBox.style.cssText =
-    "display:none;flex-direction:column;gap:4px;max-height:165px;overflow-y:auto;padding:6px;border:1px solid #e2e8f0;border-radius:10px;background:#ffffff;";
+    "display:none;flex-direction:column;gap:4px;max-height:155px;overflow-y:auto;padding:6px;border:1px solid #e2e8f0;border-radius:10px;background:#ffffff;";
 
   const syncChooseFontBtnLabel = () => {
     const matched = STORE_FONT_OPTIONS.find(
@@ -2148,7 +2064,7 @@ function openCustomTextStylePopup(config) {
   };
 
   const fontItemControllers = [];
-  const fontItemBtns = STORE_FONT_OPTIONS.map((opt) => {
+  STORE_FONT_OPTIONS.forEach((opt) => {
     const itemBtn = document.createElement("button");
     itemBtn.type = "button";
     itemBtn.textContent = opt.label;
@@ -2169,7 +2085,6 @@ function openCustomTextStylePopup(config) {
       fontToggleCtrl.setSelected(false);
     };
     fontScrollBox.appendChild(itemBtn);
-    return itemBtn;
   });
 
   renderFontScrollList = () => {
@@ -2269,15 +2184,242 @@ function openCustomTextStylePopup(config) {
     })
   );
 
+  nameSectionBox.appendChild(nameSecHead);
+  nameSectionBox.appendChild(textInput);
+  nameSectionBox.appendChild(presetWrap);
+  nameSectionBox.appendChild(mainColorRow);
+  nameSectionBox.appendChild(fontWrap);
+  nameSectionBox.appendChild(sizeSlider);
+  nameSectionBox.appendChild(weightSlider);
+  nameSectionBox.appendChild(glowCtrl.box);
+  nameSectionBox.appendChild(borderCtrl.box);
+  nameSectionBox.appendChild(bgCtrl.box);
+
+  // ---- PHOTO SECTION & ITS NEARBY CONTROLS ----
+  let boxPhotoWrap = null;
+  let photoStatusBadge = null;
+  if (isItemBox) {
+    boxPhotoWrap = document.createElement("div");
+    boxPhotoWrap.style.cssText =
+      "border:1px solid #e2e8f0;background:#ffffff;border-radius:12px;padding:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;";
+
+    const photoLeft = document.createElement("div");
+    photoLeft.style.cssText = "display:flex;flex-direction:column;gap:2px;";
+
+    const photoTitle = document.createElement("span");
+    photoTitle.textContent = "Photo";
+    photoTitle.style.cssText = `font-size:0.86rem;font-weight:800;color:${SOFT_POPUP_BTN_TEXT};`;
+
+    photoStatusBadge = document.createElement("span");
+    photoStatusBadge.textContent = draftItemImg ? "Photo Set" : "No Photo";
+    photoStatusBadge.style.cssText = "font-size:0.76rem;font-weight:700;color:#475569;";
+
+    photoLeft.appendChild(photoTitle);
+    photoLeft.appendChild(photoStatusBadge);
+
+    const pBtnGroup = document.createElement("div");
+    pBtnGroup.style.cssText = "display:flex;gap:6px;align-items:center;";
+
+    const pickPhotoBtn = document.createElement("button");
+    pickPhotoBtn.type = "button";
+    pickPhotoBtn.textContent = "Choose Photo";
+    pickPhotoBtn.style.cssText =
+      "min-height:34px;padding:5px 11px;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;";
+    pickPhotoBtn.onclick = () => {
+      const fileInput = ensureOwnerInlineFileInput();
+      pendingOwnerEditSlot = {
+        type: "item",
+        sIdx: config.sIdx,
+        itemId: config.itemId,
+        reopenBoxEditModal: true,
+        modalTitle: config.modalTitle
+      };
+      fileInput.value = "";
+      fileInput.click();
+    };
+    bindSoftToAccentButton(pickPhotoBtn);
+
+    const removePhotoBtn = document.createElement("button");
+    removePhotoBtn.type = "button";
+    removePhotoBtn.textContent = "Remove Photo";
+    removePhotoBtn.style.cssText =
+      "min-height:34px;padding:5px 10px;border:1px solid #fecaca;border-radius:8px;background:#fff5f5;color:#b91c1c;font-size:0.78rem;font-weight:700;cursor:pointer;";
+    removePhotoBtn.onclick = () => {
+      draftItemImg = "";
+      itemObj.img = "";
+      photoStatusBadge.textContent = "No Photo";
+    };
+
+    pBtnGroup.appendChild(pickPhotoBtn);
+    pBtnGroup.appendChild(removePhotoBtn);
+    boxPhotoWrap.appendChild(photoLeft);
+    boxPhotoWrap.appendChild(pBtnGroup);
+  }
+
+  // ---- PRICE SECTION & ITS NEARBY LIVE CONTROLS ----
+  let boxPriceWrap = null;
+  let priceInput = null;
+  let priceLiveBadge = null;
+  let pSizeSlider = null;
+  if (isItemBox) {
+    boxPriceWrap = document.createElement("div");
+    boxPriceWrap.style.cssText =
+      "border:1px solid #e2e8f0;background:#ffffff;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;";
+
+    const priceTopRow = document.createElement("div");
+    priceTopRow.style.cssText = "display:flex;justify-content:space-between;align-items:center;";
+
+    const priceTopLbl = document.createElement("span");
+    priceTopLbl.textContent = "Price & Size";
+    priceTopLbl.style.cssText = `font-size:0.86rem;font-weight:800;color:${SOFT_POPUP_BTN_TEXT};`;
+
+    priceLiveBadge = document.createElement("span");
+    priceLiveBadge.style.cssText = "display:inline-block;font-weight:700;line-height:1.1;";
+
+    priceTopRow.appendChild(priceTopLbl);
+    priceTopRow.appendChild(priceLiveBadge);
+
+    const syncPriceLivePreview = () => {
+      const raw = (priceInput ? priceInput.value : draftPriceText).trim();
+      const disp = raw.length > 0 ? (raw.startsWith("₹") || raw.startsWith("$") ? raw : `₹${raw}`) : "₹0";
+      if (priceLiveBadge) {
+        priceLiveBadge.textContent = disp;
+        priceLiveBadge.style.fontSize = `${draftPriceSize}px`;
+        priceLiveBadge.style.color = draftPriceColor;
+      }
+      const domPriceEl = getTargetBoxPriceElement(config.sIdx, config.itemId);
+      if (domPriceEl) {
+        domPriceEl.textContent = disp;
+        domPriceEl.style.setProperty("font-size", `${draftPriceSize}px`, "important");
+        domPriceEl.style.setProperty("color", draftPriceColor, "important");
+      }
+    };
+
+    priceInput = document.createElement("input");
+    priceInput.type = "text";
+    priceInput.value = draftPriceText;
+    priceInput.placeholder = "Enter price (e.g. 99 or 150/-)";
+    priceInput.style.cssText =
+      "width:100%;min-height:36px;padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font-size:0.9rem;font-weight:700;color:#111827;background:#f8fafc;box-sizing:border-box;";
+    priceInput.oninput = () => {
+      draftPriceText = priceInput.value;
+      syncPriceLivePreview();
+    };
+
+    pSizeSlider = makeLabeledSlider("Price Size", 9, 28, 1, draftPriceSize, "px", accentHex, (val) => {
+      draftPriceSize = val;
+      syncPriceLivePreview();
+    });
+
+    const pColorRow = document.createElement("div");
+    pColorRow.style.cssText =
+      "display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid #e2e8f0;background:#f8fafc;border-radius:10px;padding:8px 10px;";
+
+    const pColorLbl = document.createElement("span");
+    pColorLbl.textContent = "Price Color";
+    pColorLbl.style.cssText = "font-size:0.82rem;font-weight:700;color:#111827;";
+
+    const pColorBtn = document.createElement("button");
+    pColorBtn.type = "button";
+    pColorBtn.textContent = "Pick Color";
+    pColorBtn.style.cssText =
+      "min-height:32px;padding:4px 10px;border-radius:8px;font-size:0.76rem;font-weight:700;cursor:pointer;";
+    pColorBtn.onclick = () => {
+      openStandaloneColorPicker(draftPriceColor, (hex) => {
+        draftPriceColor = hex;
+        syncPriceLivePreview();
+      });
+    };
+    bindSoftToAccentButton(pColorBtn);
+
+    pColorRow.appendChild(pColorLbl);
+    pColorRow.appendChild(pColorBtn);
+
+    boxPriceWrap.appendChild(priceTopRow);
+    boxPriceWrap.appendChild(priceInput);
+    boxPriceWrap.appendChild(pSizeSlider);
+    boxPriceWrap.appendChild(pColorRow);
+
+    syncPriceLivePreview();
+  }
+
+  // ---- FOOTER BUTTONS: RESET, CANCEL, APPLY, APPLY TO ALL ----
   const footer = document.createElement("div");
-  footer.style.cssText = "display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;";
+  footer.style.cssText = "display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;";
+
+  const resetBtn = document.createElement("button");
+  resetBtn.type = "button";
+  resetBtn.textContent = "Reset";
+  resetBtn.style.cssText =
+    "min-height:42px;padding:8px 12px;border-radius:10px;font-size:0.82rem;font-weight:700;cursor:pointer;";
+  resetBtn.onclick = () => {
+    const freshStyle = normalizeTextStyle(null, {
+      fontSize: defaultSize,
+      fontWeight: isStore ? 700 : 600,
+      color: defaultColor
+    });
+    Object.assign(st, freshStyle);
+    st.fontSize = Math.max(minSize, Math.min(maxSize, st.fontSize));
+    st.borderWidth = getSafeThinBorderWidth(st.fontSize, st.borderWidth);
+
+    const resetText = isStore ? "Store Name" : isSection ? "Name" : "Item";
+    textInput.value = resetText;
+    selectedPresetIdx = 0;
+    presetControllers.forEach((c, idx) => c.setSelected(idx === 0));
+    syncAllControlsFromState();
+    syncPreview();
+
+    if (isItemBox) {
+      draftItemImg = "";
+      if (photoStatusBadge) photoStatusBadge.textContent = "No Photo";
+      draftPriceText = "0";
+      if (priceInput) priceInput.value = "0";
+      draftPriceSize = basePriceDefaults.priceFontSize;
+      draftPriceColor = basePriceDefaults.priceColor || "#111827";
+      if (pSizeSlider && typeof pSizeSlider.setSliderValue === "function") {
+        pSizeSlider.setSliderValue(draftPriceSize);
+      }
+      if (priceLiveBadge) {
+        priceLiveBadge.textContent = "₹0";
+        priceLiveBadge.style.fontSize = `${draftPriceSize}px`;
+        priceLiveBadge.style.color = draftPriceColor;
+      }
+      const domPriceEl = getTargetBoxPriceElement(config.sIdx, config.itemId);
+      if (domPriceEl) {
+        domPriceEl.textContent = "₹0";
+        domPriceEl.style.setProperty("font-size", `${draftPriceSize}px`, "important");
+        domPriceEl.style.setProperty("color", draftPriceColor, "important");
+      }
+    }
+  };
+  bindSoftToAccentButton(resetBtn);
 
   const cancelBtn = document.createElement("button");
   cancelBtn.type = "button";
   cancelBtn.textContent = "Cancel";
   cancelBtn.style.cssText =
     "flex:1;min-height:42px;padding:8px 12px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;color:#334155;font-weight:700;cursor:pointer;";
-  cancelBtn.onclick = () => modal.remove();
+  cancelBtn.onclick = () => {
+    if (isItemBox) {
+      const origPrice = itemObj.priceText !== undefined && itemObj.priceText !== null && String(itemObj.priceText).trim() !== ""
+        ? String(itemObj.priceText)
+        : String(itemObj.price ?? 0);
+      const origSize = Number.isFinite(Number(itemObj.priceFontSize)) && Number(itemObj.priceFontSize) > 0
+        ? Number(itemObj.priceFontSize)
+        : basePriceDefaults.priceFontSize;
+      const origColor = itemObj.priceColor || basePriceDefaults.priceColor || "#111827";
+      const disp = origPrice.trim().length > 0
+        ? (origPrice.trim().startsWith("₹") || origPrice.trim().startsWith("$") ? origPrice.trim() : `₹${origPrice.trim()}`)
+        : "₹0";
+      const domPriceEl = getTargetBoxPriceElement(config.sIdx, config.itemId);
+      if (domPriceEl) {
+        domPriceEl.textContent = disp;
+        domPriceEl.style.setProperty("font-size", `${origSize}px`, "important");
+        domPriceEl.style.setProperty("color", origColor, "important");
+      }
+    }
+    modal.remove();
+  };
 
   const applyBtn = document.createElement("button");
   applyBtn.type = "button";
@@ -2353,6 +2495,7 @@ function openCustomTextStylePopup(config) {
   bindSoftToAccentButton(applyBtn);
   bindSoftToAccentButton(applyAllBtn);
 
+  footer.appendChild(resetBtn);
   footer.appendChild(cancelBtn);
   footer.appendChild(applyBtn);
   if (!isStore) {
@@ -2360,16 +2503,9 @@ function openCustomTextStylePopup(config) {
   }
 
   card.appendChild(stickyHeader);
+  card.appendChild(nameSectionBox);
   if (boxPhotoWrap) card.appendChild(boxPhotoWrap);
   if (boxPriceWrap) card.appendChild(boxPriceWrap);
-  card.appendChild(presetWrap);
-  card.appendChild(mainColorRow);
-  card.appendChild(fontWrap);
-  card.appendChild(sizeSlider);
-  card.appendChild(weightSlider);
-  card.appendChild(glowCtrl.box);
-  card.appendChild(borderCtrl.box);
-  card.appendChild(bgCtrl.box);
   card.appendChild(footer);
 
   modal.appendChild(card);
@@ -3239,7 +3375,7 @@ function attachOwnerStoreEditHandlers() {
       secEl.prepend(restoreBarRow);
     }
 
-    // Single 'Edit' button per box; opens the unified bottom-sheet editor with Name, Photo, Remove & Price
+    // Single 'Edit' button per box; opens the unified bottom-sheet editor with Name, Photo & Price
     const topRowLimit = Math.min(MAX_TOP_ROW_BOXES, Math.max(0, Number(data.indexBoxLimit ?? MAX_TOP_ROW_BOXES)));
     const cards = secEl.querySelectorAll(".mini-box:not(.user-photo-only-box), .item-box");
     cards.forEach((card, idx) => {
