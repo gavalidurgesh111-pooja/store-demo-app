@@ -1,4 +1,4 @@
-console.log("OWNER_EDIT_COMPLETE_V56");
+console.log("OWNER_EDIT_COMPLETE_V57");
 
 // Balanced professional palette anchored on #FF631C with neutral surfaces and soft idle tints.
 const FIXED_EDITOR_COLOR = "#FF631C";
@@ -148,7 +148,7 @@ function removeOwnerStoreEditUI() {
   document.querySelectorAll(".owner-inline-edit-btn").forEach((btn) => btn.remove());
 }
 
-// Keep Item Name & Price in the exact same fixed position whether BG is added or removed
+// Keep Item Name & Price in the exact same fixed position on both mini (.mini-box) and product (.item-box)
 function keepItemAndPricePositionFixed() {
   document.querySelectorAll(".mini-box:not(.user-photo-only-box), .item-box").forEach((card) => {
     const isMini = card.classList.contains("mini-box");
@@ -156,29 +156,23 @@ function keepItemAndPricePositionFixed() {
     const priceEl = card.querySelector(".mini-box-price, .item-price");
 
     if (nameEl) {
-      nameEl.style.setProperty("width", "100%", "important");
-      nameEl.style.setProperty("padding-left", isMini ? "4px" : "8px", "important");
-      nameEl.style.setProperty("padding-right", isMini ? "4px" : "8px", "important");
-      nameEl.style.setProperty("box-sizing", "border-box", "important");
-      nameEl.style.setProperty("text-align", isMini ? "center" : "left", "important");
+      nameEl.style.setProperty("position", "relative", "important");
+      nameEl.style.setProperty("left", "0px", "important");
+      nameEl.style.setProperty("right", "auto", "important");
       nameEl.style.setProperty("margin-left", "0px", "important");
       nameEl.style.setProperty("margin-right", "0px", "important");
-      nameEl.style.setProperty("left", "auto", "important");
-      nameEl.style.setProperty("right", "auto", "important");
       nameEl.style.setProperty("transform", "none", "important");
+      nameEl.style.setProperty("text-align", isMini ? "center" : "left", "important");
     }
 
     if (priceEl) {
-      priceEl.style.setProperty("width", "100%", "important");
-      priceEl.style.setProperty("padding-left", isMini ? "4px" : "8px", "important");
-      priceEl.style.setProperty("padding-right", isMini ? "4px" : "8px", "important");
-      priceEl.style.setProperty("box-sizing", "border-box", "important");
-      priceEl.style.setProperty("text-align", isMini ? "center" : "left", "important");
+      priceEl.style.setProperty("position", "relative", "important");
+      priceEl.style.setProperty("left", "0px", "important");
+      priceEl.style.setProperty("right", "auto", "important");
       priceEl.style.setProperty("margin-left", "0px", "important");
       priceEl.style.setProperty("margin-right", "0px", "important");
-      priceEl.style.setProperty("left", "auto", "important");
-      priceEl.style.setProperty("right", "auto", "important");
       priceEl.style.setProperty("transform", "none", "important");
+      priceEl.style.setProperty("text-align", isMini ? "center" : "left", "important");
     }
   });
 }
@@ -928,6 +922,7 @@ function openStripHeightEditorModal(sIdx, stripEl) {
     if (stripEl && typeof applyStripBarStyle === "function") {
       applyStripBarStyle(stripEl, sec);
     }
+    keepItemAndPricePositionFixed();
     modal.remove();
   };
 
